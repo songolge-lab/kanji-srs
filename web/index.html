@@ -399,17 +399,35 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   padding: .75rem .9rem;
   margin-bottom: .5rem;
   display: flex;
-  align-items: center;
-  gap: .8rem;
+  flex-direction: column;
+  gap: .6rem;
 }
-.si-label { flex: 1; font-size: .9rem; min-width: 0; }
+.si-row { display: flex; align-items: center; gap: .8rem; }
+.si-label { flex: 1; font-size: .9rem; min-width: 0; display: flex; align-items: center; gap: .4rem; }
 .si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; }
 .si-input { width: 92px; text-align: right; min-height: 42px; flex-shrink: 0; }
+.si-info-btn {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--paper-2);
+  color: var(--ink-soft); font-size: .72rem; font-weight: 800; flex-shrink: 0;
+  border: 1px solid var(--line-soft); line-height: 1;
+}
+.si-info-btn:active { background: var(--line-soft); }
+.si-info-panel {
+  display: none; background: var(--paper-2); border-radius: var(--r-sm);
+  padding: .7rem .8rem; font-size: .82rem; color: var(--ink); line-height: 1.5;
+}
+.si-info-panel.show { display: block; }
 .danger-zone {
   background: var(--hanko-bg);
   border-radius: var(--r-lg);
   padding: 1rem;
   margin-top: 1.5rem;
+}
+
+/* Versiyon belirteci */
+.version-tag {
+  text-align: center; font-size: .76rem; color: var(--ink-soft);
+  margin-top: 1.5rem; padding-bottom: .5rem;
 }
 
 /* =====================================================================
@@ -608,8 +626,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <div class="card">
       <p class="text-muted mt-1" style="margin-bottom:.8rem">Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.</p>
       <div class="btn-row">
-        <button class="btn btn-ghost tap" id="btn-export">⬇ Dışa aktar</button>
-        <button class="btn btn-ghost tap" id="btn-import-trigger">⬆ İçe aktar</button>
+        <button class="btn btn-ghost tap" id="btn-export">⬆ Dışa aktar</button>
+        <button class="btn btn-ghost tap" id="btn-import-trigger">⬇ İçe aktar</button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
@@ -655,8 +673,13 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
    ===================================================================== */
 
 // ─── CONFIG ───────────────────────────────────────────────────────────
+// APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
+// Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
+const APP_VERSION = '1.0.1';
+
+// learnSteps Anki'nin gerçek varsayılanıdır: [1 dakika, 10 dakika]
 const CONFIG = {
-  learnSteps: [10, 60],
+  learnSteps: [1, 10],
   graduateInterval: 1,
   easyInterval: 4,
   defaultEase: 2.5,
@@ -806,7 +829,7 @@ async function connectSyncCode(code) {
     const remoteState = remote ? remote.state : null;
     const merged = pickNewerState(state, remoteState);
     state = merged;
-    state.settings = { ...CONFIG, ...state.settings };
+    state.settings = migrateSettings({ ...CONFIG, ...state.settings });
     setSyncCode(code);
     syncEnabled = true;
     save(); // local + cloud push tetikler
@@ -914,7 +937,7 @@ async function manualSync() {
     const remote = await cloudPull(syncCode);
     const remoteState = remote ? remote.state : null;
     state = pickNewerState(state, remoteState);
-    state.settings = { ...CONFIG, ...state.settings };
+    state.settings = migrateSettings({ ...CONFIG, ...state.settings });
     saveState(state);
     await cloudPush(syncCode, state);
     syncStatus = 'synced';
@@ -943,11 +966,24 @@ let state = {
   decks: [],
 };
 
+// ─── AYAR GÖÇÜ (MIGRATION) ─────────────────────────────────────────────
+// v1.0.1: Öğrenme adımları varsayılanı [10,60] -> Anki'nin gerçek
+// varsayılanı [1,10] olarak değiştirildi. Kullanıcı kendi özel bir
+// değer girmemişse (yani hâlâ eski varsayılanı taşıyorsa) otomatik
+// olarak yeni varsayılana geçirilir; kullanıcı özelleştirmişse dokunulmaz.
+function migrateSettings(settings) {
+  const OLD_DEFAULT = JSON.stringify([10, 60]);
+  if (JSON.stringify(settings.learnSteps) === OLD_DEFAULT) {
+    settings.learnSteps = [...CONFIG.learnSteps];
+  }
+  return settings;
+}
+
 async function loadApp() {
   const saved = loadState();
   if (saved) {
     state = saved;
-    state.settings = { ...CONFIG, ...state.settings };
+    state.settings = migrateSettings({ ...CONFIG, ...state.settings });
   }
   if (!testStorage()) {
     document.getElementById('storage-warning').style.display = 'block';
@@ -964,7 +1000,7 @@ async function loadApp() {
       const remote = await cloudPull(existingCode);
       const remoteState = remote ? remote.state : null;
       state = pickNewerState(state, remoteState);
-      state.settings = { ...CONFIG, ...state.settings };
+      state.settings = migrateSettings({ ...CONFIG, ...state.settings });
       save();
       syncStatus = 'synced';
     } catch (e) {
@@ -1025,9 +1061,18 @@ function _computeSRS(card, grade, preview) {
       srs.due = now + stepMs(0);
       label = fmtDur(stepMs(0));
     } else if (grade === 1) {
+      // Anki kuralı: İlk adımdaysa Hard = Again ile Good'ın ortalaması.
+      // Son adımdaysa (yalnızca o adım varsa) mevcut adımı tekrarlar.
       srs.stepIndex = Math.min(srs.stepIndex, steps.length - 1);
-      srs.due = now + stepMs(srs.stepIndex);
-      label = fmtDur(stepMs(srs.stepIndex));
+      let hardMs;
+      if (srs.stepIndex === 0 && steps.length > 1) {
+        // ortalama(ilk adım, ikinci adım)
+        hardMs = (stepMs(0) + stepMs(1)) / 2;
+      } else {
+        hardMs = stepMs(srs.stepIndex);
+      }
+      srs.due = now + hardMs;
+      label = fmtDur(hardMs);
     } else if (grade === 2) {
       srs.stepIndex++;
       if (srs.stepIndex >= steps.length) {
@@ -1505,47 +1550,64 @@ function bulkImport() {
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────
+// Her ayarın detaylı açıklaması (ⓘ ikonuna tıklayınca gösterilir)
+const SETTING_INFO = {
+  'steps': 'Yeni bir kart ilk kez çalışıldığında bu sırayla gösterilir (dakika). Örnek "1, 10": Tekrar dersen 1 dakika sonra, İyi dersen sıradaki adıma (10 dakika) geçer. Tüm adımlar İyi ile geçildiğinde kart "mezun olur" ve normal tekrar moduna girer.',
+  'grad': 'Bir kart son öğrenme adımını İyi ile geçtiğinde, bir sonraki tekrara kadar kaç gün bekleneceğini belirler. Anki varsayılanı 1 gündür.',
+  'easy-iv': 'Yeni bir kart için doğrudan Kolay dersen, öğrenme adımlarını atlayıp kaç gün sonraya planlanacağını belirler.',
+  'ease': 'Her doğru tekrarda aralığın kaç katına çıkacağını belirleyen çarpan. Yüksek ease, kartın daha hızlı seyrekleşmesi anlamına gelir. Anki varsayılanı 2.5 (yani %250) dir.',
+  'easy-bonus': 'Tekrar modundaki bir kart için Kolay dediğinde, normal İyi aralığına ek olarak uygulanan çarpan. 1.3 demek, İyi den %30 daha uzun bir aralık demektir.',
+  'mastery': 'Bir kartın aralığı bu gün sayısına ulaştığında otomatik olarak "İyi Bildiklerim" alt destesine taşınır. Düşürürsen kartlar daha çabuk "ustalaşılmış" sayılır.',
+  'daily': 'Bir günde en fazla kaç YENİ kartın çalışma kuyruğuna gireceğini sınırlar. 0 yaparsan sınır olmaz, tüm yeni kartlar aynı gün gösterilebilir.',
+  'fuzz': 'Açıkken, hesaplanan aralıklara küçük bir rastgelelik (±%5) eklenir; böylece aynı gün eklenen kartlar hep aynı günde üst üste binmez. Kapatırsan aralıklar tam hesaplanan sayıya sabitlenir.',
+};
+
+function toggleSettingInfo(key) {
+  const panel = document.getElementById('info-' + key);
+  if (!panel) return;
+  const isShowing = panel.classList.contains('show');
+  document.querySelectorAll('.si-info-panel.show').forEach(p => p.classList.remove('show'));
+  if (!isShowing) panel.classList.add('show');
+}
+
+function settingItemHTML(key, label, smallText, inputHTML) {
+  return `
+    <div class="settings-item">
+      <div class="si-row">
+        <div class="si-label">${label}<small>${smallText}</small></div>
+        <button class="si-info-btn tap" type="button" onclick="toggleSettingInfo('${key}')" aria-label="Bilgi">ⓘ</button>
+        ${inputHTML}
+      </div>
+      <div class="si-info-panel" id="info-${key}">${SETTING_INFO[key]}</div>
+    </div>
+  `;
+}
+
 function renderSettings() {
   renderSyncSection();
   const s = state.settings;
-  document.getElementById('settings-fields').innerHTML = `
-    <div class="settings-item">
-      <div class="si-label">Öğrenme adımları (dk)<small>Virgülle ayır, ör: 10, 60</small></div>
-      <input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Mezun olma aralığı (gün)<small>İyi ile mezun</small></div>
-      <input class="si-input" id="cfg-grad" type="number" min="1" value="${s.graduateInterval}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Kolay aralık (gün)<small>Kolay ile mezun</small></div>
-      <input class="si-input" id="cfg-easy-iv" type="number" min="1" value="${s.easyInterval}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Varsayılan ease<small>1.3–5.0</small></div>
-      <input class="si-input" id="cfg-ease" type="number" min="1.3" max="5" step="0.05" value="${s.defaultEase}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Kolay bonusu<small>Aralık çarpanı</small></div>
-      <input class="si-input" id="cfg-easy-bonus" type="number" min="1" step="0.05" value="${s.easyBonus}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Ustalaşma eşiği (gün)<small>Bu aralığa ulaşınca ⭐</small></div>
-      <input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Günlük yeni kart limiti<small>0 = sınırsız</small></div>
-      <input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">
-    </div>
-    <div class="settings-item">
-      <div class="si-label">Rastgele fuzz<small>Aralıklara ±%5</small></div>
-      <select class="si-input" id="cfg-fuzz" style="text-align:left">
+  document.getElementById('settings-fields').innerHTML =
+    settingItemHTML('steps', 'Öğrenme adımları (dk)', 'Virgülle ayır, ör: 1, 10',
+      `<input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">`) +
+    settingItemHTML('grad', 'Mezun olma aralığı (gün)', 'İyi ile mezun',
+      `<input class="si-input" id="cfg-grad" type="number" min="1" value="${s.graduateInterval}">`) +
+    settingItemHTML('easy-iv', 'Kolay aralık (gün)', 'Kolay ile mezun',
+      `<input class="si-input" id="cfg-easy-iv" type="number" min="1" value="${s.easyInterval}">`) +
+    settingItemHTML('ease', 'Varsayılan ease', '1.3–5.0',
+      `<input class="si-input" id="cfg-ease" type="number" min="1.3" max="5" step="0.05" value="${s.defaultEase}">`) +
+    settingItemHTML('easy-bonus', 'Kolay bonusu', 'Aralık çarpanı',
+      `<input class="si-input" id="cfg-easy-bonus" type="number" min="1" step="0.05" value="${s.easyBonus}">`) +
+    settingItemHTML('mastery', 'Ustalaşma eşiği (gün)', 'Bu aralığa ulaşınca ⭐',
+      `<input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">`) +
+    settingItemHTML('daily', 'Günlük yeni kart limiti', '0 = sınırsız',
+      `<input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">`) +
+    settingItemHTML('fuzz', 'Rastgele fuzz', 'Aralıklara ±%5',
+      `<select class="si-input" id="cfg-fuzz" style="text-align:left">
         <option value="1" ${s.fuzz?'selected':''}>Açık</option>
         <option value="0" ${!s.fuzz?'selected':''}>Kapalı</option>
-      </select>
-    </div>
-    <button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
-  `;
+      </select>`) +
+    `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
+    <div class="version-tag">漢字帖 Kanji Defterim · v${APP_VERSION}</div>`;
 }
 
 function saveSettings() {
@@ -1587,7 +1649,7 @@ function importData(file) {
       const data = JSON.parse(e.target.result);
       if (!data.decks || !Array.isArray(data.decks)) throw new Error('Geçersiz format');
       state = { ...state, ...data };
-      state.settings = { ...CONFIG, ...state.settings };
+      state.settings = migrateSettings({ ...CONFIG, ...state.settings });
       save();
       showToast('✓ Veriler içe aktarıldı: ' + state.decks.length + ' deste');
       renderDeckList();
