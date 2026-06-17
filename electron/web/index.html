@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>漢字帖 — Kanji Defterim</title>
+
+<!-- PWA: ana ekrana eklendiğinde app gibi açılması için -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1c1a17">
+
+<!-- iOS: tam ekran, adres çubuğu olmadan açılma -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="漢字帖">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<style>
+/* =====================================================================
+   TOKENS — sumi (mürekkep) + washi (kağıt) paleti
+   ===================================================================== */
+:root {
+  --ink:        #1c1a17;
+  --ink-soft:   #4a463f;
+  --paper:      #f3eee2;
+  --paper-2:    #ece5d4;
+  --card:       #fffdf8;
+  --line:       #ddd3bd;
+  --line-soft:  #e8e0cc;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #9c7a2e;
+  --gold-bg:    #f0e6c8;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+  --r-lg:       18px;
+  --r-md:       12px;
+  --r-sm:       8px;
+  --tap:        48px;            /* minimum touch target */
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-t:     env(safe-area-inset-top, 0px);
+}
+
+/* =====================================================================
+   RESET — touch-safe defaults
+   ===================================================================== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', BlinkMacSystemFont,
+               'Segoe UI', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+rt { font-size: .55em; }
+ruby { -webkit-touch-callout: none; }
+
+/* Every interactive element gets a real, generous hit target */
+button, .tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+button:disabled { opacity: .5; cursor: default; }
+
+input, textarea, select {
+  font: inherit;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: .7rem .85rem;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  min-height: var(--tap);
+  -webkit-appearance: none;
+  appearance: none;
+}
+textarea { min-height: 7rem; }
+input:focus, textarea:focus, select:focus { border-color: var(--sky); }
+label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35rem; }
+
+/* =====================================================================
+   APP SHELL
+   ===================================================================== */
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: calc(var(--safe-t) + .25rem) 1rem calc(76px + var(--safe-b) + 1rem);
+}
+
+/* TOP BAR — in normal flow, not sticky. Avoids stacking-context/touch bugs. */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 0 1rem;
+}
+#topbar-title {
+  flex: 1;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topbar-title .accent { color: var(--hanko); }
+
+.icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.icon-btn:active { background: var(--paper-2); transform: scale(.94); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* =====================================================================
+   VIEW ROUTER
+   ===================================================================== */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn .18s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* =====================================================================
+   GENERIC CARD
+   ===================================================================== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  padding: 1.1rem;
+  margin-bottom: .75rem;
+}
+.card-row { display: flex; align-items: flex-start; gap: .75rem; }
+.card-title { font-weight: 700; font-size: 1.02rem; flex: 1; min-width: 0; word-break: break-word; }
+.deck-meta { font-size: .82rem; color: var(--ink-soft); margin-top: .2rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .25rem .6rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.badge-sky   { background: var(--sky-bg);   color: var(--sky);   }
+.badge-jade  { background: var(--jade-bg);  color: var(--jade);  }
+.badge-gold  { background: var(--gold-bg);  color: var(--gold);  }
+.badge-hanko { background: var(--hanko-bg); color: var(--hanko); }
+.badge-soft  { background: var(--paper-2);  color: var(--ink-soft); }
+
+/* =====================================================================
+   BUTTONS — all sized to --tap, stacked when tight rather than squeezed
+   ===================================================================== */
+.btn {
+  min-height: var(--tap);
+  padding: 0 1.1rem;
+  border-radius: var(--r-md);
+  font-size: .92rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-block { width: 100%; }
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:active { background: #000; }
+.btn-ghost   { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:active { background: var(--line-soft); }
+.btn-danger  { background: var(--hanko-bg); color: var(--hanko); }
+.btn-danger:active { background: #ecc6bf; }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+.btn-row .btn { flex: 1 1 auto; min-width: 0; }
+
+/* =====================================================================
+   GLOBAL STATS (deck list top)
+   ===================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: .55rem;
+  margin-bottom: 1.1rem;
+}
+.stat-box {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: .7rem .4rem;
+  text-align: center;
+}
+.stat-num { font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
+.stat-lbl { font-size: .68rem; color: var(--ink-soft); margin-top: .15rem; }
+
+/* =====================================================================
+   SECTION HEADER
+   ===================================================================== */
+.section-hd {
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 1.4rem 0 .6rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-hd::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* =====================================================================
+   MASTERED BANNER
+   ===================================================================== */
+.mastered-banner {
+  border: 1.5px solid var(--jade);
+  background: var(--jade-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.mastered-banner .mb-top { display: flex; align-items: center; gap: .7rem; margin-bottom: .1rem; }
+.mastered-banner .mb-icon { font-size: 1.5rem; line-height: 1; }
+.mastered-banner .mb-title { font-weight: 700; font-size: .98rem; color: var(--ink); }
+.mastered-banner .mb-sub { font-size: .8rem; color: var(--jade); }
+
+/* =====================================================================
+   CARD LIST ITEM (deck detail) — full row is one big tap target
+   ===================================================================== */
+.card-list-item {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: .7rem .85rem;
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+.cli-kanji {
+  font-size: 1.6rem;
+  line-height: 1;
+  min-width: 2.6rem;
+  text-align: center;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  flex-shrink: 0;
+}
+.cli-info { flex: 1; min-width: 0; }
+.cli-info .cli-furi { font-weight: 700; font-size: .92rem; }
+.cli-info .cli-meaning { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cli-actions { display: flex; gap: .25rem; flex-shrink: 0; }
+.cli-actions .icon-btn { width: 40px; height: 40px; font-size: 1rem; }
+
+/* =====================================================================
+   STUDY SCREEN
+   ===================================================================== */
+.study-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: 1.1rem;
+}
+.study-progress {
+  flex: 1;
+  height: 6px;
+  background: var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.study-progress-fill {
+  height: 100%;
+  background: var(--hanko);
+  border-radius: 3px;
+  transition: width .25s ease;
+}
+.study-count { font-size: .8rem; color: var(--ink-soft); white-space: nowrap; flex-shrink: 0; }
+
+.flashcard {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  min-height: 280px;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 1.1rem;
+}
+.fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
+.fc-kanji {
+  font-size: clamp(4.5rem, 24vw, 8rem);
+  line-height: 1;
+  font-weight: 400;
+  color: var(--ink);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
+}
+.fc-back { width: 100%; text-align: center; }
+.fc-ruby {
+  font-size: 2.1rem;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  line-height: 2;
+  margin-bottom: .3rem;
+}
+.fc-furigana { font-size: 1.25rem; color: var(--ink-soft); margin-bottom: .6rem; }
+.fc-meaning { font-size: 1.2rem; font-weight: 700; margin-bottom: .9rem; }
+.fc-divider { border: none; border-top: 1px solid var(--line); margin: .8rem 0; }
+.fc-example { font-size: 1.05rem; line-height: 1.85; }
+.fc-example .hl { color: var(--hanko); font-weight: 700; }
+.fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
+
+#btn-show {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+#btn-show:active { background: #000; transform: scale(.985); }
+
+/* Answer grid: ALWAYS 2x2, generous targets, no neighbor mis-taps */
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+}
+.ans-btn {
+  min-height: 64px;
+  border-radius: var(--r-md);
+  font-size: .9rem;
+  font-weight: 700;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .5rem .3rem;
+  border: 1.5px solid transparent;
+}
+.ans-btn:active { transform: scale(.96); }
+.ans-btn .next-time { font-size: .72rem; font-weight: 400; opacity: .85; }
+.ans-again { background: var(--hanko-bg); color: var(--hanko); }
+.ans-hard  { background: var(--gold-bg);  color: var(--gold); }
+.ans-good  { background: var(--sky-bg);   color: var(--sky); }
+.ans-easy  { background: var(--jade-bg);  color: var(--jade); }
+
+.study-done { text-align: center; padding: 3rem 1rem; }
+.study-done .done-icon { font-size: 3.2rem; margin-bottom: .8rem; }
+.study-done h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; }
+.study-done p { color: var(--ink-soft); margin-bottom: 1.4rem; }
+
+/* =====================================================================
+   FORMS
+   ===================================================================== */
+.form-group { margin-bottom: 1rem; }
+.form-hint { font-size: .78rem; color: var(--ink-soft); margin-top: .35rem; }
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+.settings-item {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: .75rem .9rem;
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+}
+.si-label { flex: 1; font-size: .9rem; min-width: 0; }
+.si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; }
+.si-input { width: 92px; text-align: right; min-height: 42px; flex-shrink: 0; }
+.danger-zone {
+  background: var(--hanko-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* =====================================================================
+   BOTTOM NAV — fixed, full-width, large equal-area tap zones
+   ===================================================================== */
+#bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-b);
+  z-index: 30;
+}
+.nav-item {
+  flex: 1 1 0;
+  min-height: 64px;
+  flex-direction: column;
+  gap: .2rem;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.nav-item svg { width: 23px; height: 23px; }
+.nav-item.active { color: var(--hanko); }
+.nav-item:active { background: var(--paper-2); }
+
+/* =====================================================================
+   TOAST
+   ===================================================================== */
+#toast {
+  position: fixed;
+  left: 50%; bottom: calc(80px + var(--safe-b));
+  transform: translateX(-50%) translateY(16px);
+  background: var(--ink);
+  color: var(--paper);
+  padding: .65rem 1.2rem;
+  border-radius: 22px;
+  font-size: .86rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s, transform .22s;
+  z-index: 100;
+  max-width: 88vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* =====================================================================
+   MODAL — normal-flow overlay, no fixed-element tap traps
+   ===================================================================== */
+#modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,17,12,.5);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s;
+}
+#modal-bg.show { opacity: 1; visibility: visible; }
+#modal {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  padding: 1.4rem 1.1rem calc(1.6rem + var(--safe-b));
+  width: 100%;
+  max-width: 600px;
+  max-height: 86vh;
+  overflow-y: auto;
+  transform: translateY(30px);
+  transition: transform .25s;
+}
+#modal-bg.show #modal { transform: translateY(0); }
+#modal h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; }
+
+/* =====================================================================
+   EMPTY STATE
+   ===================================================================== */
+.empty { text-align: center; padding: 3rem 1rem; color: var(--ink-soft); }
+.empty-icon { font-size: 2.8rem; margin-bottom: .7rem; }
+.empty p { margin-bottom: 1.2rem; }
+
+/* =====================================================================
+   MISC
+   ===================================================================== */
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.text-muted { color: var(--ink-soft); font-size: .85rem; }
+.w-100 { width: 100%; }
+.required { color: var(--hanko); }
+
+@media (min-width: 480px) {
+  .stat-num { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="topbar">
+    <button class="icon-btn tap" id="btn-back" style="display:none" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div id="topbar-title">漢字帖 <span class="accent">帳</span></div>
+    <span id="sync-badge" style="margin-right:.3rem"></span>
+    <button class="icon-btn tap" id="btn-add-deck" aria-label="Yeni deste">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <!-- VIEW: DECK LIST -->
+  <div id="view-decks" class="view active">
+    <div class="stats-grid" id="global-stats"></div>
+    <div class="section-hd">Destelerim</div>
+    <div id="deck-list"></div>
+    <div id="deck-list-empty" class="empty" style="display:none">
+      <div class="empty-icon">🗂️</div>
+      <p>Henüz bir deste yok.<br>Sağ üstteki + ile yeni deste ekle.</p>
+    </div>
+  </div>
+
+  <!-- VIEW: DECK DETAIL -->
+  <div id="view-deck" class="view">
+    <div id="deck-detail-content"></div>
+  </div>
+
+  <!-- VIEW: STUDY -->
+  <div id="view-study" class="view">
+    <div id="study-screen"></div>
+  </div>
+
+  <!-- VIEW: ADD CARD -->
+  <div id="view-add" class="view">
+    <div class="section-hd">Kart ekle</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Hedef deste</label>
+        <select id="add-deck-select"></select>
+      </div>
+      <div class="form-group">
+        <label>Kanji / Kelime <span class="required">*</span></label>
+        <input type="text" id="add-kanji" placeholder="例: 漢字">
+      </div>
+      <div class="form-group">
+        <label>Furigana (okunuş) <span class="required">*</span></label>
+        <input type="text" id="add-furigana" placeholder="例: かんじ">
+      </div>
+      <div class="form-group">
+        <label>Türkçe anlam <span class="required">*</span></label>
+        <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
+      </div>
+      <div class="form-group">
+        <label>Örnek cümle (Japonca)</label>
+        <input type="text" id="add-example-jp" placeholder="例: 毎日漢字を勉強します。">
+      </div>
+      <div class="form-group">
+        <label>Örnek çeviri (Türkçe, opsiyonel)</label>
+        <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+      </div>
+      <button class="btn btn-block btn-primary tap" id="btn-save-card">Kaydet</button>
+    </div>
+
+    <div class="section-hd">Toplu içe aktar</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Hedef deste</label>
+        <select id="bulk-deck-select"></select>
+      </div>
+      <div class="form-group">
+        <label>Kart listesi</label>
+        <textarea id="bulk-input" rows="7"
+          placeholder="Her satır bir kart, | ile ayır:&#10;漢字 | かんじ | kanji, Çince karakter | 毎日漢字を勉強します。 | Her gün kanji çalışıyorum.&#10;水 | みず | su | 水を飲みます。&#10;食べる | たべる | yemek | パンを食べる。"></textarea>
+        <div class="form-hint">Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)</div>
+      </div>
+      <button class="btn btn-block btn-primary tap" id="btn-bulk-import">İçe aktar</button>
+    </div>
+  </div>
+
+  <!-- VIEW: SETTINGS -->
+  <div id="view-settings" class="view">
+    <div class="section-hd">Cihazlar Arası Senkron</div>
+    <div id="sync-section" class="card"></div>
+
+    <div class="section-hd">SRS ayarları</div>
+    <div id="settings-fields"></div>
+
+    <div class="section-hd">Yedekleme</div>
+    <div class="card">
+      <p class="text-muted mt-1" style="margin-bottom:.8rem">Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.</p>
+      <div class="btn-row">
+        <button class="btn btn-ghost tap" id="btn-export">⬇ Dışa aktar</button>
+        <button class="btn btn-ghost tap" id="btn-import-trigger">⬆ İçe aktar</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none">
+    </div>
+    <div id="storage-warning" class="card" style="display:none;border:1.5px solid var(--hanko)">
+      <p style="color:var(--hanko);font-weight:700">⚠ Veriler bu oturumda kalıcı değil</p>
+      <p class="text-muted mt-1">localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.</p>
+    </div>
+    <div class="danger-zone">
+      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem">⚠ Tehlikeli bölge</p>
+      <button class="btn btn-danger tap" id="btn-reset-all">Tüm veriyi sıfırla</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<nav id="bottom-nav">
+  <button class="nav-item active tap" data-view="decks" id="nav-decks">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M7 4v5M17 4v5"/></svg>
+    Desteler
+  </button>
+  <button class="nav-item tap" data-view="add" id="nav-add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+    Kart ekle
+  </button>
+  <button class="nav-item tap" data-view="settings" id="nav-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    Ayarlar
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">Modal</h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   KANJI SRS — UYGULAMA MANTIĞI
+   ===================================================================== */
+
+// ─── CONFIG ───────────────────────────────────────────────────────────
+const CONFIG = {
+  learnSteps: [10, 60],
+  graduateInterval: 1,
+  easyInterval: 4,
+  defaultEase: 2.5,
+  minEase: 1.3,
+  easyBonus: 1.3,
+  masteryDays: 21,
+  fuzz: true,
+  dailyNewLimit: 0,
+};
+
+// ─── STORAGE LAYER ────────────────────────────────────────────────────
+let _inMemory = false;
+let _memStore = null;
+
+function _tryLS(fn) {
+  try { return fn(); }
+  catch(e) { _inMemory = true; return null; }
+}
+
+function saveState(state) {
+  const json = JSON.stringify(state);
+  if (_inMemory) { _memStore = json; return; }
+  _tryLS(() => localStorage.setItem('kanji_srs_v1', json));
+}
+
+function loadState() {
+  if (_inMemory) return _memStore ? JSON.parse(_memStore) : null;
+  const raw = _tryLS(() => localStorage.getItem('kanji_srs_v1'));
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function testStorage() {
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+    return true;
+  } catch { _inMemory = true; return false; }
+}
+
+// ─── BULUT SENKRON (Supabase) ──────────────────────────────────────────
+// Bu bölüm, "giriş kodu" ile telefon/PC arasında veri senkronize eder.
+// SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini kendi Supabase
+// projenden alıp aşağıya yapıştırman gerekir (bkz. KURULUM.md).
+const SUPABASE_URL = 'https://ugrplersscohvsclgxqp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncnBsZXJzc2NvaHZzY2xneHFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NTAyNTUsImV4cCI6MjA5NzIyNjI1NX0.uFzTdr5PuXz97x0o-nkr8quioKB1jj96FSyPdE-mvJQ';
+const SYNC_TABLE = 'app_state';
+const SYNC_CODE_KEY = 'kanji_srs_sync_code';
+
+let syncCode = null;          // aktif giriş kodu
+let lastSyncedAt = null;      // son senkronun updated_at değeri
+let syncEnabled = false;      // Supabase bilgileri girilmiş mi
+let syncStatus = 'idle';      // idle | syncing | synced | error | offline
+
+function syncConfigured() {
+  return SUPABASE_URL.indexOf('YOUR_PROJECT') === -1 &&
+         SUPABASE_ANON_KEY.indexOf('YOUR_ANON_KEY') === -1;
+}
+
+function getSyncCode() {
+  return _tryLS(() => localStorage.getItem(SYNC_CODE_KEY));
+}
+function setSyncCode(code) {
+  syncCode = code;
+  _tryLS(() => localStorage.setItem(SYNC_CODE_KEY, code));
+}
+function clearSyncCode() {
+  syncCode = null;
+  _tryLS(() => localStorage.removeItem(SYNC_CODE_KEY));
+}
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  return res;
+}
+
+/** Buluttaki kaydı çek. Yoksa null döner. */
+async function cloudPull(code) {
+  const res = await sbFetch(`${SYNC_TABLE}?code=eq.${encodeURIComponent(code)}&select=*`);
+  if (!res.ok) throw new Error('Sunucudan okuma hatası');
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+/** Yerel state'i buluta yaz (upsert). */
+async function cloudPush(code, stateObj) {
+  const res = await sbFetch(`${SYNC_TABLE}?on_conflict=code`, {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ code, state: stateObj }),
+  });
+  if (!res.ok) throw new Error('Sunucuya yazma hatası');
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+/** İki state'ten hangisi daha "büyük" (daha çok ilerleme içeriyor) onu seç.
+ *  Basit kural: toplam review sayısı + kart sayısı daha fazla olan kazanır.
+ *  Bağlantı kaybı sonrası çatışmaları kabaca makul çözer. */
+function pickNewerState(local, remote) {
+  if (!remote) return local;
+  if (!local) return remote;
+  const score = (s) => {
+    let cards = 0, reviews = 0;
+    for (const d of (s.decks || [])) cards += d.cards.length;
+    for (const k in (s.stats?.reviewsByDate || {})) reviews += s.stats.reviewsByDate[k];
+    return cards * 1000 + reviews;
+  };
+  return score(remote) >= score(local) ? remote : local;
+}
+
+let _pushTimer = null;
+/** save() her çağrıldığında local'e anında, buluta debounce'lu yazar. */
+function scheduleCloudPush() {
+  if (!syncEnabled || !syncCode) return;
+  clearTimeout(_pushTimer);
+  syncStatus = 'syncing';
+  renderSyncBadge();
+  _pushTimer = setTimeout(async () => {
+    try {
+      await cloudPush(syncCode, state);
+      syncStatus = 'synced';
+    } catch (e) {
+      syncStatus = 'error';
+    }
+    renderSyncBadge();
+  }, 1200);
+}
+
+async function connectSyncCode(code) {
+  if (!syncConfigured()) {
+    showToast('⚠ Bulut senkron henüz yapılandırılmadı (KURULUM.md\'ye bak)', 4000);
+    return false;
+  }
+  syncStatus = 'syncing';
+  renderSyncBadge();
+  try {
+    const remote = await cloudPull(code);
+    const remoteState = remote ? remote.state : null;
+    const merged = pickNewerState(state, remoteState);
+    state = merged;
+    state.settings = { ...CONFIG, ...state.settings };
+    setSyncCode(code);
+    syncEnabled = true;
+    save(); // local + cloud push tetikler
+    await cloudPush(code, state);
+    syncStatus = 'synced';
+    renderSyncBadge();
+    return true;
+  } catch (e) {
+    syncStatus = 'error';
+    renderSyncBadge();
+    showToast('⚠ Bağlantı hatası: ' + e.message, 3500);
+    return false;
+  }
+}
+
+function disconnectSync() {
+  clearSyncCode();
+  syncEnabled = false;
+  syncStatus = 'idle';
+  renderSyncBadge();
+}
+
+function renderSyncBadge() {
+  const el = document.getElementById('sync-badge');
+  if (!el) return;
+  if (!syncEnabled) { el.innerHTML = ''; return; }
+  const map = {
+    idle:    ['⏺', 'var(--ink-soft)', 'Bağlı değil'],
+    syncing: ['🔄', 'var(--sky)', 'Senkronize ediliyor…'],
+    synced:  ['✓',  'var(--jade)', 'Senkron'],
+    error:   ['⚠',  'var(--hanko)','Bağlantı hatası'],
+    offline: ['📴', 'var(--ink-soft)', 'Çevrimdışı'],
+  };
+  const [icon, color, label] = map[syncStatus] || map.idle;
+  el.innerHTML = `<span title="${label}" style="color:${color};font-size:.78rem;font-weight:700">${icon}</span>`;
+}
+
+/** Rastgele 6 haneli giriş kodu üretir (örn: 482913) */
+function generateSyncCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function renderSyncSection() {
+  const el = document.getElementById('sync-section');
+  if (!el) return;
+
+  if (!syncConfigured()) {
+    el.innerHTML = `
+      <p class="text-muted">Bulut senkron henüz kurulmadı.</p>
+      <p class="form-hint mt-1">Geliştirici notu: index.html içinde SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurman gerekiyor (bkz. KURULUM.md).</p>
+    `;
+    return;
+  }
+
+  if (syncEnabled && syncCode) {
+    el.innerHTML = `
+      <p style="font-weight:700">Bağlı giriş kodu:</p>
+      <p style="font-size:1.8rem;font-weight:800;letter-spacing:.1em;margin:.3rem 0;color:var(--hanko)">${esc(syncCode)}</p>
+      <p class="text-muted">Diğer cihazda (telefon/PC) aynı kodu girerek bu kartları orada da görebilirsin.</p>
+      <div class="btn-row">
+        <button class="btn btn-ghost tap" onclick="manualSync()">🔄 Şimdi senkronize et</button>
+        <button class="btn btn-danger tap" onclick="confirmDisconnectSync()">Bağlantıyı kes</button>
+      </div>
+    `;
+  } else {
+    el.innerHTML = `
+      <p class="text-muted" style="margin-bottom:.8rem">Telefon ve bilgisayarın otomatik senkronize olması için bir giriş kodu oluştur, diğer cihazda da aynı kodu gir.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary tap" onclick="createAndConnectCode()">✨ Yeni kod oluştur</button>
+      </div>
+      <div class="form-group mt-2">
+        <label>Veya var olan bir kodu gir</label>
+        <input id="sync-code-input" placeholder="ör: 482913" inputmode="numeric" maxlength="6">
+      </div>
+      <button class="btn btn-block btn-ghost tap" onclick="enterSyncCode()">Bu kodla bağlan</button>
+    `;
+  }
+}
+
+async function createAndConnectCode() {
+  const code = generateSyncCode();
+  const ok = await connectSyncCode(code);
+  if (ok) {
+    renderSyncSection();
+    showToast('✓ Kod oluşturuldu: ' + code, 3500);
+  }
+}
+
+async function enterSyncCode() {
+  const input = document.getElementById('sync-code-input');
+  const code = input.value.trim();
+  if (!/^[0-9]{4,8}$/.test(code)) { showToast('⚠ Geçerli bir kod gir (4-8 hane)'); return; }
+  const ok = await connectSyncCode(code);
+  if (ok) {
+    renderSyncSection();
+    showToast('✓ Bağlandı ve senkronize edildi');
+  }
+}
+
+async function manualSync() {
+  if (!syncCode) return;
+  syncStatus = 'syncing';
+  renderSyncBadge();
+  try {
+    const remote = await cloudPull(syncCode);
+    const remoteState = remote ? remote.state : null;
+    state = pickNewerState(state, remoteState);
+    state.settings = { ...CONFIG, ...state.settings };
+    saveState(state);
+    await cloudPush(syncCode, state);
+    syncStatus = 'synced';
+    showToast('✓ Senkronize edildi');
+    renderDeckList();
+    renderGlobalStats();
+  } catch (e) {
+    syncStatus = 'error';
+    showToast('⚠ Senkron hatası: ' + e.message);
+  }
+  renderSyncBadge();
+}
+
+function confirmDisconnectSync() {
+  if (!confirm('Bu cihazı senkron koddan ayırmak istediğine emin misin? Veriler bu cihazda yerel olarak kalır, ama otomatik senkron durur.')) return;
+  disconnectSync();
+  renderSyncSection();
+  showToast('Bağlantı kesildi');
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────
+let state = {
+  version: 1,
+  settings: { ...CONFIG },
+  stats: { reviewsByDate: {}, streak: 0 },
+  decks: [],
+};
+
+async function loadApp() {
+  const saved = loadState();
+  if (saved) {
+    state = saved;
+    state.settings = { ...CONFIG, ...state.settings };
+  }
+  if (!testStorage()) {
+    document.getElementById('storage-warning').style.display = 'block';
+    showToast('⚠ Veriler bu oturumda kalıcı değil', 4000);
+  }
+
+  // Daha önce bağlanılmış bir senkron kodu varsa otomatik bağlan
+  const existingCode = getSyncCode();
+  if (existingCode && syncConfigured()) {
+    syncCode = existingCode;
+    syncEnabled = true;
+    syncStatus = 'syncing';
+    try {
+      const remote = await cloudPull(existingCode);
+      const remoteState = remote ? remote.state : null;
+      state = pickNewerState(state, remoteState);
+      state.settings = { ...CONFIG, ...state.settings };
+      save();
+      syncStatus = 'synced';
+    } catch (e) {
+      syncStatus = 'offline';
+    }
+    renderSyncBadge();
+  }
+}
+
+function save() {
+  saveState(state);
+  scheduleCloudPush();
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() { return new Date().toISOString().slice(0,10); }
+function nowMs() { return Date.now(); }
+function daysToMs(d) { return d * 86400000; }
+
+// ─── SRS ENGINE ───────────────────────────────────────────────────────
+const cfg = () => state.settings;
+
+function clampEase(e) { return Math.max(cfg().minEase, e); }
+
+function fuzz(days) {
+  if (!cfg().fuzz || days <= 1) return days;
+  const delta = Math.max(1, Math.round(days * 0.05));
+  return days + Math.floor(Math.random() * (delta * 2 + 1)) - delta;
+}
+
+function stepMs(stepIdx) {
+  const steps = cfg().learnSteps;
+  const idx = Math.max(0, Math.min(stepIdx, steps.length - 1));
+  return steps[idx] * 60000;
+}
+
+function previewSRS(card, grade) {
+  return _computeSRS(card, grade, true);
+}
+
+function applySRS(card, grade) {
+  const result = _computeSRS(card, grade, false);
+  card.srs = result.srs;
+  return card;
+}
+
+function _computeSRS(card, grade, preview) {
+  const srs = preview ? JSON.parse(JSON.stringify(card.srs)) : card.srs;
+  const now = nowMs();
+  const steps = cfg().learnSteps;
+  let label = '';
+
+  if (srs.state === 'new' || srs.state === 'learning') {
+    srs.state = 'learning';
+    if (grade === 0) {
+      srs.stepIndex = 0;
+      srs.ease = clampEase(srs.ease - 0.20);
+      srs.due = now + stepMs(0);
+      label = fmtDur(stepMs(0));
+    } else if (grade === 1) {
+      srs.stepIndex = Math.min(srs.stepIndex, steps.length - 1);
+      srs.due = now + stepMs(srs.stepIndex);
+      label = fmtDur(stepMs(srs.stepIndex));
+    } else if (grade === 2) {
+      srs.stepIndex++;
+      if (srs.stepIndex >= steps.length) {
+        srs.state = 'review';
+        srs.stepIndex = 0;
+        const iv = fuzz(cfg().graduateInterval);
+        srs.intervalDays = iv;
+        srs.due = now + daysToMs(iv);
+        srs.reps++;
+        label = fmtDur(daysToMs(iv));
+      } else {
+        srs.due = now + stepMs(srs.stepIndex);
+        label = fmtDur(stepMs(srs.stepIndex));
+      }
+    } else {
+      srs.state = 'review';
+      srs.stepIndex = 0;
+      srs.ease = clampEase(srs.ease + 0.15);
+      const iv = fuzz(cfg().easyInterval);
+      srs.intervalDays = iv;
+      srs.due = now + daysToMs(iv);
+      srs.reps++;
+      label = fmtDur(daysToMs(iv));
+    }
+  } else {
+    if (grade === 0) {
+      srs.lapses++;
+      srs.ease = clampEase(srs.ease - 0.20);
+      srs.state = 'learning';
+      srs.stepIndex = 0;
+      srs.intervalDays = 0;
+      srs.due = now + stepMs(0);
+      if (srs.mastered) srs.mastered = false;
+      label = fmtDur(stepMs(0));
+    } else if (grade === 1) {
+      srs.ease = clampEase(srs.ease - 0.15);
+      const iv = fuzz(Math.round(srs.intervalDays * 1.2));
+      srs.intervalDays = Math.max(1, iv);
+      srs.due = now + daysToMs(srs.intervalDays);
+      srs.reps++;
+      label = fmtDur(daysToMs(srs.intervalDays));
+    } else if (grade === 2) {
+      const iv = fuzz(Math.round(srs.intervalDays * srs.ease));
+      srs.intervalDays = Math.max(1, iv);
+      srs.due = now + daysToMs(srs.intervalDays);
+      srs.reps++;
+      label = fmtDur(daysToMs(srs.intervalDays));
+    } else {
+      srs.ease = clampEase(srs.ease + 0.15);
+      const iv = fuzz(Math.round(srs.intervalDays * srs.ease * cfg().easyBonus));
+      srs.intervalDays = Math.max(1, iv);
+      srs.due = now + daysToMs(srs.intervalDays);
+      srs.reps++;
+      label = fmtDur(daysToMs(srs.intervalDays));
+    }
+    if (srs.intervalDays >= cfg().masteryDays) {
+      srs.mastered = true;
+    }
+  }
+
+  return { srs, label };
+}
+
+function fmtDur(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 60) return min + ' dk';
+  if (min < 1440) return Math.round(min / 60) + ' sa';
+  return Math.round(min / 1440) + ' gün';
+}
+
+// ─── QUEUE BUILDER ────────────────────────────────────────────────────
+function buildQueue(deck, masteredOnly = false) {
+  const now = nowMs();
+  const todayStr = today();
+  const newToday = state.stats.reviewsByDate[todayStr + '_new'] || 0;
+  const dailyLimit = cfg().dailyNewLimit;
+
+  let learning = [], review = [], newCards = [];
+
+  for (const card of deck.cards) {
+    if (masteredOnly && !card.srs.mastered) continue;
+    if (!masteredOnly && card.srs.mastered) {
+      if (card.srs.state === 'review' && card.srs.due <= now) review.push(card);
+      continue;
+    }
+    if (card.srs.state === 'new') {
+      if (dailyLimit === 0 || newToday < dailyLimit) newCards.push(card);
+    } else if (card.srs.state === 'learning') {
+      if (card.srs.due <= now) learning.push(card);
+    } else if (card.srs.state === 'review') {
+      if (card.srs.due <= now) review.push(card);
+    }
+  }
+  return [...learning, ...review, ...newCards];
+}
+
+// ─── STATS HELPERS ────────────────────────────────────────────────────
+function recordReview(isNew) {
+  const t = today();
+  state.stats.reviewsByDate[t] = (state.stats.reviewsByDate[t] || 0) + 1;
+  if (isNew) {
+    const k = t + '_new';
+    state.stats.reviewsByDate[k] = (state.stats.reviewsByDate[k] || 0) + 1;
+  }
+  updateStreak();
+}
+
+function updateStreak() {
+  const keys = Object.keys(state.stats.reviewsByDate).filter(k => !k.includes('_new')).sort();
+  if (!keys.length) { state.stats.streak = 0; return; }
+  const t = today();
+  if (!state.stats.reviewsByDate[t]) {
+    const yest = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    if (!state.stats.reviewsByDate[yest]) { state.stats.streak = 0; return; }
+  }
+  let streak = 0;
+  let check = new Date(t);
+  while (true) {
+    const d = check.toISOString().slice(0,10);
+    if (state.stats.reviewsByDate[d]) { streak++; check.setDate(check.getDate() - 1); }
+    else break;
+  }
+  state.stats.streak = streak;
+}
+
+function globalStats() {
+  let total = 0, mastered = 0;
+  const t = today();
+  for (const deck of state.decks) {
+    for (const card of deck.cards) {
+      total++;
+      if (card.srs.mastered) mastered++;
+    }
+  }
+  return { total, mastered, todayCount: state.stats.reviewsByDate[t] || 0, streak: state.stats.streak || 0 };
+}
+
+function deckStats(deck) {
+  const now = nowMs();
+  let newC = 0, learning = 0, due = 0, mastered = 0;
+  for (const c of deck.cards) {
+    if (c.srs.mastered) mastered++;
+    else if (c.srs.state === 'new') newC++;
+    else if (c.srs.state === 'learning') learning++;
+    if (c.srs.state !== 'new' && c.srs.due <= now) due++;
+  }
+  return { newC, learning, due, mastered, total: deck.cards.length };
+}
+
+// ─── DECK / CARD HELPERS ──────────────────────────────────────────────
+function findDeck(id) { return state.decks.find(d => d.id === id); }
+function createDeck(name) {
+  const d = { id: uid(), name, createdAt: Date.now(), cards: [] };
+  state.decks.push(d);
+  save();
+  return d;
+}
+function makeCard(kanji, furigana, meaningTr, exampleJp, exampleTr) {
+  return {
+    id: uid(), kanji, furigana, meaningTr,
+    exampleJp: exampleJp || '', exampleTr: exampleTr || '',
+    srs: { state: 'new', stepIndex: 0, ease: cfg().defaultEase, intervalDays: 0, due: 0, reps: 0, lapses: 0, mastered: false }
+  };
+}
+
+function highlightKanji(sentence, kanji) {
+  if (!sentence || !kanji) return sentence || '';
+  const escaped = kanji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return sentence.replace(new RegExp(escaped, 'g'), `<span class="hl">${kanji}</span>`);
+}
+function buildRuby(kanji, furigana) { return `<ruby>${kanji}<rt>${furigana}</rt></ruby>`; }
+
+// ─── ROUTER ───────────────────────────────────────────────────────────
+let currentView = 'decks';
+let currentDeckId = null;
+let studyMastered = false;
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navBtn = document.querySelector(`.nav-item[data-view="${name}"]`);
+  if (navBtn) navBtn.classList.add('active');
+
+  const backBtn = document.getElementById('btn-back');
+  const addBtn = document.getElementById('btn-add-deck');
+  const title = document.getElementById('topbar-title');
+
+  backBtn.style.display = 'none';
+  addBtn.style.display = 'flex';
+  title.innerHTML = '漢字帖 <span class="accent">帳</span>';
+
+  currentView = name;
+  window.scrollTo(0, 0);
+
+  if (name === 'decks') { renderDeckList(); renderGlobalStats(); }
+  else if (name === 'deck') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; renderDeckDetail(); }
+  else if (name === 'study') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = '読む'; renderStudy(); }
+  else if (name === 'add') { addBtn.style.display = 'none'; renderAddForm(); }
+  else if (name === 'settings') { addBtn.style.display = 'none'; renderSettings(); }
+}
+
+function renderGlobalStats() {
+  const s = globalStats();
+  document.getElementById('global-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam kart</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşılan</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">Bugün · 🔥${s.streak}</div></div>
+  `;
+}
+
+function renderDeckList() {
+  const container = document.getElementById('deck-list');
+  const empty = document.getElementById('deck-list-empty');
+  if (!state.decks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  container.innerHTML = state.decks.map(deck => {
+    const s = deckStats(deck);
+    const qLen = buildQueue(deck).length;
+    return `
+    <div class="card">
+      <div class="card-row">
+        <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
+          <span>
+            <span class="card-title" style="display:block">${esc(deck.name)}</span>
+            <span class="deck-meta">${s.total} kart · ${s.mastered} ustalaşıldı</span>
+          </span>
+        </button>
+      </div>
+      <div class="btn-row" style="margin-top:.6rem">
+        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">▶ Çalış (${qLen})</button>` : '<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>'}
+        <button class="btn btn-ghost tap" style="flex:0" onclick="openDeck('${deck.id}')">Detay</button>
+      </div>
+      <div class="btn-row" style="margin-top:.5rem">
+        ${s.newC ? `<span class="badge badge-sky">${s.newC} yeni</span>` : ''}
+        ${s.learning ? `<span class="badge badge-gold">${s.learning} öğreniliyor</span>` : ''}
+        ${s.due ? `<span class="badge badge-hanko">${s.due} tekrar</span>` : ''}
+        ${s.mastered ? `<span class="badge badge-jade">⭐ ${s.mastered}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDeckDetail() {
+  const deck = findDeck(currentDeckId);
+  if (!deck) { showView('decks'); return; }
+
+  document.getElementById('topbar-title').textContent = deck.name;
+  const s = deckStats(deck);
+  const qLen = buildQueue(deck).length;
+  const mLen = buildQueue(deck, true).length;
+  const masteredCards = deck.cards.filter(c => c.srs.mastered);
+  const normalCards = deck.cards.filter(c => !c.srs.mastered);
+
+  document.getElementById('deck-detail-content').innerHTML = `
+    <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+      <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">Yeni</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">Öğreniliyor</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">Bugün tekrar</div></div>
+      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşıldı</div></div>
+      <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">Kuyrukta</div></div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:1rem">
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">▶ Çalışmaya başla (${qLen})</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>`}
+      <button class="btn btn-ghost tap" onclick="showRenameModal('${deck.id}')">✏ Adlandır</button>
+      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">🗑 Sil</button>
+    </div>
+
+    ${masteredCards.length ? `
+    <div class="mastered-banner">
+      <div class="mb-top">
+        <span class="mb-icon">⭐</span>
+        <span style="flex:1">
+          <span class="mb-title" style="display:block">İyi Bildiklerim</span>
+          <span class="mb-sub">${masteredCards.length} kart ustalaşıldı</span>
+        </span>
+      </div>
+      <div class="btn-row">
+        ${mLen > 0 ? `<button class="btn btn-ghost tap" onclick="startStudy('${deck.id}',true)">Çalış (${mLen})</button>` : ''}
+        <button class="btn btn-ghost tap" onclick="toggleMasteredList()">Listele</button>
+      </div>
+    </div>
+    <div id="mastered-list" style="display:none">
+      ${masteredCards.map(c => cardListItemHTML(c, deck.id)).join('')}
+    </div>` : ''}
+
+    <div class="section-hd">Kartlar (${normalCards.length})</div>
+    ${normalCards.length ? normalCards.map(c => cardListItemHTML(c, deck.id)).join('') : `<div class="empty"><div class="empty-icon">📭</div><p>Bu destede henüz kart yok.</p></div>`}
+  `;
+}
+
+function cardListItemHTML(c, deckId) {
+  const stateLabel = {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[c.srs.state] || '';
+  const badgeCls = {new:'badge-sky', learning:'badge-gold', review:'badge-hanko'}[c.srs.state] || 'badge-soft';
+  return `
+  <div class="card-list-item">
+    <div class="cli-kanji">${esc(c.kanji)}</div>
+    <div class="cli-info">
+      <div class="cli-furi">${esc(c.furigana)}</div>
+      <div class="cli-meaning">${esc(c.meaningTr)}</div>
+    </div>
+    ${c.srs.mastered ? '<span class="badge badge-jade">⭐</span>' : `<span class="badge ${badgeCls}">${stateLabel}</span>`}
+    <div class="cli-actions">
+      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="Düzenle">✏</button>
+      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="Sil">🗑</button>
+    </div>
+  </div>`;
+}
+
+function toggleMasteredList() {
+  const el = document.getElementById('mastered-list');
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── STUDY ────────────────────────────────────────────────────────────
+let studyQueue = [];
+let studyCardIndex = 0;
+let studyDoneToday = 0;
+let studyShowingBack = false;
+
+function startStudy(deckId, masteredOnly) {
+  currentDeckId = deckId;
+  studyMastered = masteredOnly;
+  studyQueue = buildQueue(findDeck(deckId), masteredOnly);
+  studyCardIndex = 0;
+  studyDoneToday = 0;
+  studyShowingBack = false;
+  showView('study');
+}
+
+function renderStudy() {
+  const screen = document.getElementById('study-screen');
+  const total = studyQueue.length;
+
+  if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
+    screen.innerHTML = `
+      <div class="study-done">
+        <div class="done-icon">🎉</div>
+        <h2>Oturum tamamlandı</h2>
+        <p>${studyDoneToday} kart çalışıldı. Bugün için kalan: 0.</p>
+        <button class="btn btn-primary tap" onclick="showView('deck')">Desteye dön</button>
+      </div>`;
+    return;
+  }
+
+  const card = studyQueue[studyCardIndex];
+  const done = studyCardIndex;
+  const remaining = studyQueue.length - studyCardIndex;
+  const pct = (done / (done + remaining)) * 100;
+
+  if (!studyShowingBack) {
+    screen.innerHTML = `
+      <div class="study-header">
+        <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
+        <div class="study-count">${done}/${done + remaining}</div>
+      </div>
+      <div class="flashcard">
+        <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+        <div class="fc-kanji">${esc(card.kanji)}</div>
+      </div>
+      <button id="btn-show" class="tap" onclick="showBack()">Cevabı göster</button>
+    `;
+  } else {
+    const previews = [0,1,2,3].map(g => previewSRS(card, g).label);
+    const exHighlight = highlightKanji(esc(card.exampleJp), card.kanji);
+    screen.innerHTML = `
+      <div class="study-header">
+        <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
+        <div class="study-count">${done}/${done + remaining}</div>
+      </div>
+      <div class="flashcard">
+        <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+        <div class="fc-back">
+          <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+          <div class="fc-meaning">${esc(card.meaningTr)}</div>
+          ${card.exampleJp ? `
+          <hr class="fc-divider">
+          <div class="fc-example">${exHighlight}</div>
+          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+        </div>
+      </div>
+      <div class="answer-grid">
+        <button class="ans-btn ans-again tap" onclick="gradeCard(0)">Tekrar<span class="next-time">${previews[0]}</span></button>
+        <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">Zor<span class="next-time">${previews[1]}</span></button>
+        <button class="ans-btn ans-good tap" onclick="gradeCard(2)">İyi<span class="next-time">${previews[2]}</span></button>
+        <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">Kolay<span class="next-time">${previews[3]}</span></button>
+      </div>
+    `;
+  }
+}
+
+function stateBadgeCls(srs) {
+  if (srs.mastered) return 'badge-jade';
+  return {new:'badge-sky', learning:'badge-gold', review:'badge-hanko'}[srs.state] || 'badge-soft';
+}
+function stateLabel(srs) {
+  if (srs.mastered) return '⭐';
+  return {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[srs.state] || '';
+}
+
+function showBack() { studyShowingBack = true; renderStudy(); }
+
+function gradeCard(grade) {
+  const card = studyQueue[studyCardIndex];
+  const wasNew = card.srs.state === 'new';
+  const wasMastered = card.srs.mastered;
+  applySRS(card, grade);
+  recordReview(wasNew);
+  if (card.srs.mastered && !wasMastered) {
+    showToast('⭐ ' + card.kanji + ' → İyi Bildiklerim!', 2200);
+  }
+  studyDoneToday++;
+  studyCardIndex++;
+  studyShowingBack = false;
+  save();
+  renderStudy();
+}
+
+// ─── ADD FORM ─────────────────────────────────────────────────────────
+function renderAddForm() { populateDeckSelects(); }
+
+function populateDeckSelects() {
+  const opts = state.decks.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  const placeholder = state.decks.length ? '' : '<option disabled selected>Önce bir deste oluştur</option>';
+  document.getElementById('add-deck-select').innerHTML = placeholder + opts;
+  document.getElementById('bulk-deck-select').innerHTML = placeholder + opts;
+}
+
+function saveCard() {
+  const deckId = document.getElementById('add-deck-select').value;
+  const kanji = document.getElementById('add-kanji').value.trim();
+  const furigana = document.getElementById('add-furigana').value.trim();
+  const meaning = document.getElementById('add-meaning').value.trim();
+  const exJp = document.getElementById('add-example-jp').value.trim();
+  const exTr = document.getElementById('add-example-tr').value.trim();
+
+  if (!kanji || !furigana || !meaning) { showToast('⚠ Kanji, furigana ve anlam zorunlu'); return; }
+  const deck = findDeck(deckId);
+  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+
+  deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr));
+  save();
+  showToast('✓ Kart eklendi: ' + kanji);
+  document.getElementById('add-kanji').value = '';
+  document.getElementById('add-furigana').value = '';
+  document.getElementById('add-meaning').value = '';
+  document.getElementById('add-example-jp').value = '';
+  document.getElementById('add-example-tr').value = '';
+}
+
+function bulkImport() {
+  const deckId = document.getElementById('bulk-deck-select').value;
+  const raw = document.getElementById('bulk-input').value;
+  const deck = findDeck(deckId);
+  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+
+  const lines = raw.split('\n');
+  let added = 0, skipped = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split('|').map(p => p.trim());
+    if (parts.length < 3) { skipped++; continue; }
+    const [kanji, furigana, meaning, exJp='', exTr=''] = parts;
+    if (!kanji || !furigana || !meaning) { skipped++; continue; }
+    deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr));
+    added++;
+  }
+  save();
+  document.getElementById('bulk-input').value = '';
+  showToast(`✓ ${added} kart eklendi${skipped ? ', ' + skipped + ' satır atlandı' : ''}`, 3000);
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────
+function renderSettings() {
+  renderSyncSection();
+  const s = state.settings;
+  document.getElementById('settings-fields').innerHTML = `
+    <div class="settings-item">
+      <div class="si-label">Öğrenme adımları (dk)<small>Virgülle ayır, ör: 10, 60</small></div>
+      <input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Mezun olma aralığı (gün)<small>İyi ile mezun</small></div>
+      <input class="si-input" id="cfg-grad" type="number" min="1" value="${s.graduateInterval}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Kolay aralık (gün)<small>Kolay ile mezun</small></div>
+      <input class="si-input" id="cfg-easy-iv" type="number" min="1" value="${s.easyInterval}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Varsayılan ease<small>1.3–5.0</small></div>
+      <input class="si-input" id="cfg-ease" type="number" min="1.3" max="5" step="0.05" value="${s.defaultEase}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Kolay bonusu<small>Aralık çarpanı</small></div>
+      <input class="si-input" id="cfg-easy-bonus" type="number" min="1" step="0.05" value="${s.easyBonus}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Ustalaşma eşiği (gün)<small>Bu aralığa ulaşınca ⭐</small></div>
+      <input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Günlük yeni kart limiti<small>0 = sınırsız</small></div>
+      <input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">
+    </div>
+    <div class="settings-item">
+      <div class="si-label">Rastgele fuzz<small>Aralıklara ±%5</small></div>
+      <select class="si-input" id="cfg-fuzz" style="text-align:left">
+        <option value="1" ${s.fuzz?'selected':''}>Açık</option>
+        <option value="0" ${!s.fuzz?'selected':''}>Kapalı</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
+  `;
+}
+
+function saveSettings() {
+  try {
+    const steps = document.getElementById('cfg-steps').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+    if (!steps.length) { showToast('⚠ Geçersiz adım değerleri'); return; }
+    state.settings.learnSteps = steps;
+    state.settings.graduateInterval = parseInt(document.getElementById('cfg-grad').value) || 1;
+    state.settings.easyInterval = parseInt(document.getElementById('cfg-easy-iv').value) || 4;
+    state.settings.defaultEase = parseFloat(document.getElementById('cfg-ease').value) || 2.5;
+    state.settings.easyBonus = parseFloat(document.getElementById('cfg-easy-bonus').value) || 1.3;
+    state.settings.masteryDays = parseInt(document.getElementById('cfg-mastery').value) || 21;
+    state.settings.dailyNewLimit = parseInt(document.getElementById('cfg-daily').value) || 0;
+    state.settings.fuzz = document.getElementById('cfg-fuzz').value === '1';
+    save();
+    showToast('✓ Ayarlar kaydedildi');
+  } catch (e) { showToast('⚠ Hata: ' + e.message); }
+}
+
+// ─── EXPORT / IMPORT ──────────────────────────────────────────────────
+function exportData() {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'kanji-srs-yedek-' + today() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✓ Veriler dışa aktarıldı');
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.decks || !Array.isArray(data.decks)) throw new Error('Geçersiz format');
+      state = { ...state, ...data };
+      state.settings = { ...CONFIG, ...state.settings };
+      save();
+      showToast('✓ Veriler içe aktarıldı: ' + state.decks.length + ' deste');
+      renderDeckList();
+      renderGlobalStats();
+    } catch (err) {
+      showToast('⚠ İçe aktarma hatası: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────
+function openModal(title, bodyHTML) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('show'); }
+
+function showRenameModal(deckId) {
+  const deck = findDeck(deckId);
+  openModal('Desteyi yeniden adlandır', `
+    <div class="form-group">
+      <label>Yeni isim</label>
+      <input id="rename-input" value="${esc(deck.name)}" placeholder="Deste adı">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="renameDeck('${deckId}')">Kaydet</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+    </div>
+  `);
+}
+
+function renameDeck(deckId) {
+  const deck = findDeck(deckId);
+  const newName = document.getElementById('rename-input').value.trim();
+  if (!newName) { showToast('⚠ İsim boş olamaz'); return; }
+  deck.name = newName;
+  save();
+  closeModal();
+  if (currentView === 'deck') { document.getElementById('topbar-title').textContent = newName; renderDeckDetail(); }
+  else renderDeckList();
+  showToast('✓ Deste adı güncellendi');
+}
+
+function showEditModal(deckId, cardId) {
+  const deck = findDeck(deckId);
+  const card = deck?.cards.find(c => c.id === cardId);
+  if (!card) return;
+  openModal('Kartı düzenle', `
+    <div class="form-group"><label>Kanji / Kelime</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
+    <div class="form-group"><label>Furigana</label><input id="edit-furigana" value="${esc(card.furigana)}"></div>
+    <div class="form-group"><label>Türkçe anlam</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
+    <div class="form-group"><label>Örnek cümle (JP)</label><input id="edit-example-jp" value="${esc(card.exampleJp)}"></div>
+    <div class="form-group"><label>Örnek çeviri (TR)</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">Kaydet</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+    </div>
+  `);
+}
+
+function saveEditCard(deckId, cardId) {
+  const deck = findDeck(deckId);
+  const card = deck?.cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.kanji = document.getElementById('edit-kanji').value.trim();
+  card.furigana = document.getElementById('edit-furigana').value.trim();
+  card.meaningTr = document.getElementById('edit-meaning').value.trim();
+  card.exampleJp = document.getElementById('edit-example-jp').value.trim();
+  card.exampleTr = document.getElementById('edit-example-tr').value.trim();
+  save();
+  closeModal();
+  renderDeckDetail();
+  showToast('✓ Kart güncellendi');
+}
+
+function deleteDeck(deckId) {
+  const deck = findDeck(deckId);
+  if (!deck) return;
+  if (!confirm(`"${deck.name}" destesini ve tüm kartlarını silmek istediğine emin misin?`)) return;
+  state.decks = state.decks.filter(d => d.id !== deckId);
+  save();
+  showView('decks');
+  showToast('🗑 Deste silindi');
+}
+
+function deleteCard(deckId, cardId) {
+  const deck = findDeck(deckId);
+  if (!deck) return;
+  if (!confirm('Bu kartı silmek istediğine emin misin?')) return;
+  deck.cards = deck.cards.filter(c => c.id !== cardId);
+  save();
+  renderDeckDetail();
+  showToast('🗑 Kart silindi');
+}
+
+function showAddDeckModal() {
+  openModal('Yeni deste oluştur', `
+    <div class="form-group">
+      <label>Deste adı</label>
+      <input id="new-deck-name" placeholder="ör: JLPT N3 Kanji">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="addDeck()">Oluştur</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+    </div>
+  `);
+}
+
+function addDeck() {
+  const name = document.getElementById('new-deck-name').value.trim();
+  if (!name) { showToast('⚠ İsim boş olamaz'); return; }
+  createDeck(name);
+  closeModal();
+  renderDeckList();
+  renderGlobalStats();
+  showToast('✓ Deste oluşturuldu: ' + name);
+}
+
+function openDeck(deckId) { currentDeckId = deckId; showView('deck'); }
+
+// ─── UTILITY ──────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+let _toastTimer;
+function showToast(msg, dur=2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ─── KEYBOARD SHORTCUTS (desktop) ────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (currentView !== 'study') return;
+  if (e.code === 'Space') { e.preventDefault(); if (!studyShowingBack) showBack(); }
+  if (studyShowingBack) {
+    if (e.key === '1') gradeCard(0);
+    else if (e.key === '2') gradeCard(1);
+    else if (e.key === '3') gradeCard(2);
+    else if (e.key === '4') gradeCard(3);
+  }
+});
+
+// ─── EVENT BINDINGS ───────────────────────────────────────────────────
+document.getElementById('btn-add-deck').addEventListener('click', showAddDeckModal);
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (currentView === 'study') showView('deck');
+  else if (currentView === 'deck') showView('decks');
+  else showView('decks');
+});
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+document.getElementById('btn-save-card').addEventListener('click', saveCard);
+document.getElementById('btn-bulk-import').addEventListener('click', bulkImport);
+document.getElementById('btn-export').addEventListener('click', exportData);
+document.getElementById('btn-import-trigger').addEventListener('click', () => document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', e => {
+  if (e.target.files[0]) importData(e.target.files[0]);
+  e.target.value = '';
+});
+document.getElementById('btn-reset-all').addEventListener('click', () => {
+  if (!confirm('TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?')) return;
+  state = { version:1, settings:{...CONFIG}, stats:{reviewsByDate:{},streak:0}, decks:[] };
+  save();
+  showView('decks');
+  showToast('✓ Tüm veri sıfırlandı');
+});
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-bg')) closeModal();
+});
+['add-kanji','add-furigana','add-meaning','add-example-jp','add-example-tr'].forEach(id => {
+  document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') saveCard(); });
+});
+
+// ─── BOOT ─────────────────────────────────────────────────────────────
+async function boot() {
+  await loadApp();
+  showView('decks');
+
+  if (!state.decks.length) {
+    const demo = createDeck('JLPT N3 Kanji (Örnek)');
+    const sampleCards = [
+      ['漢字','かんじ','kanji, Çince karakter','毎日漢字を勉強します。','Her gün kanji çalışıyorum.'],
+      ['水','みず','su','水を飲みます。','Su içiyorum.'],
+      ['食べる','たべる','yemek (fiil)','パンを食べる。','Ekmek yerim.'],
+      ['学校','がっこう','okul','学校に行きます。','Okula gidiyorum.'],
+      ['友達','ともだち','arkadaş','友達と遊びます。','Arkadaşımla oynuyorum.'],
+      ['電車','でんしゃ','tren','電車で来ました。','Trenle geldim.'],
+      ['仕事','しごと','iş','仕事が終わりました。','İş bitti.'],
+      ['勉強','べんきょう','çalışmak','毎日勉強します。','Her gün ders çalışıyorum.'],
+    ];
+    for (const [k,f,m,ej,et] of sampleCards) demo.cards.push(makeCard(k,f,m,ej,et));
+    save();
+    renderDeckList();
+    renderGlobalStats();
+  }
+}
+boot();
+
+// ─── SERVICE WORKER (offline destek, app gibi açılma) ─────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "漢字帖 Kanji Defterim",
+  "short_name": "漢字帖",
+  "description": "Kişisel kanji flashcard ve aralıklı tekrar uygulaması",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1a17",
+  "theme_color": "#1c1a17",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
