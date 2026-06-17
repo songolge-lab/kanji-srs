@@ -1,0 +1,51 @@
+name: Windows EXE Derle
+
+# Bu workflow, "electron" klasöründeki kodu GitHub'ın kendi
+# Windows sunucusunda derler ve sana hazır bir .exe / kurulum
+# dosyası üretir. Senin bilgisayarında HİÇBİR ŞEY kurmana
+# gerek yoktur.
+#
+# Nasıl çalıştırılır:
+#  1. Bu repoyu GitHub'a yükle (bu dosyalarla birlikte).
+#  2. GitHub'da "Actions" sekmesine gir.
+#  3. Soldaki listede "Windows EXE Derle" işine tıkla.
+#  4. Sağ üstte "Run workflow" butonuna bas, tekrar "Run workflow" de.
+#  5. ~3-5 dakika bekle, yeşil tik çıkınca işin üstüne tıkla.
+#  6. Altta "Artifacts" bölümünden "kanji-srs-windows" zip'ini indir.
+#  7. Zip'i aç, içindeki .exe kurulum dosyasını çalıştır.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+    paths:
+      - 'electron/**'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bağımlılıkları yükle
+        working-directory: electron
+        run: npm install
+
+      - name: Windows .exe derle
+        working-directory: electron
+        run: npm run build:win
+
+      - name: Derlenen dosyaları yükle (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanji-srs-windows
+          path: |
+            electron/dist/*.exe
+          if-no-files-found: error
