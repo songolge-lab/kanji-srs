@@ -6,9 +6,12 @@
   "author": "Harun",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64",
+    "build:win": "electron-builder --win --x64 --publish always",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.4"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -24,6 +27,13 @@
       "main.js",
       "web/**/*",
       "build/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "songolge-lab",
+        "repo": "kanji-srs"
+      }
     ],
     "win": {
       "target": [
