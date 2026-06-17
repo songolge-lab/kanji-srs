@@ -1,25 +1,35 @@
 name: Windows EXE Derle
 
 # Bu workflow, "electron" klasöründeki kodu GitHub'ın kendi
-# Windows sunucusunda derler ve sana hazır bir .exe / kurulum
-# dosyası üretir. Senin bilgisayarında HİÇBİR ŞEY kurmana
-# gerek yoktur.
+# Windows sunucusunda derler. İki şey yapar:
+#  1. Sana indirilebilir bir .exe / kurulum dosyası üretir (Artifacts).
+#  2. AYRICA bunu otomatik olarak bir GitHub Release TASLAĞI (draft)
+#     olarak yayınlar — bu, kurulu uygulamalardaki "otomatik
+#     güncelleme" özelliğinin çalışması için gereklidir.
 #
-# Nasıl çalıştırılır:
-#  1. Bu repoyu GitHub'a yükle (bu dosyalarla birlikte).
-#  2. GitHub'da "Actions" sekmesine gir.
-#  3. Soldaki listede "Windows EXE Derle" işine tıkla.
-#  4. Sağ üstte "Run workflow" butonuna bas, tekrar "Run workflow" de.
-#  5. ~3-5 dakika bekle, yeşil tik çıkınca işin üstüne tıkla.
-#  6. Altta "Artifacts" bölümünden "kanji-srs-windows" zip'ini indir.
-#  7. Zip'i aç, içindeki .exe kurulum dosyasını çalıştır.
+# Senin bilgisayarında HİÇBİR ŞEY kurmana gerek yoktur.
+#
+# YENİ SÜRÜM ÇIKARMAK İSTEDİĞİNDE (örn. yeni bir özellik):
+#  1. electron/package.json içindeki "version" değerini artır
+#     (örn. "1.0.0" -> "1.0.1"). BU ADIM ZORUNLU, atlarsan
+#     güncelleme kontrolü yeni sürümü "aynı" sayıp atlar.
+#  2. Değişiklikleri GitHub'a yükle (web/index.html, electron/web/index.html, vs.)
+#  3. GitHub'da "Actions" sekmesine gir.
+#  4. Soldaki listede "Windows EXE Derle" işine tıkla.
+#  5. Sağ üstte "Run workflow" butonuna bas, tekrar "Run workflow" de.
+#  6. ~3-5 dakika bekle, yeşil tik çıkınca işin üstüne tıkla.
+#  7. Repo sayfasında "Releases" sekmesine gir, oluşan TASLAK
+#     (draft) sürümü bul, "Edit" -> "Publish release" de.
+#     (Bu adım taslağı yayına alır; yayına alınmadan kurulu
+#     uygulamalar güncellemeyi göremez.)
+#  8. Kurulu uygulamalar birkaç dakika içinde (veya açılışta)
+#     güncellemeyi otomatik fark edip indirecek.
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [ main ]
-    paths:
-      - 'electron/**'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -38,9 +48,11 @@ jobs:
         working-directory: electron
         run: npm install
 
-      - name: Windows .exe derle
+      - name: Windows .exe derle ve GitHub Release taslağı oluştur
         working-directory: electron
         run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Derlenen dosyaları yükle (Artifacts)
         uses: actions/upload-artifact@v4
