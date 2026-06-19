@@ -3,16 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>漢字帖 — Kanji Defterim</title>
+<title>Stacks</title>
 
 <!-- PWA: ana ekrana eklendiğinde app gibi açılması için -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json" id="pwa-manifest-link">
 <meta name="theme-color" content="#1c1a17">
+
+<!-- Tema VE ikon, sayfa boyanmadan ÖNCE uygulanır (FOUC önleme):
+     kullanıcı Sumi (dark) temadaysa sayfa bir an için açık renkte
+     yanıp sönmesin; seçtiği app ikonu manifest'i de doğru gelsin. -->
+<script>
+(function() {
+  try {
+    var saved = localStorage.getItem('stacks-theme');
+    var followSystem = localStorage.getItem('stacks-theme-follow-system');
+    var theme = saved || 'washi';
+    if (followSystem !== '0' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !saved) {
+      theme = 'sumi';
+    }
+    if (theme && theme !== 'washi') document.documentElement.setAttribute('data-theme', theme);
+
+    var iconLocked = localStorage.getItem('stacks-app-icon-locked') === '1';
+    var savedIcon = localStorage.getItem('stacks-app-icon');
+    // Kilitliyse kayıtlı ikon sabit kullanılır; kilitli değilse ikon zaten
+    // temayla senkron tutulur (bkz. setTheme), o yüzden güncel tema kullanılır.
+    var iconTheme = (iconLocked && savedIcon) ? savedIcon : theme;
+    if (iconTheme && iconTheme !== 'washi') {
+      var manifestLink = document.getElementById('pwa-manifest-link');
+      if (manifestLink) manifestLink.setAttribute('href', 'manifest-' + iconTheme + '.json');
+    }
+  } catch (e) {}
+})();
+</script>
 
 <!-- iOS: tam ekran, adres çubuğu olmadan açılma -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="漢字帖">
+<meta name="apple-mobile-web-app-title" content="Stacks">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
 <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
@@ -64,6 +91,90 @@
 }
 
 /* =====================================================================
+   TEMALAR — [data-theme] ile :root değişkenleri override edilir.
+   Varsayılan (yukarıdaki :root) "Washi" temasıdır. Her tema kendi
+   paper/ink/card/line + hanko/gold/jade/sky setini tanımlar; uygulamanın
+   geri kalanı hep var(--...) kullandığı için TEK SATIR KOD DEĞİŞMEDEN
+   tüm arayüz yeni temaya geçer.
+   ===================================================================== */
+
+/* SUMI — karanlık mürekkep teması (dark mode) */
+[data-theme="sumi"] {
+  --ink:        #ece6da;
+  --ink-soft:   #b8b0a0;
+  --paper:      #1a1814;
+  --paper-2:    #242019;
+  --card:       #28241d;
+  --line:       #3a3528;
+  --line-soft:  #322e24;
+  --hanko:      #d97362;
+  --hanko-bg:   #432822;
+  --gold:       #cdab5f;
+  --gold-bg:    #3d3420;
+  --jade:       #6fae8c;
+  --jade-bg:    #20342b;
+  --sky:        #7fb0d6;
+  --sky-bg:     #1f3140;
+}
+
+/* MATCHA — yeşil çay teması */
+[data-theme="matcha"] {
+  --ink:        #243224;
+  --ink-soft:   #56654f;
+  --paper:      #eef0e1;
+  --paper-2:    #e3e7d2;
+  --card:       #fafcf2;
+  --line:       #cdd6b4;
+  --line-soft:  #dbe2c5;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93822c;
+  --gold-bg:    #ece3c0;
+  --jade:       #3c7048;
+  --jade-bg:    #d6e8d3;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+}
+
+/* SAKURA — kiraz çiçeği teması */
+[data-theme="sakura"] {
+  --ink:        #3e2630;
+  --ink-soft:   #7d5d68;
+  --paper:      #f7eee8;
+  --paper-2:    #f0e0d8;
+  --card:       #fffaf6;
+  --line:       #e8c9c2;
+  --line-soft:  #f0d9d2;
+  --hanko:      #b5495f;
+  --hanko-bg:   #f6dde2;
+  --gold:       #aa7e3e;
+  --gold-bg:    #f2e4c8;
+  --jade:       #4a7a5e;
+  --jade-bg:    #dcecdf;
+  --sky:        #5b6f9a;
+  --sky-bg:     #e0e4f0;
+}
+
+/* INDIGO — Japon mavisi (藍) teması */
+[data-theme="indigo"] {
+  --ink:        #1c2838;
+  --ink-soft:   #4d5e72;
+  --paper:      #e9edf3;
+  --paper-2:    #dde3ec;
+  --card:       #f8fafc;
+  --line:       #c2cedd;
+  --line-soft:  #d2dbe6;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93782e;
+  --gold-bg:    #e9e0c4;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2456a3;
+  --sky-bg:     #d2e0f4;
+}
+
+/* =====================================================================
    RESET — touch-safe defaults
    ===================================================================== */
 * { box-sizing: border-box; }
@@ -84,6 +195,23 @@ body {
 }
 rt { font-size: .55em; }
 ruby { -webkit-touch-callout: none; }
+
+/* ─── BOOT SPLASH (kısa açılış ekranı) ──────────────────────────────── */
+#boot-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .4rem;
+  transition: opacity .35s ease;
+}
+#boot-splash.is-hidden { opacity: 0; pointer-events: none; }
+#boot-splash-title {
+  font-size: 1.6rem; font-weight: 700; color: var(--ink);
+  letter-spacing: .02em;
+}
+#boot-splash-motto {
+  font-size: .85rem; color: var(--ink-soft); font-style: italic;
+}
 
 /* Every interactive element gets a real, generous hit target */
 button, .tap {
@@ -149,6 +277,13 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   padding: calc(var(--safe-t) + .25rem) 1rem calc(76px + var(--safe-b) + 1rem);
 }
 
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ (tablet / masaüstü tarayıcı / Electron penceresi)
+   768px ve üzeri ekranlarda alt navigasyon sol kenarda dikey bir
+   "sidebar"a dönüşür; içerik onun yanında, kendi içinde okunabilir bir
+   genişlikte (max 720px) kalır. Mobil/dar ekranda HİÇBİR ŞEY değişmez
+   — bu blok sadece >=768px'te devreye girer.
+   ===================================================================== */
 /* TOP BAR — in normal flow, not sticky. Avoids stacking-context/touch bugs. */
 #topbar {
   display: flex;
@@ -644,6 +779,62 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   text-align: center; font-size: .76rem; color: var(--ink-soft);
   margin-top: 1.5rem; padding-bottom: .5rem;
 }
+.version-motto {
+  font-size: .72rem; color: var(--ink-soft); opacity: .7; font-style: italic;
+}
+
+/* ─── TEMA SEÇİCİ (Ayarlar > Görünüm) ───────────────────────────────── */
+.theme-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: .7rem; margin-bottom: .9rem;
+}
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+.theme-swatch {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: var(--bd-ctrl) solid var(--line);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-option.is-active .theme-swatch { border: 2.5px solid var(--hanko); box-shadow: var(--sh-sm); }
+.theme-swatch-check { color: #fff; width: 1.1em; height: 1.1em; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.theme-label { font-size: .72rem; color: var(--ink-soft); }
+.theme-option.is-active .theme-label { color: var(--ink); font-weight: 600; }
+
+/* ─── APP İKONU SEÇİCİ (Ayarlar > Uygulama İkonu) ───────────────────── */
+.app-icon-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: .8rem .7rem; margin-bottom: .6rem;
+}
+.app-icon-option {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  position: relative;
+}
+.app-icon-thumb-wrap { position: relative; }
+.app-icon-thumb {
+  width: 56px; height: 56px; border-radius: 16px;
+  border: var(--bd-ctrl) solid var(--line);
+  cursor: pointer; display: block; background: none; padding: 0;
+}
+.app-icon-thumb img { width: 100%; height: 100%; border-radius: 14px; display: block; }
+.app-icon-option.is-active .app-icon-thumb { border: 2.5px solid var(--hanko); }
+.app-icon-lock-btn {
+  position: absolute; bottom: -4px; right: -4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--card); border: var(--bd) solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-soft); padding: 0;
+}
+.app-icon-lock-btn .ic { width: .68em; height: .68em; }
+.app-icon-lock-btn.is-locked { background: var(--hanko); border-color: var(--hanko); color: #fff; }
+.app-icon-label { font-size: .68rem; color: var(--ink-soft); text-align: center; }
+.app-icon-option.is-active .app-icon-label { color: var(--ink); font-weight: 600; }
+.app-icon-note {
+  font-size: .78rem; color: var(--ink-soft); line-height: 1.5;
+  border-top: var(--bd) solid var(--line); padding-top: .7rem; margin-top: .3rem;
+}
 
 /* =====================================================================
    BOTTOM NAV — fixed, full-width, large equal-area tap zones
@@ -752,6 +943,53 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 @media (min-width: 480px) {
   .stat-num { font-size: 1.5rem; }
 }
+
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ (tablet / masaüstü tarayıcı / Electron penceresi)
+   768px ve üzeri ekranlarda alt navigasyon sol kenarda dikey bir
+   "sidebar"a dönüşür; içerik onun yanında, kendi içinde okunabilir bir
+   genişlikte (max 720px) kalır. Mobil/dar ekranda HİÇBİR ŞEY değişmez
+   — bu blok sadece >=768px'te devreye girer. EN SONDA durur ki CSS
+   sıralamasında temel .nav-item / #bottom-nav kurallarını ezebilsin.
+   ===================================================================== */
+@media (min-width: 768px) {
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    margin-left: calc(220px + max(2rem, (100vw - 220px - 720px) / 2));
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+
+  #bottom-nav {
+    position: fixed;
+    left: 0; top: 0; bottom: 0; right: auto;
+    width: 220px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: .3rem;
+    padding: calc(var(--safe-t) + 1.5rem) .8rem 1rem;
+    border-top: none;
+    border-right: var(--bd) solid var(--line);
+    box-shadow: none;
+  }
+  .nav-item {
+    flex: none !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: .7rem !important;
+    min-height: 44px !important;
+    border-radius: var(--r-md);
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    padding: 0 .7rem !important;
+  }
+  .nav-item.active { background: var(--hanko-bg, var(--paper-2)); }
+  .nav-item:active { background: var(--paper-2); }
+}
 </style>
 <link id="gfont-Libre-Baskerville" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@300;400;500;600;700&amp;display=swap">
 <link id="gfont-Pacifico" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico:wght@300;400;500;600;700&amp;display=swap">
@@ -759,7 +997,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 <link id="gfont-Permanent-Marker" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker:wght@300;400;500;600;700&amp;display=swap">
 <link id="gfont-Lato" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&amp;display=swap">
 </head>
-<body style="background-color: rgb(243, 238, 226); font-family: -apple-system; font-size: 16px">
+<body>
+
+<div id="boot-splash">
+  <div id="boot-splash-title">Stacks</div>
+  <div id="boot-splash-motto">Keep stacking.</div>
+</div>
 
 <div id="app">
 
@@ -767,7 +1010,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <button class="icon-btn tap" id="btn-back" style="display:none" aria-label="Geri">
       <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
     </button>
-    <div id="topbar-title">漢字帖 <span class="accent">帳</span></div>
+    <div id="topbar-title">Stacks</div>
     <span id="sync-badge" style="margin-right:.3rem"></span>
 
     <div id="update-wrap" style="display:none;position:relative">
@@ -871,6 +1114,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 
   <!-- VIEW: SETTINGS -->
   <div id="view-settings" class="view">
+    <div class="section-hd">Görünüm</div>
+    <div class="card" id="theme-section"></div>
+
+    <div class="section-hd">Uygulama İkonu</div>
+    <div class="card" id="app-icon-section"></div>
+
     <div class="section-hd">Cihazlar Arası Senkron</div>
     <div id="sync-section" class="card"></div>
 
@@ -930,7 +1179,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.1.0';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -957,6 +1206,8 @@ const ICONS = {
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/>',
   close:  '<path d="M6 6l12 12M18 6L6 18"/>',
   shield: '<path d="M12 3 4.5 6v6c0 5 3.4 7.6 7.5 9 4.1-1.4 7.5-4 7.5-9V6L12 3Z"/>',
+  lock:   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  unlock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>',
 };
 
 function icon(name, cls) {
@@ -1157,6 +1408,144 @@ function renderSyncBadge() {
 /** Rastgele 6 haneli giriş kodu üretir (örn: 482913) */
 function generateSyncCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ─── TEMA SİSTEMİ ───────────────────────────────────────────────────────
+const THEMES = [
+  { id: 'washi',  label: 'Washi',  paper: '#f3eee2', accent: '#a8362a' },
+  { id: 'sumi',   label: 'Sumi',   paper: '#1a1814', accent: '#d97362' },
+  { id: 'matcha', label: 'Matcha', paper: '#eef0e1', accent: '#3c7048' },
+  { id: 'sakura', label: 'Sakura', paper: '#f7eee8', accent: '#b5495f' },
+  { id: 'indigo', label: 'Indigo', paper: '#e9edf3', accent: '#2456a3' },
+];
+const THEME_STORAGE_KEY = 'stacks-theme';
+const THEME_FOLLOW_SYSTEM_KEY = 'stacks-theme-follow-system';
+
+function getCurrentTheme() {
+  return localStorage.getItem(THEME_STORAGE_KEY) || 'washi';
+}
+function getFollowSystemTheme() {
+  return localStorage.getItem(THEME_FOLLOW_SYSTEM_KEY) !== '0'; // varsayılan: açık
+}
+function applyTheme(themeId) {
+  if (themeId === 'washi') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', themeId);
+}
+function setTheme(themeId) {
+  localStorage.setItem(THEME_STORAGE_KEY, themeId);
+  applyTheme(themeId);
+  // Tema değişince ikon de otomatik o temanın ikonuna geçer — TABİİ Kİ
+  // kullanıcı ikon kilidi açtıysa (bkz. APP_ICONS). Kilitliyse dokunulmaz.
+  if (!getIconLocked()) setAppIcon(themeId, /* fromThemeChange */ true);
+  renderThemeSection();
+  renderAppIconSection();
+}
+function setFollowSystemTheme(on) {
+  localStorage.setItem(THEME_FOLLOW_SYSTEM_KEY, on ? '1' : '0');
+  if (on) {
+    // Sistem temasını hemen kontrol edip uygula; kullanıcı daha önce
+    // elle bir tema seçmiş olsa bile "takip et" açıldığında sistem önceliklidir.
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const themeId = prefersDark ? 'sumi' : 'washi';
+    localStorage.setItem(THEME_STORAGE_KEY, themeId);
+    applyTheme(themeId);
+    if (!getIconLocked()) setAppIcon(themeId, true);
+  }
+  renderThemeSection();
+  renderAppIconSection();
+}
+
+// ─── APP İKONU SİSTEMİ ──────────────────────────────────────────────────
+// Her temanın kendi varsayılan ikonu vardır (tema değişince ikon de
+// otomatik değişir). Kullanıcı "kilit" ile bunu durdurup kendi seçtiği
+// ikonu sabit tutabilir. PWA ikonu gerçek sistem seviyesinde DEĞİŞMEZ
+// (iOS/Android kısıtı) — manifest dinamik olarak değiştirilir ve
+// kullanıcıya "ana ekrandan silip tekrar ekle" talimatı gösterilir.
+const APP_ICON_STORAGE_KEY = 'stacks-app-icon';
+const APP_ICON_LOCK_KEY = 'stacks-app-icon-locked';
+// THEMES listesindeki id'lerle birebir eşleşir (her temanın kendi ikonu)
+const APP_ICONS = THEMES.map(t => ({ id: t.id, label: t.label, manifestSrc: t.id === 'washi' ? 'manifest.json' : `manifest-${t.id}.json`, thumb: t.id === 'washi' ? 'icons/icon-120.png' : `icons/${t.id}/icon-120.png` }));
+
+function getCurrentAppIcon() {
+  return localStorage.getItem(APP_ICON_STORAGE_KEY) || getCurrentTheme();
+}
+function getIconLocked() {
+  return localStorage.getItem(APP_ICON_LOCK_KEY) === '1';
+}
+function setIconLocked(locked) {
+  localStorage.setItem(APP_ICON_LOCK_KEY, locked ? '1' : '0');
+  renderAppIconSection();
+}
+function setAppIcon(iconId, fromThemeChange) {
+  localStorage.setItem(APP_ICON_STORAGE_KEY, iconId);
+  const found = APP_ICONS.find(i => i.id === iconId);
+  const link = document.querySelector('link[rel="manifest"]');
+  if (link && found) link.setAttribute('href', found.manifestSrc);
+  if (!fromThemeChange) {
+    renderAppIconSection();
+    showAppIconChangeNotice();
+  }
+}
+
+function showAppIconChangeNotice() {
+  showToast('İkonu değiştirmek için uygulamayı ana ekrandan silip tekrar ekle', 4200);
+}
+
+function renderAppIconSection() {
+  const box = document.getElementById('app-icon-section');
+  if (!box) return;
+  const current = getCurrentAppIcon();
+  const locked = getIconLocked();
+
+  const itemsHTML = APP_ICONS.map(i => {
+    const isActive = current === i.id;
+    return `
+      <div class="app-icon-option${isActive ? ' is-active' : ''}">
+        <div class="app-icon-thumb-wrap">
+          <button type="button" class="app-icon-thumb tap" onclick="setAppIcon('${i.id}')" aria-label="${esc(i.label)} ikonu">
+            <img src="${i.thumb}" alt="${esc(i.label)}">
+          </button>
+          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? 'Kilidi aç' : 'Kilitle'}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
+        </div>
+        <span class="app-icon-label">${esc(i.label)}</span>
+      </div>
+    `;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="app-icon-grid">${itemsHTML}</div>
+    <div class="app-icon-note">${locked ? '🔒 İkon kilitli — tema değiştirse de bu ikon sabit kalır.' : 'Tema değiştirdiğinde ikon de otomatik değişir. Kilitlemek için aktif ikonun üzerindeki kilide dokun.'}<br>Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome\'dan tekrar eklemen gerekir.</div>
+  `;
+}
+
+function renderThemeSection() {
+  const box = document.getElementById('theme-section');
+  if (!box) return;
+  const current = getCurrentTheme();
+  const followSystem = getFollowSystemTheme();
+
+  const swatchesHTML = THEMES.map(t => {
+    const isActive = current === t.id;
+    return `
+      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${t.id}')">
+        <span class="theme-swatch" style="background:${t.paper}">
+          ${isActive ? `<span class="theme-swatch-check" style="color:${t.accent}">${icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${t.accent}"></span>`}
+        </span>
+        <span class="theme-label">${esc(t.label)}</span>
+      </button>
+    `;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="theme-grid">${swatchesHTML}</div>
+    <div class="settings-item" style="border-top:var(--bd) solid var(--line);padding-top:.8rem">
+      <div class="si-label">Sistem temasını takip et<small>Cihazın karanlık modu açıksa Sumi otomatik seçilir</small></div>
+      <select class="si-input" id="cfg-follow-system" style="text-align:left" onchange="setFollowSystemTheme(this.value === '1')">
+        <option value="1" ${followSystem ? 'selected' : ''}>Açık</option>
+        <option value="0" ${!followSystem ? 'selected' : ''}>Kapalı</option>
+      </select>
+    </div>
+  `;
 }
 
 function renderSyncSection() {
@@ -2086,7 +2475,7 @@ function showView(name) {
 
   backBtn.style.display = 'none';
   addBtn.style.display = 'flex';
-  title.innerHTML = '漢字帖 <span class="accent">帳</span>';
+  title.innerHTML = 'Stacks';
 
   currentView = name;
   window.scrollTo(0, 0);
@@ -2533,6 +2922,8 @@ function settingItemHTML(key, label, smallText, inputHTML) {
 }
 
 function renderSettings() {
+  renderThemeSection();
+  renderAppIconSection();
   renderSyncSection();
   const s = state.settings;
   document.getElementById('settings-fields').innerHTML =
@@ -2561,7 +2952,7 @@ function renderSettings() {
         <option value="0" ${!s.autoUseShield?'selected':''}>Kapalı</option>
       </select>`) +
     `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
-    <div class="version-tag">漢字帖 Kanji Defterim · v${APP_VERSION}</div>`;
+    <div class="version-tag">Stacks · v${APP_VERSION}<br><span class="version-motto">Keep stacking.</span></div>`;
 }
 
 function saveSettings() {
@@ -2912,6 +3303,16 @@ async function boot() {
   }
 }
 boot();
+
+// Açılış ekranını uygulama hazır olduktan kısa bir süre sonra gizle —
+// tamamen anlık kaybolmasın, "Stacks" ismi/motto'su bir an görünsün.
+setTimeout(() => {
+  const splash = document.getElementById('boot-splash');
+  if (splash) {
+    splash.classList.add('is-hidden');
+    setTimeout(() => splash.remove(), 400);
+  }
+}, 450);
 
 // ─── ELECTRON OTOMATİK GÜNCELLEME ARAYÜZÜ (sadece masaüstü) ───────────
 // window.electronAPI sadece Electron'da (preload.js üzerinden) mevcuttur;
