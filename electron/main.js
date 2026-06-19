@@ -23,8 +23,8 @@ let updateDownloaded = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 480,
-    height: 850,
+    width: 1000,
+    height: 720,
     minWidth: 380,
     minHeight: 600,
     backgroundColor: '#1c1a17',
@@ -35,7 +35,7 @@ function createWindow() {
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js'),
     },
-    title: '漢字帖 — Kanji Defterim',
+    title: 'Stacks',
   });
 
   mainWindow.loadFile(path.join(__dirname, 'web', 'index.html'));
