@@ -1,6 +1,6 @@
 {
   "name": "kanji-srs-desktop",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Kanji SRS — Kişisel Kanji Flashcard ve Aralıklı Tekrar Uygulaması",
   "main": "main.js",
   "author": "Harun",
@@ -25,6 +25,7 @@
     },
     "files": [
       "main.js",
+      "preload.js",
       "web/**/*",
       "build/**/*"
     ],
