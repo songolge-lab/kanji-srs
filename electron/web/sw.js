@@ -1,7 +1,7 @@
 // CACHE_NAME, web/index.html içindeki APP_VERSION ile senkron tutulur.
 // Her yeni sürümde bu satır da güncellenmeli ki tarayıcı eski cache'i
 // otomatik atıp yeni dosyaları çeksin (kullanıcı elle bir şey yapmasın).
-const CACHE_NAME = 'kanji-srs-v1.0.1';
+const CACHE_NAME = 'kanji-srs-v1.1.0';
 const ASSETS = [
   './',
   './index.html',
