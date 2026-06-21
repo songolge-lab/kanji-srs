@@ -9,9 +9,23 @@
 <link rel="manifest" href="manifest.json" id="pwa-manifest-link">
 <meta name="theme-color" content="#1c1a17">
 
+<!-- iOS: tam ekran, adres çubuğu olmadan açılma. Bu link'ler aşağıdaki
+     boot script'inden ÖNCE tanımlı olmalı — script onları tema/ikon
+     tercihine göre güncelliyor (id'ler bunun için var). -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stacks">
+<link rel="apple-touch-icon" id="touch-icon-180-a" href="icons/icon-180.png">
+<link rel="apple-touch-icon" id="touch-icon-152" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" id="touch-icon-167" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" id="touch-icon-180-b" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" id="favicon-192" href="icons/icon-192.png">
+
 <!-- Tema VE ikon, sayfa boyanmadan ÖNCE uygulanır (FOUC önleme):
      kullanıcı Sumi (dark) temadaysa sayfa bir an için açık renkte
-     yanıp sönmesin; seçtiği app ikonu manifest'i de doğru gelsin. -->
+     yanıp sönmesin; seçtiği app ikonu manifest + apple-touch-icon'lar
+     da (iOS "Ana Ekrana Ekle" bunlara bakar, manifest'e değil) doğru
+     gelsin. -->
 <script>
 (function() {
   try {
@@ -31,20 +45,17 @@
     if (iconTheme && iconTheme !== 'washi') {
       var manifestLink = document.getElementById('pwa-manifest-link');
       if (manifestLink) manifestLink.setAttribute('href', 'manifest-' + iconTheme + '.json');
+
+      var folder = 'icons/' + iconTheme;
+      var t180a = document.getElementById('touch-icon-180-a'); if (t180a) t180a.setAttribute('href', folder + '/icon-180.png');
+      var t152  = document.getElementById('touch-icon-152');   if (t152)  t152.setAttribute('href', folder + '/icon-152.png');
+      var t167  = document.getElementById('touch-icon-167');   if (t167)  t167.setAttribute('href', folder + '/icon-167.png');
+      var t180b = document.getElementById('touch-icon-180-b'); if (t180b) t180b.setAttribute('href', folder + '/icon-180.png');
+      var fav   = document.getElementById('favicon-192');      if (fav)   fav.setAttribute('href', folder + '/icon-192.png');
     }
   } catch (e) {}
 })();
 </script>
-
-<!-- iOS: tam ekran, adres çubuğu olmadan açılma -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Stacks">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
-<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
 <style>
 /* =====================================================================
@@ -178,7 +189,7 @@
    RESET — touch-safe defaults
    ===================================================================== */
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -474,11 +485,28 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   aspect-ratio: 1; border-radius: var(--r-sm);
   display: flex; align-items: center; justify-content: center;
   font-size: .78rem; background: var(--paper-2); color: var(--ink-soft);
+  border: none; font-family: inherit; cursor: pointer; padding: 0;
+  transition: filter .12s ease;
 }
+.cal-day:active { filter: brightness(0.92); }
 .cal-day.is-active { background: var(--hanko); color: #fff; font-weight: 600; }
+/* Yoğunluk seviyeleri (o gün uygulamada geçirilen genel süreye göre):
+   lvl-1 hafif (<5dk), lvl-2 orta (5-20dk), lvl-3 yoğun (20dk+).
+   is-active'in temel rengi üzerine opaklık/parlaklık farkıyla katmanlanır. */
+.cal-day.is-active.lvl-1 { filter: brightness(1.18); }
+.cal-day.is-active.lvl-2 { filter: brightness(1.0); }
+.cal-day.is-active.lvl-3 { filter: brightness(0.82); box-shadow: 0 0 0 1.5px var(--hanko); }
 .cal-day.is-shielded { background: var(--sky); color: #fff; font-weight: 600; }
 .cal-day.is-today { box-shadow: inset 0 0 0 2px var(--ink-soft); }
-.cal-day.is-empty { background: transparent; }
+.cal-day.is-today.lvl-3 { box-shadow: inset 0 0 0 2px var(--ink-soft), 0 0 0 1.5px var(--hanko); }
+.cal-day.is-empty { background: transparent; cursor: default; }
+.day-detail-total { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: .4rem; margin-bottom: .8rem; }
+.day-detail-total .ic { width: 1.1em; height: 1.1em; color: var(--hanko); }
+.day-detail-list { display: flex; flex-direction: column; gap: .6rem; }
+.day-detail-item { background: var(--paper-2); border-radius: var(--r-md); padding: .7rem .8rem; }
+.ddi-name { font-weight: 700; font-size: .92rem; margin-bottom: .4rem; }
+.ddi-stats { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.ddi-time { font-size: .8rem; color: var(--ink-soft); margin-left: auto; }
 .cal-legend { display: flex; gap: 1rem; margin-top: .8rem; font-size: .76rem; color: var(--ink-soft); }
 .cal-legend-item { display: flex; align-items: center; gap: .35rem; }
 .cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
@@ -550,6 +578,16 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   margin-top: .75rem;
 }
 .btn-row .btn { flex: 1 1 auto; min-width: 0; }
+/* "Çalışılacak kart yok" gibi boş-durum mesajları, buton satırında
+   (.btn-row) yer alan diğer butonlarla EŞİT pay aldığında dar bir
+   sütuna sıkışıp metin dikey olarak uzayabiliyordu. Bu class, mesajı
+   tam genişlikte (100%) kendi satırına alır — yanındaki butonlar
+   alta kayar, metin rahat nefes alır. */
+.btn-row-empty-msg {
+  width: 100%; flex-basis: 100%;
+  font-size: .85rem; color: var(--ink-soft);
+  padding: .5rem .2rem;
+}
 
 /* =====================================================================
    GLOBAL STATS (deck list top)
@@ -684,13 +722,48 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   line-height: 2;
   margin-bottom: .3rem;
 }
-.fc-furigana { font-size: 1.25rem; color: var(--ink-soft); margin-bottom: .6rem; }
 .fc-meaning { font-size: 1.2rem; font-weight: 700; margin-bottom: .9rem; }
 .fc-divider { border: none; border-top: 1px solid var(--line); margin: .8rem 0; }
 .fc-example { font-size: 1.05rem; line-height: 1.85; }
 .fc-example .hl { color: var(--hanko); font-weight: 700; }
 .fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
 .fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
+
+/* ─── KART EKLEME ÖNİZLEMESİ (canlı flashcard) ──────────────────────── */
+.fc-preview-sticky {
+  position: sticky;
+  top: calc(var(--safe-t) + .25rem);
+  z-index: 20;
+  background: var(--paper);
+  padding-bottom: .6rem;
+  margin-bottom: .2rem;
+}
+.fc-preview-sticky-modal {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--card);
+  padding-bottom: .7rem;
+  margin: -0.2rem -0.2rem .9rem;
+  padding-top: .1rem;
+}
+.fc-preview {
+  min-height: 150px;
+  padding: 1.2rem 1rem;
+  box-shadow: var(--sh-sm);
+  transition: box-shadow .2s ease;
+}
+.fc-preview .fc-kanji { font-size: clamp(2.6rem, 14vw, 3.6rem); }
+.fc-preview .fc-ruby { font-size: 1.3rem; margin-bottom: .15rem; }
+.fc-preview .fc-meaning { font-size: .98rem; margin-bottom: .5rem; }
+.fc-preview .fc-example { font-size: .86rem; line-height: 1.55; }
+.fc-preview .fc-exampletr { font-size: .76rem; }
+.fc-preview .fc-divider { margin: .5rem 0; }
+.fc-preview-empty { color: var(--ink-soft); font-size: .86rem; text-align: center; }
+.fc-preview-hint {
+  position: absolute; bottom: .6rem; left: 0; right: 0;
+  text-align: center; font-size: .68rem; color: var(--ink-soft); opacity: .6;
+}
 
 #btn-show {
   width: 100%;
@@ -754,8 +827,14 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 .si-row { display: flex; align-items: center; gap: .8rem; }
 .si-label { flex: 1; font-size: .9rem; min-width: 0; display: flex; align-items: center; gap: .4rem; }
-.si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; }
+.si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; overflow-wrap: break-word; word-break: break-word; }
 .si-input { width: 92px; text-align: right; min-height: 42px; flex-shrink: 0; }
+/* <select> elementleri (Açık/Kapalı gibi metin seçenekleri) farklı
+   dillerde çok uzayabilir (örn. Moğolca "Асаалттай") — sabit 92px'e
+   sığmayıp kesilebilir. Bu yüzden select'lere ayrı, daha esnek bir
+   genişlik kuralı veriyoruz: minimum 92px ama gerekirse büyüyebilir,
+   konteyner sınırını aşmaz (max-width ile güvenceye alınır). */
+select.si-input { width: auto; min-width: 92px; max-width: 112px; font-size: .82rem; }
 .si-info-btn {
   width: 22px; height: 22px; border-radius: 50%; background: var(--paper-2);
   color: var(--ink-soft); font-size: .72rem; font-weight: 800; flex-shrink: 0;
@@ -835,6 +914,49 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   font-size: .78rem; color: var(--ink-soft); line-height: 1.5;
   border-top: var(--bd) solid var(--line); padding-top: .7rem; margin-top: .3rem;
 }
+
+/* ─── KLASÖR / DESTE LİSTESİ HİYERARŞİSİ ────────────────────────────── */
+.folder-card { background: var(--paper-2); }
+.drag-item { transition: opacity .15s ease; }
+.drop-target.is-drag-over { box-shadow: inset 0 0 0 2px var(--hanko); background: var(--hanko-bg); }
+@media (min-width: 768px) {
+  .drag-item { cursor: grab; }
+  .drag-item:active { cursor: grabbing; }
+}
+.folder-toggle-btn { display: flex; align-items: center; gap: .55rem; }
+.folder-chevron { display: inline-flex; width: 1em; height: 1em; transition: transform .15s ease; color: var(--ink-soft); flex-shrink: 0; }
+.folder-chevron.is-open { transform: rotate(90deg); }
+.folder-children { margin-top: .7rem; display: flex; flex-direction: column; gap: .7rem; }
+.folder-children .card { box-shadow: none; border: var(--bd) solid var(--line); }
+
+.dropdown-wrap { position: relative; flex-shrink: 0; }
+.dropdown-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  min-width: 190px; background: var(--card); border: var(--bd) solid var(--line);
+  border-radius: var(--r-md); box-shadow: var(--sh-pop); z-index: 30;
+  padding: .35rem;
+}
+.dropdown-item {
+  display: flex; align-items: center; gap: .6rem;
+  width: 100%; text-align: left; padding: .55rem .6rem;
+  border-radius: var(--r-sm); font-size: .88rem; color: var(--ink);
+  background: none; border: none;
+}
+.dropdown-item:active { background: var(--paper-2); }
+.dropdown-item.is-danger { color: var(--hanko); }
+.dropdown-item .ic { width: 1.05em; height: 1.05em; flex-shrink: 0; }
+.dropdown-divider { height: 1px; background: var(--line); margin: .3rem .2rem; }
+
+.move-target-list { max-height: 50vh; overflow-y: auto; }
+.move-target-item {
+  display: flex; align-items: center; gap: .6rem;
+  width: 100%; text-align: left; padding: .7rem .6rem;
+  border-radius: var(--r-sm); font-size: .92rem; color: var(--ink);
+  background: none; border: none; border-bottom: var(--bd) solid var(--line-soft);
+}
+.move-target-item:active { background: var(--paper-2); }
+.move-target-item .ic { width: 1.1em; height: 1.1em; flex-shrink: 0; color: var(--ink-soft); }
+.move-target-item.is-disabled { opacity: .35; pointer-events: none; }
 
 /* =====================================================================
    BOTTOM NAV — fixed, full-width, large equal-area tap zones
@@ -935,9 +1057,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
    ===================================================================== */
 .mt-1 { margin-top: .5rem; }
 .mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
 .text-muted { color: var(--ink-soft); font-size: .85rem; }
-.w-100 { width: 100%; }
 .required { color: var(--hanko); }
 
 @media (min-width: 480px) {
@@ -1010,7 +1130,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <button class="icon-btn tap" id="btn-back" style="display:none" aria-label="Geri">
       <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
     </button>
-    <div id="topbar-title">Stacks</div>
+    <div id="topbar-title" data-i18n="appTitle">Stacks</div>
     <span id="sync-badge" style="margin-right:.3rem"></span>
 
     <div id="update-wrap" style="display:none;position:relative">
@@ -1029,11 +1149,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <div id="view-decks" class="view active">
     <div class="stats-grid" id="global-stats"></div>
     <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
-    <div class="section-hd">Destelerim</div>
+    <div class="section-hd" data-i18n="myDecks">Destelerim</div>
     <div id="deck-list"></div>
     <div id="deck-list-empty" class="empty" style="display:none">
       <div class="empty-icon"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg></div>
-      <p>Henüz bir deste yok.<br>Sağ üstteki + ile yeni deste ekle.</p>
+      <p><span data-i18n="noDeckYet">Henüz bir deste yok.</span><br><span data-i18n="addDeckHint">Sağ üstteki + ile yeni deste ekle.</span></p>
     </div>
   </div>
 
@@ -1059,89 +1179,95 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 
   <!-- VIEW: ADD CARD -->
   <div id="view-add" class="view">
-    <div class="section-hd">Kart ekle</div>
+    <div class="fc-preview-sticky">
+      <div class="flashcard fc-preview" id="add-fc-preview"></div>
+    </div>
+    <div class="section-hd" data-i18n="addCardSection">Kart ekle</div>
     <div class="card">
       <div class="form-group">
-        <label>Hedef deste</label>
+        <label data-i18n="targetDeck">Hedef deste</label>
         <select id="add-deck-select"></select>
       </div>
       <div class="form-group">
-        <label>Kanji / Kelime <span class="required">*</span></label>
+        <label><span data-i18n="kanjiWord">Kanji / Kelime</span> <span class="required">*</span></label>
         <input type="text" id="add-kanji" placeholder="例: 漢字">
       </div>
       <div class="form-group">
-        <label>Furigana (okunuş) <span class="required">*</span></label>
+        <label><span data-i18n="furiganaLabel">Furigana (okunuş)</span> <span class="required">*</span></label>
         <input type="text" id="add-furigana" placeholder="例: かんじ">
         <div class="furigana-suggest" id="add-furigana-suggest"></div>
       </div>
       <div class="form-group">
-        <label>Türkçe anlam <span class="required">*</span></label>
+        <label><span data-i18n="meaningLabel">Türkçe anlam</span> <span class="required">*</span></label>
         <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
       </div>
       <div class="form-group">
-        <label>Örnek cümle (Japonca)</label>
+        <label data-i18n="exampleJpLabel">Örnek cümle (Japonca)</label>
         <input type="text" id="add-example-jp" placeholder="例: 毎日漢字を勉強します。">
         <div class="furigana-mark-row" id="add-example-mark-row" style="display:none">
           <button type="button" class="btn btn-ghost tap btn-sm" id="add-example-mark-btn">
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/><path d="M7.6 7.6l2 2M14.4 14.4l2 2M16.4 7.6l-2 2M9.6 14.4l-2 2"/></svg>
-            Kelimeleri işaretle (furigana ekle)
+            <span data-i18n="markWordsBtn">Kelimeleri işaretle (furigana ekle)</span>
           </button>
         </div>
         <div id="add-example-furigana-editor"></div>
       </div>
       <div class="form-group">
-        <label>Örnek çeviri (Türkçe, opsiyonel)</label>
+        <label data-i18n="exampleTrLabel">Örnek çeviri (Türkçe, opsiyonel)</label>
         <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
       </div>
-      <button class="btn btn-block btn-primary tap" id="btn-save-card">Kaydet</button>
+      <button class="btn btn-block btn-primary tap" id="btn-save-card" data-i18n="saveBtn">Kaydet</button>
     </div>
 
-    <div class="section-hd">Toplu içe aktar</div>
+    <div class="section-hd" data-i18n="bulkImportSection">Toplu içe aktar</div>
     <div class="card">
       <div class="form-group">
-        <label>Hedef deste</label>
+        <label data-i18n="targetDeck">Hedef deste</label>
         <select id="bulk-deck-select"></select>
       </div>
       <div class="form-group">
-        <label>Kart listesi</label>
-        <textarea id="bulk-input" rows="7"
+        <label data-i18n="cardListLabel">Kart listesi</label>
+        <textarea id="bulk-input" rows="7" data-i18n-placeholder="bulkInputPlaceholder"
           placeholder="Her satır bir kart, | ile ayır:&#10;漢字 | かんじ | kanji, Çince karakter | 毎日漢字を勉強します。 | Her gün kanji çalışıyorum.&#10;水 | みず | su | 水を飲みます。&#10;食べる | たべる | yemek | パンを食べる。"></textarea>
-        <div class="form-hint">Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)</div>
+        <div class="form-hint" data-i18n="bulkFormatHint">Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)</div>
       </div>
-      <button class="btn btn-block btn-primary tap" id="btn-bulk-import">İçe aktar</button>
+      <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-i18n="bulkImportBtn">İçe aktar</button>
     </div>
   </div>
 
   <!-- VIEW: SETTINGS -->
   <div id="view-settings" class="view">
-    <div class="section-hd">Görünüm</div>
+    <div class="section-hd" data-i18n="languageSection">Dil</div>
+    <div class="card" id="lang-section"></div>
+
+    <div class="section-hd" data-i18n="appearanceSection">Görünüm</div>
     <div class="card" id="theme-section"></div>
 
-    <div class="section-hd">Uygulama İkonu</div>
+    <div class="section-hd" data-i18n="appIconSection">Uygulama İkonu</div>
     <div class="card" id="app-icon-section"></div>
 
-    <div class="section-hd">Cihazlar Arası Senkron</div>
+    <div class="section-hd" data-i18n="syncSection">Cihazlar Arası Senkron</div>
     <div id="sync-section" class="card"></div>
 
-    <div class="section-hd" style="width: 568px; height: 19px; gap: 8px; flex-direction: row">SRS ayarları</div>
+    <div class="section-hd" data-i18n="srsSection">SRS ayarları</div>
     <div id="settings-fields"></div>
 
-    <div class="section-hd">Yedekleme</div>
+    <div class="section-hd" data-i18n="backupSection">Yedekleme</div>
     <div class="card">
-      <p class="text-muted mt-1" style="margin-bottom:.8rem">Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.</p>
+      <p class="text-muted mt-1" style="margin-bottom:.8rem" data-i18n="backupDesc">Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.</p>
       <div class="btn-row">
-        <button class="btn btn-ghost tap" id="btn-export"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>Dışa aktar</button>
-        <button class="btn btn-ghost tap" id="btn-import-trigger"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>İçe aktar</button>
+        <button class="btn btn-ghost tap" id="btn-export"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-i18n="exportBtn">Dışa aktar</span></button>
+        <button class="btn btn-ghost tap" id="btn-import-trigger"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-i18n="importBtn">İçe aktar</span></button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
     <div id="storage-warning" class="card" style="display:none;border:var(--bd-ctrl) solid var(--hanko)">
-      <p style="color:var(--hanko);font-weight:700;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg>Veriler bu oturumda kalıcı değil</p>
-      <p class="text-muted mt-1">localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.</p>
+      <p style="color:var(--hanko);font-weight:700;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-i18n="dataNotPersistentTitle">Veriler bu oturumda kalıcı değil</span></p>
+      <p class="text-muted mt-1" data-i18n="dataNotPersistentDesc">localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.</p>
     </div>
     <div class="danger-zone">
-      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg>Tehlikeli bölge</p>
-      <button class="btn btn-danger tap" id="btn-reset-all">Tüm veriyi sıfırla</button>
+      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-i18n="dangerZone">Tehlikeli bölge</span></p>
+      <button class="btn btn-danger tap" id="btn-reset-all" data-i18n="resetAllBtn">Tüm veriyi sıfırla</button>
     </div>
   </div>
 
@@ -1150,15 +1276,15 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 <nav id="bottom-nav">
   <button class="nav-item active tap" data-view="decks" id="nav-decks">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
-    Desteler
+    <span data-i18n="decksTab">Desteler</span>
   </button>
   <button class="nav-item tap" data-view="add" id="nav-add">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" style="width: 17px; height: 14px"/><path d="M12 9.3v5.4M9.3 12h5.4"/></svg>
-    Kart ekle
+    <span data-i18n="addCardTab">Kart ekle</span>
   </button>
   <button class="nav-item tap" data-view="settings" id="nav-settings">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>
-    Ayarlar
+    <span data-i18n="settingsTab">Ayarlar</span>
   </button>
 </nav>
 
@@ -1179,7 +1305,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.3.0';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -1202,16 +1328,635 @@ const ICONS = {
   done:   '<circle cx="12" cy="12" r="9"/><path d="M8.3 12.4l2.6 2.6 4.8-5.4"/>',
   chevL:  '<path d="M15 5l-7 7 7 7"/>',
   chevR:  '<path d="M9 5l7 7-7 7"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>',
+  layers: '<path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/>',
+  moreV:  '<circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/>',
   dot:    '<circle cx="12" cy="12" r="4.5"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/>',
   close:  '<path d="M6 6l12 12M18 6L6 18"/>',
   shield: '<path d="M12 3 4.5 6v6c0 5 3.4 7.6 7.5 9 4.1-1.4 7.5-4 7.5-9V6L12 3Z"/>',
+  clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   lock:   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   unlock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>',
 };
 
 function icon(name, cls) {
   return `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+// ─── i18n (DİL) SİSTEMİ ─────────────────────────────────────────────────
+// 4 dil: tr, en, zh (Çince, basitleştirilmiş), mn (Moğolca, Kiril).
+// Çeviri anahtarları İngilizce isimlendirilir (örn. 'decks', 'addCard').
+// t(key, vars?) -> o anki dile göre metni döndürür; bulunamazsa İngilizce'ye,
+// o da yoksa anahtarın kendisine düşer (hiçbir zaman boş/kırık görünmez).
+const SUPPORTED_LANGS = ['tr', 'en', 'zh', 'mn', 'ko'];
+const LANG_STORAGE_KEY = 'stacks-lang';
+const LANG_NAMES = { tr: 'Türkçe', en: 'English', zh: '中文', mn: 'Монгол', ko: '한국어' };
+
+// Çeviri sözlüğü. Her dil aynı anahtar setini içermeli; eksik anahtar
+// olursa t() otomatik İngilizce'ye düşer (asla boş görünmez).
+const TRANSLATIONS = {
+  tr: {
+    appTitle: 'Stacks',
+    appMotto: 'Keep stacking.',
+    decksTab: 'Desteler', addCardTab: 'Kart ekle', settingsTab: 'Ayarlar',
+    myDecks: 'Destelerim', noDeckYet: 'Henüz bir deste yok.', addDeckHint: 'Sağ üstteki + ile yeni deste ekle.',
+    totalCards: 'Toplam kart', mastered: 'Ustalaşılan', today: 'Bugün',
+    studyTitle: '読む', reviewTitle: 'Gözden Geçir', streakTitle: 'Çalışma Takvimi',
+    newDeck: 'Yeni Deste', newDeckName: 'Deste adı', create: 'Oluştur', cancel: 'İptal',
+    study: 'Çalış', detail: 'Detay', noCardsToStudy: 'Şimdilik çalışılacak kart yok',
+    studyAll: 'Tümünü Çalış',
+    newC: 'yeni', learningC: 'öğreniliyor', dueC: 'tekrar',
+    folderItems: '{n} öğe', folderTotalCards: '{n} kart toplam',
+    moveToFolder: 'Klasöre Taşı', rename: 'Adlandır', delete: 'Sil',
+    streakDays: 'günlük seri', shieldsCount: '{n} kalkanın var',
+    moreOptions: 'Daha fazla', cardsCountLabel: '{n} kart', masteredCountLabel: '{n} ustalaşıldı',
+    languageSection: 'Dil', appearanceSection: 'Görünüm', appIconSection: 'Uygulama İkonu',
+    syncSection: 'Cihazlar Arası Senkron', srsSection: 'SRS ayarları', backupSection: 'Yedekleme',
+    addCardSection: 'Kart ekle', targetDeck: 'Hedef deste', kanjiWord: 'Kanji / Kelime',
+    furiganaLabel: 'Furigana (okunuş)', meaningLabel: 'Türkçe anlam', exampleJpLabel: 'Örnek cümle (Japonca)',
+    markWordsBtn: 'Kelimeleri işaretle (furigana ekle)', exampleTrLabel: 'Örnek çeviri (Türkçe, opsiyonel)',
+    saveBtn: 'Kaydet', bulkImportSection: 'Toplu içe aktar', cardListLabel: 'Kart listesi',
+    bulkFormatHint: 'Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)',
+    bulkImportBtn: 'İçe aktar',
+    requiredFieldsMsg: 'Kanji, furigana ve anlam zorunlu', deckNotFoundMsg: 'Deste bulunamadı',
+    cardAddedMsg: 'Kart eklendi: {name}', bulkAddedMsg: '{n} kart eklendi', bulkSkippedMsg: '{n} satır atlandı',
+    previewEmptyMsg: 'Yazmaya başladığında<br>kartın burada görünür', previewTypeKanji: 'Kanji / kelime yaz',
+    previewTypeMeaning: 'Anlam yaz', frontSide: 'Ön yüz', backSide: 'Arka yüz',
+    dueToday: 'Bugün tekrar', totalLabel: 'Toplam', inQueue: 'Kuyrukta', startStudying: 'Çalışmaya başla',
+    addCardBtn: 'Kart Ekle', masteredBucket: 'İyi Bildiklerim', listBtn: 'Listele',
+    cardsSection: 'Kartlar ({n})', noCardsInDeck: 'Bu destede henüz kart yok.', editLabel: 'Düzenle',
+    sessionDoneTitle: 'Oturum tamamlandı', sessionDoneMsg: '{n} kart çalışıldı. Bugün için kalan: 0.',
+    backToDeck: 'Desteye dön', showAnswer: 'Cevabı göster',
+    gradeAgain: 'Tekrar', gradeHard: 'Zor', gradeGood: 'İyi', gradeEasy: 'Kolay',
+    noCardsToShow: 'Gösterilecek kart yok.', peekBadge: 'Göz at', prevBtn: 'Önceki', nextBtn: 'Sonraki',
+    unitMin: ' dk', unitHour: ' sa', unitDay: ' gün',
+    milestone0: 'Her gün biraz çalış, alev büyüsün', milestone7: 'Güzel bir tempo tuttun',
+    milestone30: 'Alev büyüyor, devam!', milestone100: 'Efsanevi seri! 🔥',
+    streakDayCount: '{n} gün', shieldExplain: 'kalkanın var — bir gün kaçırırsan serini otomatik korur.',
+    monthNames: 'Ocak,Şubat,Mart,Nisan,Mayıs,Haziran,Temmuz,Ağustos,Eylül,Ekim,Kasım,Aralık',
+    weekdayLetters: 'P,S,Ç,P,C,C,P', dayLabelsShort: 'Pzt,Sal,Çar,Prş,Cum,Cmt,Paz',
+    prevMonth: 'Önceki ay', nextMonth: 'Sonraki ay',
+    studiedLegend: 'Çalışıldı', shieldedLegend: 'Kalkanla korundu',
+    followSystemTheme: 'Sistem temasını takip et', followSystemThemeHint: 'Cihazın karanlık modu açıksa Sumi otomatik seçilir',
+    onLabel: 'Açık', offLabel: 'Kapalı',
+    lockLabel: 'Kilitle', unlockLabel: 'Kilidi aç',
+    iconLockedNote: '🔒 İkon kilitli — tema değiştirse de bu ikon sabit kalır.',
+    iconUnlockedNote: 'Tema değiştirdiğinde ikon de otomatik değişir. Kilitlemek için aktif ikonun üzerindeki kilide dokun.',
+    iconChangeNote: "Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome'dan tekrar eklemen gerekir.",
+    syncNotSetUp: 'Bulut senkron henüz kurulmadı.',
+    syncDevNote: 'Geliştirici notu: index.html içinde SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurman gerekiyor (bkz. KURULUM.md).',
+    connectedCodeLabel: 'Bağlı giriş kodu:', syncCodeHint: 'Diğer cihazda (telefon/PC) aynı kodu girerek bu kartları orada da görebilirsin.',
+    syncNowBtn: 'Şimdi senkronize et', disconnectBtn: 'Bağlantıyı kes',
+    syncSetupHint: 'Telefon ve bilgisayarın otomatik senkronize olması için bir giriş kodu oluştur, diğer cihazda da aynı kodu gir.',
+    createCodeBtn: 'Yeni kod oluştur', enterExistingCodeLabel: 'Veya var olan bir kodu gir',
+    codeExamplePlaceholder: 'ör: 482913', connectWithCodeBtn: 'Bu kodla bağlan',
+    codeCreatedMsg: 'Kod oluşturuldu: {code}', invalidCodeMsg: 'Geçerli bir kod gir (4-8 hane)',
+    syncedMsg: 'Senkronize edildi', syncErrorMsg: 'Senkron hatası',
+    disconnectConfirm: 'Bu cihazı senkron koddan ayırmak istediğine emin misin? Veriler bu cihazda yerel olarak kalır, ama otomatik senkron durur.',
+    disconnectedMsg: 'Bağlantı kesildi', infoLabel: 'Bilgi',
+    stepsLabel: 'Öğrenme adımları (dk)', stepsHint: 'Virgülle ayır, ör: 1, 10',
+    gradLabel: 'Mezun olma aralığı (gün)', gradHint: 'İyi ile mezun',
+    easyIvLabel: 'Kolay aralık (gün)', easyIvHint: 'Kolay ile mezun',
+    easeLabel: 'Varsayılan ease', easeHint: '1.3–5.0',
+    easyBonusLabel: 'Kolay bonusu', easyBonusHint: 'Aralık çarpanı',
+    masteryLabel: 'Ustalaşma eşiği (gün)', masteryHint: 'Bu aralığa ulaşınca ⭐',
+    dailyLabel: 'Günlük yeni kart limiti', dailyHint: '0 = sınırsız',
+    fuzzLabel: 'Rastgele fuzz', fuzzHint: 'Aralıklara ±%5',
+    shieldLabel: 'Otomatik kalkan kullanımı', shieldHint: 'Gün kaçırınca seriyi korur',
+    saveSettingsBtn: 'Ayarları kaydet', invalidStepsMsg: 'Geçersiz adım değerleri',
+    settingsSavedMsg: 'Ayarlar kaydedildi', errorMsg: 'Hata',
+    backupDesc: 'Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.',
+    exportBtn: 'Dışa aktar', importBtn: 'İçe aktar',
+    dataNotPersistentTitle: 'Veriler bu oturumda kalıcı değil',
+    dataNotPersistentDesc: 'localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.',
+    dangerZone: 'Tehlikeli bölge', resetAllBtn: 'Tüm veriyi sıfırla',
+    resetAllConfirm: 'TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?', resetAllDoneMsg: 'Tüm veri sıfırlandı',
+    renameModalTitle: 'Desteyi yeniden adlandır', newNameLabel: 'Yeni isim', deckNamePlaceholder: 'Deste adı',
+    newDeckModalTitle: 'Yeni deste oluştur', newDeckPlaceholder: 'ör: JLPT N3 Kanji',
+    nameEmptyMsg: 'İsim boş olamaz', deckCreatedMsg: 'Deste oluşturuldu: {name}',
+    deckNameUpdatedMsg: 'Deste adı güncellendi', editCardModalTitle: 'Kartı düzenle',
+    furiganaSimpleLabel: 'Furigana', exampleJpSimpleLabel: 'Örnek cümle (JP)', exampleTrSimpleLabel: 'Örnek çeviri (TR)',
+    cardUpdatedMsg: 'Kart güncellendi', deleteDeckConfirm: '"{name}" destesini ve tüm kartlarını silmek istediğine emin misin?',
+    deckDeletedMsg: 'Deste silindi', deleteCardConfirm: 'Bu kartı silmek istediğine emin misin?', cardDeletedMsg: 'Kart silindi',
+    moveToRootBtn: 'Kök dizine taşı (klasörden çıkar)', createNewFolderHint: 'yeni klasör oluştur',
+    noOtherItemsMsg: 'Taşınacak başka deste/klasör yok.', movedMsg: 'Taşındı', moveFailedMsg: 'Taşınamadı',
+    newFolderNameTitle: 'Yeni Klasör Adı', folderNameLabel: 'Klasör adı', newFolderDefault: 'Yeni Klasör',
+    targetNotFoundMsg: 'Hedef bulunamadı', folderCreatedMsg: 'Klasör oluşturuldu: {name}',
+    deleteFolderConfirmWithCards: '"{name}" klasörünü ve içindeki TÜM desteleri ({n} kart) silmek istediğine emin misin? Bu işlem geri alınamaz.',
+    deleteFolderConfirm: '"{name}" klasörünü silmek istediğine emin misin?', folderDeletedMsg: 'Klasör silindi',
+    reviewPickModalTitle: 'Gözden Geçir — Kapsam Seç',
+    reviewPickModalDesc: 'Bu modda kartlara sadece göz atarsın; cevapların ilerlemeni veya tekrar planını etkilemez.',
+    normalCardsOpt: 'Normal kartlar ({n})', masteredOpt: 'İyi Bildiklerim ({n})', allCardsOpt: 'Tüm kartlar ({n})',
+    noCardsInScopeMsg: 'Bu kapsamda kart yok',
+    iconChangeToastMsg: 'İkonu değiştirmek için uygulamayı ana ekrandan silip tekrar ekle',
+    searchingReadingMsg: 'Okunuş aranıyor…', readingNotFoundMsg: 'Otomatik okunuş bulunamadı, elle yazabilirsin',
+    blockSplitMsg: '"{text}" için otomatik okunuş bulunamadı, kelimeyi tek tek kanjiye böldüm — birini seç.',
+    manualReadingLabel: '"{text}" için okunuş (elle yaz)', tapToMarkHint: 'Furigana eklemek istediğin kanjiye/kelimeye dokun.',
+    shieldsUsedMsg: '{n} kalkan kullanıldı, streak korundu', weeklyShieldEarnedMsg: 'Bir haftayı kesintisiz tamamladın, +1 kalkan!',
+    invalidFormatMsg: 'Geçersiz format', dataImportedMsg: 'Veriler içe aktarıldı: {n} deste', importErrorMsg: 'İçe aktarma hatası',
+    bulkInputPlaceholder: 'Her satır bir kart, | ile ayır:\n漢字 | かんじ | kanji, Çince karakter | 毎日漢字を勉強します。 | Her gün kanji çalışıyorum.\n水 | みず | su | 水を飲みます。\n食べる | たべる | yemek | パンを食べる。',
+    syncNotConfiguredMsg: 'Bulut senkron henüz yapılandırılmadı (KURULUM.md\'ye bak)',
+    connectionErrorMsg: 'Bağlantı hatası', connectedAndSyncedMsg: 'Bağlandı ve senkronize edildi',
+    dataExportedMsg: 'Veriler dışa aktarıldı',
+    syncIdleLabel: 'Bağlı değil', syncingLabel: 'Senkronize ediliyor…', syncedLabel: 'Senkron', offlineLabel: 'Çevrimdışı',
+    serverWriteErrorMsg: 'Sunucuya yazma hatası', createDeckFirstMsg: 'Önce bir deste oluştur',
+    updateAvailableTitle: 'Yeni güncelleme mevcut', versionLabel: 'Sürüm {v}', downloadBtn: 'İndir',
+    downloadingLabel: 'İndiriliyor…', updateReadyTitle: 'Güncelleme hazır', versionDownloadedLabel: 'Sürüm {v} indirildi',
+    restartAndInstallBtn: 'Yeniden Başlat ve Kur', cardMasteredMsg: '{name} → İyi Bildiklerim!',
+    totalTimeLabel: 'Toplam süre: {time}', noActivityThisDayMsg: 'Bu gün hiç çalışılmamış.', deletedDeckLabel: '(silinmiş deste)',
+  },
+  en: {
+    appTitle: 'Stacks',
+    appMotto: 'Keep stacking.',
+    decksTab: 'Decks', addCardTab: 'Add Card', settingsTab: 'Settings',
+    myDecks: 'My Decks', noDeckYet: 'No decks yet.', addDeckHint: 'Tap + in the top right to add a deck.',
+    totalCards: 'Total Cards', mastered: 'Mastered', today: 'Today',
+    studyTitle: 'Study', reviewTitle: 'Review', streakTitle: 'Study Calendar',
+    newDeck: 'New Deck', newDeckName: 'Deck name', create: 'Create', cancel: 'Cancel',
+    study: 'Study', detail: 'Detail', noCardsToStudy: 'No cards to study right now',
+    studyAll: 'Study All',
+    newC: 'new', learningC: 'learning', dueC: 'due',
+    folderItems: '{n} items', folderTotalCards: '{n} cards total',
+    moveToFolder: 'Move to Folder', rename: 'Rename', delete: 'Delete',
+    streakDays: 'day streak', shieldsCount: '{n} shields',
+    moreOptions: 'More options', cardsCountLabel: '{n} cards', masteredCountLabel: '{n} mastered',
+    languageSection: 'Language', appearanceSection: 'Appearance', appIconSection: 'App Icon',
+    syncSection: 'Cross-Device Sync', srsSection: 'SRS Settings', backupSection: 'Backup',
+    addCardSection: 'Add Card', targetDeck: 'Target Deck', kanjiWord: 'Kanji / Word',
+    furiganaLabel: 'Furigana (reading)', meaningLabel: 'Meaning', exampleJpLabel: 'Example Sentence (Japanese)',
+    markWordsBtn: 'Mark words (add furigana)', exampleTrLabel: 'Example Translation (optional)',
+    saveBtn: 'Save', bulkImportSection: 'Bulk Import', cardListLabel: 'Card List',
+    bulkFormatHint: 'Format: Kanji | Furigana | Meaning | Example JP (optional) | Example translation (optional)',
+    bulkImportBtn: 'Import',
+    requiredFieldsMsg: 'Kanji, furigana, and meaning are required', deckNotFoundMsg: 'Deck not found',
+    cardAddedMsg: 'Card added: {name}', bulkAddedMsg: '{n} cards added', bulkSkippedMsg: '{n} lines skipped',
+    previewEmptyMsg: 'Start typing to see<br>your card here', previewTypeKanji: 'Type kanji / word',
+    previewTypeMeaning: 'Type meaning', frontSide: 'Front', backSide: 'Back',
+    dueToday: 'Due Today', totalLabel: 'Total', inQueue: 'In Queue', startStudying: 'Start Studying',
+    addCardBtn: 'Add Card', masteredBucket: 'Mastered', listBtn: 'List',
+    cardsSection: 'Cards ({n})', noCardsInDeck: 'No cards in this deck yet.', editLabel: 'Edit',
+    sessionDoneTitle: 'Session complete', sessionDoneMsg: '{n} cards studied. Remaining today: 0.',
+    backToDeck: 'Back to deck', showAnswer: 'Show Answer',
+    gradeAgain: 'Again', gradeHard: 'Hard', gradeGood: 'Good', gradeEasy: 'Easy',
+    noCardsToShow: 'No cards to show.', peekBadge: 'Peek', prevBtn: 'Previous', nextBtn: 'Next',
+    unitMin: 'm', unitHour: 'h', unitDay: 'd',
+    milestone0: 'Study a bit every day to grow the flame', milestone7: "You've got a good rhythm going",
+    milestone30: 'The flame is growing, keep going!', milestone100: 'Legendary streak! 🔥',
+    streakDayCount: '{n} days', shieldExplain: "shields — if you miss a day, they'll protect your streak automatically.",
+    monthNames: 'January,February,March,April,May,June,July,August,September,October,November,December',
+    weekdayLetters: 'M,T,W,T,F,S,S', dayLabelsShort: 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
+    prevMonth: 'Previous month', nextMonth: 'Next month',
+    studiedLegend: 'Studied', shieldedLegend: 'Protected by shield',
+    followSystemTheme: 'Follow system theme', followSystemThemeHint: "Sumi is selected automatically if your device's dark mode is on",
+    onLabel: 'On', offLabel: 'Off',
+    lockLabel: 'Lock', unlockLabel: 'Unlock',
+    iconLockedNote: "🔒 Icon locked — it'll stay the same even if you change the theme.",
+    iconUnlockedNote: 'The icon changes automatically with the theme. Tap the lock on the active icon to keep it fixed.',
+    iconChangeNote: 'On phones, remove the app from your home screen and re-add it from Safari/Chrome to see the new icon.',
+    syncNotSetUp: 'Cloud sync is not set up yet.',
+    syncDevNote: 'Developer note: fill in SUPABASE_URL and SUPABASE_ANON_KEY in index.html (see KURULUM.md).',
+    connectedCodeLabel: 'Connected sync code:', syncCodeHint: 'Enter the same code on another device (phone/PC) to see these cards there too.',
+    syncNowBtn: 'Sync now', disconnectBtn: 'Disconnect',
+    syncSetupHint: 'Create a sync code so your phone and computer sync automatically, then enter the same code on the other device.',
+    createCodeBtn: 'Create new code', enterExistingCodeLabel: 'Or enter an existing code',
+    codeExamplePlaceholder: 'e.g. 482913', connectWithCodeBtn: 'Connect with this code',
+    codeCreatedMsg: 'Code created: {code}', invalidCodeMsg: 'Enter a valid code (4-8 digits)',
+    syncedMsg: 'Synced', syncErrorMsg: 'Sync error',
+    disconnectConfirm: 'Disconnect this device from the sync code? Data stays on this device locally, but automatic sync will stop.',
+    disconnectedMsg: 'Disconnected', infoLabel: 'Info',
+    stepsLabel: 'Learning steps (min)', stepsHint: 'Comma-separated, e.g. 1, 10',
+    gradLabel: 'Graduating interval (days)', gradHint: 'Graduate with Good',
+    easyIvLabel: 'Easy interval (days)', easyIvHint: 'Graduate with Easy',
+    easeLabel: 'Starting ease', easeHint: '1.3–5.0',
+    easyBonusLabel: 'Easy bonus', easyBonusHint: 'Interval multiplier',
+    masteryLabel: 'Mastery threshold (days)', masteryHint: 'Marked ⭐ at this interval',
+    dailyLabel: 'Daily new card limit', dailyHint: '0 = unlimited',
+    fuzzLabel: 'Random fuzz', fuzzHint: '±5% on intervals',
+    shieldLabel: 'Auto-use shields', shieldHint: 'Protects your streak when you miss a day',
+    saveSettingsBtn: 'Save Settings', invalidStepsMsg: 'Invalid step values',
+    settingsSavedMsg: 'Settings saved', errorMsg: 'Error',
+    backupDesc: 'Download or upload all your data (decks, cards, SRS state) as JSON.',
+    exportBtn: 'Export', importBtn: 'Import',
+    dataNotPersistentTitle: 'Data is not saved permanently in this session',
+    dataNotPersistentDesc: 'localStorage is unavailable. Download the app as .html and open it in your local browser to save data permanently.',
+    dangerZone: 'Danger zone', resetAllBtn: 'Reset all data',
+    resetAllConfirm: 'ALL data (decks, cards, statistics) will be deleted. Are you sure?', resetAllDoneMsg: 'All data has been reset',
+    renameModalTitle: 'Rename deck', newNameLabel: 'New name', deckNamePlaceholder: 'Deck name',
+    newDeckModalTitle: 'Create new deck', newDeckPlaceholder: 'e.g. JLPT N3 Kanji',
+    nameEmptyMsg: 'Name cannot be empty', deckCreatedMsg: 'Deck created: {name}',
+    deckNameUpdatedMsg: 'Deck name updated', editCardModalTitle: 'Edit card',
+    furiganaSimpleLabel: 'Furigana', exampleJpSimpleLabel: 'Example sentence (JP)', exampleTrSimpleLabel: 'Example translation (EN)',
+    cardUpdatedMsg: 'Card updated', deleteDeckConfirm: 'Delete "{name}" and all its cards?',
+    deckDeletedMsg: 'Deck deleted', deleteCardConfirm: 'Delete this card?', cardDeletedMsg: 'Card deleted',
+    moveToRootBtn: 'Move to root (take out of folder)', createNewFolderHint: 'create new folder',
+    noOtherItemsMsg: 'No other decks/folders to move to.', movedMsg: 'Moved', moveFailedMsg: 'Move failed',
+    newFolderNameTitle: 'New Folder Name', folderNameLabel: 'Folder name', newFolderDefault: 'New Folder',
+    targetNotFoundMsg: 'Target not found', folderCreatedMsg: 'Folder created: {name}',
+    deleteFolderConfirmWithCards: 'Delete "{name}" and ALL decks inside it ({n} cards)? This cannot be undone.',
+    deleteFolderConfirm: 'Delete folder "{name}"?', folderDeletedMsg: 'Folder deleted',
+    reviewPickModalTitle: 'Review — Choose Scope',
+    reviewPickModalDesc: "In this mode you're just browsing cards; your answers don't affect your progress or review schedule.",
+    normalCardsOpt: 'Normal cards ({n})', masteredOpt: 'Mastered ({n})', allCardsOpt: 'All cards ({n})',
+    noCardsInScopeMsg: 'No cards in this scope',
+    iconChangeToastMsg: 'Remove the app from your home screen and re-add it to see the new icon',
+    searchingReadingMsg: 'Looking up reading…', readingNotFoundMsg: "Couldn't find an automatic reading, you can type it manually",
+    blockSplitMsg: 'No automatic reading found for "{text}", split it into individual kanji — pick one.',
+    manualReadingLabel: 'Reading for "{text}" (type manually)', tapToMarkHint: 'Tap the kanji/word you want to add furigana to.',
+    shieldsUsedMsg: '{n} shields used, streak protected', weeklyShieldEarnedMsg: 'You completed a streak-free week, +1 shield!',
+    invalidFormatMsg: 'Invalid format', dataImportedMsg: 'Data imported: {n} decks', importErrorMsg: 'Import error',
+    bulkInputPlaceholder: 'One card per line, separate with |:\n漢字 | かんじ | kanji, Chinese character | 毎日漢字を勉強します。 | I study kanji every day.\n水 | みず | water | 水を飲みます。\n食べる | たべる | to eat | パンを食べる。',
+    syncNotConfiguredMsg: 'Cloud sync is not configured yet (see KURULUM.md)',
+    connectionErrorMsg: 'Connection error', connectedAndSyncedMsg: 'Connected and synced',
+    dataExportedMsg: 'Data exported',
+    syncIdleLabel: 'Not connected', syncingLabel: 'Syncing…', syncedLabel: 'Synced', offlineLabel: 'Offline',
+    serverWriteErrorMsg: 'Server write error', createDeckFirstMsg: 'Create a deck first',
+    updateAvailableTitle: 'New update available', versionLabel: 'Version {v}', downloadBtn: 'Download',
+    downloadingLabel: 'Downloading…', updateReadyTitle: 'Update ready', versionDownloadedLabel: 'Version {v} downloaded',
+    restartAndInstallBtn: 'Restart and Install', cardMasteredMsg: '{name} → Mastered!',
+    totalTimeLabel: 'Total time: {time}', noActivityThisDayMsg: 'No activity on this day.', deletedDeckLabel: '(deleted deck)',
+  },
+  zh: {
+    appTitle: 'Stacks',
+    appMotto: 'Keep stacking.',
+    decksTab: '卡组', addCardTab: '添加卡片', settingsTab: '设置',
+    myDecks: '我的卡组', noDeckYet: '还没有卡组。', addDeckHint: '点击右上角的 + 添加卡组。',
+    totalCards: '卡片总数', mastered: '已掌握', today: '今天',
+    studyTitle: '学习', reviewTitle: '预览', streakTitle: '学习日历',
+    newDeck: '新建卡组', newDeckName: '卡组名称', create: '创建', cancel: '取消',
+    study: '学习', detail: '详情', noCardsToStudy: '暂时没有需要学习的卡片',
+    studyAll: '学习全部',
+    newC: '新', learningC: '学习中', dueC: '待复习',
+    folderItems: '{n} 项', folderTotalCards: '共 {n} 张卡片',
+    moveToFolder: '移动到文件夹', rename: '重命名', delete: '删除',
+    streakDays: '天连续学习', shieldsCount: '拥有 {n} 个护盾',
+    moreOptions: '更多选项', cardsCountLabel: '{n} 张卡片', masteredCountLabel: '已掌握 {n} 张',
+    languageSection: '语言', appearanceSection: '外观', appIconSection: '应用图标',
+    syncSection: '跨设备同步', srsSection: 'SRS 设置', backupSection: '备份',
+    addCardSection: '添加卡片', targetDeck: '目标卡组', kanjiWord: '汉字 / 词语',
+    furiganaLabel: '读音 (假名)', meaningLabel: '释义', exampleJpLabel: '例句（日语）',
+    markWordsBtn: '标记单词（添加假名）', exampleTrLabel: '例句翻译（可选）',
+    saveBtn: '保存', bulkImportSection: '批量导入', cardListLabel: '卡片列表',
+    bulkFormatHint: '格式：汉字 | 假名 | 释义 | 日语例句（可选） | 例句翻译（可选）',
+    bulkImportBtn: '导入',
+    requiredFieldsMsg: '汉字、假名和释义为必填项', deckNotFoundMsg: '未找到卡组',
+    cardAddedMsg: '已添加卡片：{name}', bulkAddedMsg: '已添加 {n} 张卡片', bulkSkippedMsg: '跳过 {n} 行',
+    previewEmptyMsg: '开始输入后<br>卡片将显示在这里', previewTypeKanji: '输入汉字 / 词语',
+    previewTypeMeaning: '输入释义', frontSide: '正面', backSide: '背面',
+    dueToday: '今日待复习', totalLabel: '总计', inQueue: '队列中', startStudying: '开始学习',
+    addCardBtn: '添加卡片', masteredBucket: '已掌握', listBtn: '列表',
+    cardsSection: '卡片 ({n})', noCardsInDeck: '此卡组暂无卡片。', editLabel: '编辑',
+    sessionDoneTitle: '本次学习完成', sessionDoneMsg: '已学习 {n} 张卡片。今日剩余：0。',
+    backToDeck: '返回卡组', showAnswer: '显示答案',
+    gradeAgain: '重来', gradeHard: '困难', gradeGood: '良好', gradeEasy: '简单',
+    noCardsToShow: '没有可显示的卡片。', peekBadge: '预览', prevBtn: '上一个', nextBtn: '下一个',
+    unitMin: '分', unitHour: '小时', unitDay: '天',
+    milestone0: '每天学一点，让火焰成长', milestone7: '你已经找到了不错的节奏',
+    milestone30: '火焰在成长，继续加油！', milestone100: '传奇连胜！🔥',
+    streakDayCount: '{n} 天', shieldExplain: '个护盾 — 如果错过一天，会自动保护你的连续记录。',
+    monthNames: '一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月',
+    weekdayLetters: '一,二,三,四,五,六,日', dayLabelsShort: '周一,周二,周三,周四,周五,周六,周日',
+    prevMonth: '上个月', nextMonth: '下个月',
+    studiedLegend: '已学习', shieldedLegend: '护盾保护',
+    followSystemTheme: '跟随系统主题', followSystemThemeHint: '如果设备开启深色模式，将自动选择 Sumi',
+    onLabel: '开', offLabel: '关',
+    lockLabel: '锁定', unlockLabel: '解锁',
+    iconLockedNote: '🔒 图标已锁定 — 即使更换主题也保持不变。',
+    iconUnlockedNote: '更换主题时图标会自动改变。点击当前图标上的锁可固定它。',
+    iconChangeNote: '在手机上，需要将应用从主屏幕删除，再通过 Safari/Chrome 重新添加才能看到新图标。',
+    syncNotSetUp: '云同步尚未设置。',
+    syncDevNote: '开发者提示：请在 index.html 中填写 SUPABASE_URL 和 SUPABASE_ANON_KEY（参见 KURULUM.md）。',
+    connectedCodeLabel: '已连接的同步码：', syncCodeHint: '在另一台设备（手机/电脑）上输入相同的代码，即可在那里看到这些卡片。',
+    syncNowBtn: '立即同步', disconnectBtn: '断开连接',
+    syncSetupHint: '创建一个同步码，让手机和电脑自动同步，然后在另一台设备上输入相同的代码。',
+    createCodeBtn: '创建新代码', enterExistingCodeLabel: '或输入已有代码',
+    codeExamplePlaceholder: '例如：482913', connectWithCodeBtn: '用此代码连接',
+    codeCreatedMsg: '已创建代码：{code}', invalidCodeMsg: '请输入有效代码（4-8 位数字）',
+    syncedMsg: '已同步', syncErrorMsg: '同步错误',
+    disconnectConfirm: '确定要断开此设备与同步代码的连接吗？数据将保留在本设备上，但自动同步将停止。',
+    disconnectedMsg: '已断开连接', infoLabel: '信息',
+    stepsLabel: '学习步骤（分钟）', stepsHint: '用逗号分隔，例如 1, 10',
+    gradLabel: '毕业间隔（天）', gradHint: '以"良好"毕业',
+    easyIvLabel: '简单间隔（天）', easyIvHint: '以"简单"毕业',
+    easeLabel: '初始难度系数', easeHint: '1.3–5.0',
+    easyBonusLabel: '简单加成', easyBonusHint: '间隔倍数',
+    masteryLabel: '掌握阈值（天）', masteryHint: '达到此间隔时标记 ⭐',
+    dailyLabel: '每日新卡片上限', dailyHint: '0 = 无限制',
+    fuzzLabel: '随机波动', fuzzHint: '间隔 ±5%',
+    shieldLabel: '自动使用护盾', shieldHint: '错过一天时保护你的连续记录',
+    saveSettingsBtn: '保存设置', invalidStepsMsg: '步骤数值无效',
+    settingsSavedMsg: '设置已保存', errorMsg: '错误',
+    backupDesc: '以 JSON 格式下载或上传所有数据（卡组、卡片、SRS 状态）。',
+    exportBtn: '导出', importBtn: '导入',
+    dataNotPersistentTitle: '本次会话的数据不会永久保存',
+    dataNotPersistentDesc: '无法访问 localStorage。请将应用下载为 .html 文件并在本地浏览器中打开，以永久保存数据。',
+    dangerZone: '危险区域', resetAllBtn: '重置所有数据',
+    resetAllConfirm: '所有数据（卡组、卡片、统计）都将被删除。确定吗？', resetAllDoneMsg: '所有数据已重置',
+    renameModalTitle: '重命名卡组', newNameLabel: '新名称', deckNamePlaceholder: '卡组名称',
+    newDeckModalTitle: '创建新卡组', newDeckPlaceholder: '例如：JLPT N3 汉字',
+    nameEmptyMsg: '名称不能为空', deckCreatedMsg: '已创建卡组：{name}',
+    deckNameUpdatedMsg: '卡组名称已更新', editCardModalTitle: '编辑卡片',
+    furiganaSimpleLabel: '假名', exampleJpSimpleLabel: '例句（日语）', exampleTrSimpleLabel: '例句翻译（中文）',
+    cardUpdatedMsg: '卡片已更新', deleteDeckConfirm: '确定要删除"{name}"及其所有卡片吗？',
+    deckDeletedMsg: '卡组已删除', deleteCardConfirm: '确定要删除此卡片吗？', cardDeletedMsg: '卡片已删除',
+    moveToRootBtn: '移至根目录（移出文件夹）', createNewFolderHint: '创建新文件夹',
+    noOtherItemsMsg: '没有其他卡组/文件夹可移动。', movedMsg: '已移动', moveFailedMsg: '移动失败',
+    newFolderNameTitle: '新文件夹名称', folderNameLabel: '文件夹名称', newFolderDefault: '新文件夹',
+    targetNotFoundMsg: '未找到目标', folderCreatedMsg: '已创建文件夹：{name}',
+    deleteFolderConfirmWithCards: '确定要删除"{name}"文件夹及其中的所有卡组（{n} 张卡片）吗？此操作无法撤销。',
+    deleteFolderConfirm: '确定要删除文件夹"{name}"吗？', folderDeletedMsg: '文件夹已删除',
+    reviewPickModalTitle: '预览 — 选择范围',
+    reviewPickModalDesc: '在此模式下，您只是浏览卡片；您的回答不会影响学习进度或复习计划。',
+    normalCardsOpt: '普通卡片（{n}）', masteredOpt: '已掌握（{n}）', allCardsOpt: '全部卡片（{n}）',
+    noCardsInScopeMsg: '此范围内没有卡片',
+    iconChangeToastMsg: '请将应用从主屏幕删除并重新添加以查看新图标',
+    searchingReadingMsg: '正在查找读音…', readingNotFoundMsg: '未找到自动读音，您可以手动输入',
+    blockSplitMsg: '未找到"{text}"的自动读音，已将其拆分为单个汉字 — 请选择一个。',
+    manualReadingLabel: '"{text}" 的读音（手动输入）', tapToMarkHint: '点击你想添加假名的汉字/词语。',
+    shieldsUsedMsg: '已使用 {n} 个护盾，连续记录已保护', weeklyShieldEarnedMsg: '你完成了一整周不间断学习，+1 个护盾！',
+    invalidFormatMsg: '格式无效', dataImportedMsg: '已导入数据：{n} 个卡组', importErrorMsg: '导入错误',
+    bulkInputPlaceholder: '每行一张卡片，用 | 分隔：\n漢字 | かんじ | 汉字 | 毎日漢字を勉強します。 | 我每天学习汉字。\n水 | みず | 水 | 水を飲みます。\n食べる | たべる | 吃 | パンを食べる。',
+    syncNotConfiguredMsg: '云同步尚未配置（参见 KURULUM.md）',
+    connectionErrorMsg: '连接错误', connectedAndSyncedMsg: '已连接并同步',
+    dataExportedMsg: '数据已导出',
+    syncIdleLabel: '未连接', syncingLabel: '同步中…', syncedLabel: '已同步', offlineLabel: '离线',
+    serverWriteErrorMsg: '服务器写入错误', createDeckFirstMsg: '请先创建一个卡组',
+    updateAvailableTitle: '有新版本可用', versionLabel: '版本 {v}', downloadBtn: '下载',
+    downloadingLabel: '下载中…', updateReadyTitle: '更新已就绪', versionDownloadedLabel: '版本 {v} 已下载',
+    restartAndInstallBtn: '重启并安装', cardMasteredMsg: '{name} → 已掌握！',
+    totalTimeLabel: '总时长：{time}', noActivityThisDayMsg: '这一天没有学习记录。', deletedDeckLabel: '（已删除的卡组）',
+  },
+  mn: {
+    appTitle: 'Stacks',
+    appMotto: 'Keep stacking.',
+    decksTab: 'Дэвтэр', addCardTab: 'Карт нэмэх', settingsTab: 'Тохиргоо',
+    myDecks: 'Миний дэвтэр', noDeckYet: 'Дэвтэр алга байна.', addDeckHint: 'Шинэ дэвтэр нэмэхийн тулд баруун дээрх + товчийг дарна уу.',
+    totalCards: 'Нийт карт', mastered: 'Эзэмшсэн', today: 'Өнөөдөр',
+    studyTitle: 'Судлах', reviewTitle: 'Харах', streakTitle: 'Судалгааны хуанли',
+    newDeck: 'Шинэ дэвтэр', newDeckName: 'Дэвтрийн нэр', create: 'Үүсгэх', cancel: 'Цуцлах',
+    study: 'Судлах', detail: 'Дэлгэрэнгүй', noCardsToStudy: 'Одоогоор судлах карт алга байна',
+    studyAll: 'Бүгдийг судлах',
+    newC: 'шинэ', learningC: 'судалж буй', dueC: 'давтах',
+    folderItems: '{n} зүйл', folderTotalCards: 'нийт {n} карт',
+    moveToFolder: 'Хавтас руу зөөх', rename: 'Нэр өөрчлөх', delete: 'Устгах',
+    streakDays: 'өдрийн дараалал', shieldsCount: '{n} бамбай байна',
+    moreOptions: 'Цааш', cardsCountLabel: '{n} карт', masteredCountLabel: '{n} эзэмшсэн',
+    languageSection: 'Хэл', appearanceSection: 'Харагдац', appIconSection: 'Аппын дүрс тэмдэг',
+    syncSection: 'Төхөөрөмж хоорондын синк', srsSection: 'SRS тохиргоо', backupSection: 'Нөөцлөлт',
+    addCardSection: 'Карт нэмэх', targetDeck: 'Зорилтот дэвтэр', kanjiWord: 'Канжи / Үг',
+    furiganaLabel: 'Фуригана (унших дүрэм)', meaningLabel: 'Утга', exampleJpLabel: 'Жишээ өгүүлбэр (Япон)',
+    markWordsBtn: 'Үгийг тэмдэглэх (фуригана нэмэх)', exampleTrLabel: 'Жишээ орчуулга (заавал биш)',
+    saveBtn: 'Хадгалах', bulkImportSection: 'Багц импорт', cardListLabel: 'Картын жагсаалт',
+    bulkFormatHint: 'Формат: Канжи | Фуригана | Утга | Жишээ JP (заавал биш) | Жишээ орчуулга (заавал биш)',
+    bulkImportBtn: 'Импортлох',
+    requiredFieldsMsg: 'Канжи, фуригана, утга заавал шаардлагатай', deckNotFoundMsg: 'Дэвтэр олдсонгүй',
+    cardAddedMsg: 'Карт нэмэгдлээ: {name}', bulkAddedMsg: '{n} карт нэмэгдлээ', bulkSkippedMsg: '{n} мөр алгассан',
+    previewEmptyMsg: 'Бичиж эхлэхэд<br>картаа эндээс харна', previewTypeKanji: 'Канжи / үг бичих',
+    previewTypeMeaning: 'Утга бичих', frontSide: 'Урд тал', backSide: 'Ар тал',
+    dueToday: 'Өнөөдөр давтах', totalLabel: 'Нийт', inQueue: 'Дараалалд', startStudying: 'Судалж эхлэх',
+    addCardBtn: 'Карт нэмэх', masteredBucket: 'Эзэмшсэн', listBtn: 'Жагсаалт',
+    cardsSection: 'Карт ({n})', noCardsInDeck: 'Энэ дэвтэрт одоогоор карт алга байна.', editLabel: 'Засах',
+    sessionDoneTitle: 'Цэс дууслаа', sessionDoneMsg: '{n} карт судаллаа. Өнөөдрийн үлдсэн: 0.',
+    backToDeck: 'Дэвтэр рүү буцах', showAnswer: 'Хариулт харах',
+    gradeAgain: 'Дахин', gradeHard: 'Хэцүү', gradeGood: 'Сайн', gradeEasy: 'Амархан',
+    noCardsToShow: 'Харуулах карт алга байна.', peekBadge: 'Харах', prevBtn: 'Өмнөх', nextBtn: 'Дараах',
+    unitMin: ' мин', unitHour: ' цаг', unitDay: ' өдөр',
+    milestone0: 'Өдөр бүр бага зэрэг суралц, дөл өснө', milestone7: 'Чи сайн хэмнэлтэй болж байна',
+    milestone30: 'Дөл өсөж байна, үргэлжлүүл!', milestone100: 'Домогт дараалал! 🔥',
+    streakDayCount: '{n} өдөр', shieldExplain: 'бамбай байна — нэг өдөр алгасвал дарааллыг чинь автоматаар хамгаална.',
+    monthNames: '1-р сар,2-р сар,3-р сар,4-р сар,5-р сар,6-р сар,7-р сар,8-р сар,9-р сар,10-р сар,11-р сар,12-р сар',
+    weekdayLetters: 'Д,М,Л,П,Б,Б,Н', dayLabelsShort: 'Дав,Мяг,Лха,Пүр,Баа,Бям,Ням',
+    prevMonth: 'Өмнөх сар', nextMonth: 'Дараагийн сар',
+    studiedLegend: 'Судалсан', shieldedLegend: 'Бамбайгаар хамгаалсан',
+    followSystemTheme: 'Системийн загварыг дагах', followSystemThemeHint: 'Төхөөрөмжийн харанхуй горим асаалттай бол Sumi автоматаар сонгогдоно',
+    onLabel: 'Асаалттай', offLabel: 'Унтраалттай',
+    lockLabel: 'Түгжих', unlockLabel: 'Түгжээг тайлах',
+    iconLockedNote: '🔒 Дүрс тэмдэг түгжээтэй — загвар өөрчлөгдсөн ч энэ хэвээр үлдэнэ.',
+    iconUnlockedNote: 'Загвар өөрчлөгдөхөд дүрс тэмдэг автоматаар өөрчлөгдөнө. Идэвхтэй дүрс тэмдгийн түгжээг дарж тогтооно уу.',
+    iconChangeNote: 'Утсан дээр шинэ дүрс тэмдгийг харахын тулд аппыг нүүр хуудаснаас устгаад Safari/Chrome-оор дахин нэмнэ үү.',
+    syncNotSetUp: 'Үүлэн синк хараахан тохируулагдаагүй байна.',
+    syncDevNote: 'Хөгжүүлэгчийн тэмдэглэл: index.html файлд SUPABASE_URL болон SUPABASE_ANON_KEY-г бөглөнө үү (KURULUM.md-г үзнэ үү).',
+    connectedCodeLabel: 'Холбогдсон синк код:', syncCodeHint: 'Өөр төхөөрөмж (утас/компьютер) дээр ижил кодыг оруулснаар эдгээр картыг тэндээс ч харах боломжтой.',
+    syncNowBtn: 'Одоо синк хийх', disconnectBtn: 'Холболтыг тасалдах',
+    syncSetupHint: 'Утас, компьютер чинь автоматаар синк хийгдэхийн тулд код үүсгээд, өөр төхөөрөмж дээр ижил кодыг оруулна уу.',
+    createCodeBtn: 'Шинэ код үүсгэх', enterExistingCodeLabel: 'Эсвэл байгаа кодоо оруулна уу',
+    codeExamplePlaceholder: 'жиш: 482913', connectWithCodeBtn: 'Энэ кодоор холбох',
+    codeCreatedMsg: 'Код үүслээ: {code}', invalidCodeMsg: 'Хүчинтэй код оруулна уу (4-8 орон)',
+    syncedMsg: 'Синк хийгдлээ', syncErrorMsg: 'Синкийн алдаа',
+    disconnectConfirm: 'Энэ төхөөрөмжийг синк кодоос салгахдаа итгэлтэй байна уу? Өгөгдөл энэ төхөөрөмж дээр локалаар хадгалагдах боловч автомат синк зогсоно.',
+    disconnectedMsg: 'Холболт тасарлаа', infoLabel: 'Мэдээлэл',
+    stepsLabel: 'Сургалтын алхам (мин)', stepsHint: 'Таслалаар тусгаарла, жиш: 1, 10',
+    gradLabel: 'Төгсөх интервал (өдөр)', gradHint: 'Сайнаар төгсөнө',
+    easyIvLabel: 'Амархан интервал (өдөр)', easyIvHint: 'Амархнаар төгсөнө',
+    easeLabel: 'Эхний ease', easeHint: '1.3–5.0',
+    easyBonusLabel: 'Амархан урамшуулал', easyBonusHint: 'Интервалын үржигч',
+    masteryLabel: 'Эзэмшилтийн босго (өдөр)', masteryHint: 'Энэ интервалд хүрэхэд ⭐ тэмдэглэгдэнэ',
+    dailyLabel: 'Өдрийн шинэ картын хязгаар', dailyHint: '0 = хязгааргүй',
+    fuzzLabel: 'Санамсаргүй хэлбэлзэл', fuzzHint: 'Интервалд ±5%',
+    shieldLabel: 'Бамбайг автоматаар ашиглах', shieldHint: 'Өдөр алгасахад дарааллыг чинь хамгаална',
+    saveSettingsBtn: 'Тохиргоог хадгалах', invalidStepsMsg: 'Алхамын утга буруу байна',
+    settingsSavedMsg: 'Тохиргоо хадгалагдлаа', errorMsg: 'Алдаа',
+    backupDesc: 'Бүх өгөгдлийг (дэвтэр, карт, SRS төлөв) JSON хэлбэрээр татах эсвэл байршуулах.',
+    exportBtn: 'Экспортлох', importBtn: 'Импортлох',
+    dataNotPersistentTitle: 'Энэ хичээллэлд өгөгдөл байнга хадгалагдахгүй',
+    dataNotPersistentDesc: 'localStorage ашиглах боломжгүй байна. Аппыг .html болгож татаад локал хөтчөөр нээвэл өгөгдөл байнга хадгалагдана.',
+    dangerZone: 'Аюултай бүс', resetAllBtn: 'Бүх өгөгдлийг шинэчлэх',
+    resetAllConfirm: 'БҮХ өгөгдөл (дэвтэр, карт, статистик) устах болно. Итгэлтэй байна уу?', resetAllDoneMsg: 'Бүх өгөгдөл шинэчлэгдлээ',
+    renameModalTitle: 'Дэвтрийн нэр өөрчлөх', newNameLabel: 'Шинэ нэр', deckNamePlaceholder: 'Дэвтрийн нэр',
+    newDeckModalTitle: 'Шинэ дэвтэр үүсгэх', newDeckPlaceholder: 'жиш: JLPT N3 Канжи',
+    nameEmptyMsg: 'Нэр хоосон байж болохгүй', deckCreatedMsg: 'Дэвтэр үүслээ: {name}',
+    deckNameUpdatedMsg: 'Дэвтрийн нэр шинэчлэгдлээ', editCardModalTitle: 'Картыг засах',
+    furiganaSimpleLabel: 'Фуригана', exampleJpSimpleLabel: 'Жишээ өгүүлбэр (JP)', exampleTrSimpleLabel: 'Жишээ орчуулга (MN)',
+    cardUpdatedMsg: 'Карт шинэчлэгдлээ', deleteDeckConfirm: '"{name}" дэвтэр болон бүх картыг устгахдаа итгэлтэй байна уу?',
+    deckDeletedMsg: 'Дэвтэр устгагдлаа', deleteCardConfirm: 'Энэ картыг устгахдаа итгэлтэй байна уу?', cardDeletedMsg: 'Карт устгагдлаа',
+    moveToRootBtn: 'Үндсэн руу зөөх (хавтаснаас гаргах)', createNewFolderHint: 'шинэ хавтас үүсгэх',
+    noOtherItemsMsg: 'Зөөх өөр дэвтэр/хавтас алга байна.', movedMsg: 'Зөөгдлөө', moveFailedMsg: 'Зөөж чадсангүй',
+    newFolderNameTitle: 'Шинэ хавтасны нэр', folderNameLabel: 'Хавтасны нэр', newFolderDefault: 'Шинэ хавтас',
+    targetNotFoundMsg: 'Зорилт олдсонгүй', folderCreatedMsg: 'Хавтас үүслээ: {name}',
+    deleteFolderConfirmWithCards: '"{name}" хавтас болон дотор нь байгаа БҮХ дэвтэр ({n} карт) устах болно. Энэ үйлдлийг буцаах боломжгүй. Итгэлтэй байна уу?',
+    deleteFolderConfirm: '"{name}" хавтсыг устгахдаа итгэлтэй байна уу?', folderDeletedMsg: 'Хавтас устгагдлаа',
+    reviewPickModalTitle: 'Харах — Хүрээ сонгох',
+    reviewPickModalDesc: 'Энэ горимд та зөвхөн картуудыг үзэж байгаа; таны хариулт ахицад болон давталтын төлөвлөгөөнд нөлөөлөхгүй.',
+    normalCardsOpt: 'Энгийн карт ({n})', masteredOpt: 'Эзэмшсэн ({n})', allCardsOpt: 'Бүх карт ({n})',
+    noCardsInScopeMsg: 'Энэ хүрээнд карт алга байна',
+    iconChangeToastMsg: 'Шинэ дүрс тэмдгийг харахын тулд аппыг нүүр хуудаснаас устгаад дахин нэмнэ үү',
+    searchingReadingMsg: 'Унших дүрмийг хайж байна…', readingNotFoundMsg: 'Автомат унших дүрэм олдсонгүй, гараар бичиж болно',
+    blockSplitMsg: '"{text}"-д автомат унших дүрэм олдсонгүй, канжи тус бүрд хуваалаа — нэгийг сонгоно уу.',
+    manualReadingLabel: '"{text}"-ийн унших дүрэм (гараар бичих)', tapToMarkHint: 'Фуригана нэмэхийг хүссэн канжи/үг дээрээ дарна уу.',
+    shieldsUsedMsg: '{n} бамбай ашиглагдаж, дараалал хамгаалагдлаа', weeklyShieldEarnedMsg: 'Та тасралтгүй нэг долоо хоног дуусгалаа, +1 бамбай!',
+    invalidFormatMsg: 'Буруу формат', dataImportedMsg: 'Өгөгдөл импортлогдлоо: {n} дэвтэр', importErrorMsg: 'Импортын алдаа',
+    bulkInputPlaceholder: 'Мөр бүрт нэг карт, | -ээр тусгаарла:\n漢字 | かんじ | канжи, хятад үсэг | 毎日漢字を勉強します。 | Би өдөр бүр канжи судалдаг.\n水 | みず | ус | 水を飲みます。\n食べる | たべる | идэх | パンを食べる。',
+    syncNotConfiguredMsg: 'Үүлэн синк хараахан тохируулагдаагүй байна (KURULUM.md-г үзнэ үү)',
+    connectionErrorMsg: 'Холболтын алдаа', connectedAndSyncedMsg: 'Холбогдож синк хийгдлээ',
+    dataExportedMsg: 'Өгөгдөл экспортлогдлоо',
+    syncIdleLabel: 'Холбогдоогүй', syncingLabel: 'Синк хийгдэж байна…', syncedLabel: 'Синк хийгдсэн', offlineLabel: 'Офлайн',
+    serverWriteErrorMsg: 'Серверт бичих алдаа', createDeckFirstMsg: 'Эхлээд дэвтэр үүсгэнэ үү',
+    updateAvailableTitle: 'Шинэ хувилбар байна', versionLabel: 'Хувилбар {v}', downloadBtn: 'Татах',
+    downloadingLabel: 'Татаж байна…', updateReadyTitle: 'Шинэчлэлт бэлэн боллоо', versionDownloadedLabel: 'Хувилбар {v} татагдлаа',
+    restartAndInstallBtn: 'Дахин эхлүүлж суулгах', cardMasteredMsg: '{name} → Эзэмшсэн!',
+    totalTimeLabel: 'Нийт хугацаа: {time}', noActivityThisDayMsg: 'Энэ өдөр идэвх алга байна.', deletedDeckLabel: '(устгасан дэвтэр)',
+  },
+  ko: {
+    appTitle: 'Stacks',
+    appMotto: 'Keep stacking.',
+    decksTab: '덱', addCardTab: '카드 추가', settingsTab: '설정',
+    myDecks: '내 덱', noDeckYet: '아직 덱이 없습니다.', addDeckHint: '오른쪽 위 + 버튼을 눌러 새 덱을 추가하세요.',
+    totalCards: '전체 카드', mastered: '습득함', today: '오늘',
+    studyTitle: '학습', reviewTitle: '둘러보기', streakTitle: '학습 캘린더',
+    newDeck: '새 덱', newDeckName: '덱 이름', create: '만들기', cancel: '취소',
+    study: '학습', detail: '상세', noCardsToStudy: '지금 학습할 카드가 없습니다',
+    studyAll: '전체 학습',
+    newC: '신규', learningC: '학습 중', dueC: '복습',
+    folderItems: '{n}개 항목', folderTotalCards: '총 {n}장',
+    moveToFolder: '폴더로 이동', rename: '이름 변경', delete: '삭제',
+    streakDays: '일 연속', shieldsCount: '방어막 {n}개 보유',
+    moreOptions: '더보기', cardsCountLabel: '카드 {n}장', masteredCountLabel: '{n}장 습득',
+    languageSection: '언어', appearanceSection: '테마', appIconSection: '앱 아이콘',
+    syncSection: '기기 간 동기화', srsSection: 'SRS 설정', backupSection: '백업',
+    addCardSection: '카드 추가', targetDeck: '대상 덱', kanjiWord: '한자 / 단어',
+    furiganaLabel: '후리가나 (읽기)', meaningLabel: '뜻', exampleJpLabel: '예문 (일본어)',
+    markWordsBtn: '단어 표시 (후리가나 추가)', exampleTrLabel: '예문 번역 (선택사항)',
+    saveBtn: '저장', bulkImportSection: '일괄 가져오기', cardListLabel: '카드 목록',
+    bulkFormatHint: '형식: 한자 | 후리가나 | 뜻 | 일본어 예문 (선택) | 예문 번역 (선택)',
+    bulkImportBtn: '가져오기',
+    requiredFieldsMsg: '한자, 후리가나, 뜻은 필수 항목입니다', deckNotFoundMsg: '덱을 찾을 수 없습니다',
+    cardAddedMsg: '카드가 추가되었습니다: {name}', bulkAddedMsg: '{n}장의 카드가 추가되었습니다', bulkSkippedMsg: '{n}줄을 건너뛰었습니다',
+    previewEmptyMsg: '입력을 시작하면<br>여기에 카드가 표시됩니다', previewTypeKanji: '한자 / 단어 입력',
+    previewTypeMeaning: '뜻 입력', frontSide: '앞면', backSide: '뒷면',
+    dueToday: '오늘 복습', totalLabel: '전체', inQueue: '대기 중', startStudying: '학습 시작',
+    addCardBtn: '카드 추가', masteredBucket: '습득함', listBtn: '목록',
+    cardsSection: '카드 ({n})', noCardsInDeck: '이 덱에는 아직 카드가 없습니다.', editLabel: '편집',
+    sessionDoneTitle: '학습 완료', sessionDoneMsg: '{n}장의 카드를 학습했습니다. 오늘 남은 카드: 0장.',
+    backToDeck: '덱으로 돌아가기', showAnswer: '답 보기',
+    gradeAgain: '다시', gradeHard: '어려움', gradeGood: '좋음', gradeEasy: '쉬움',
+    noCardsToShow: '표시할 카드가 없습니다.', peekBadge: '미리보기', prevBtn: '이전', nextBtn: '다음',
+    unitMin: '분', unitHour: '시간', unitDay: '일',
+    milestone0: '매일 조금씩 공부하면 불꽃이 자라요', milestone7: '좋은 리듬을 유지하고 있어요',
+    milestone30: '불꽃이 점점 커지고 있어요, 계속해요!', milestone100: '전설적인 연속 기록! 🔥',
+    streakDayCount: '{n}일', shieldExplain: '개의 방어막을 보유 중 — 하루를 놓쳐도 연속 기록을 자동으로 지켜줍니다.',
+    monthNames: '1월,2월,3월,4월,5월,6월,7월,8월,9월,10월,11월,12월',
+    weekdayLetters: '월,화,수,목,금,토,일', dayLabelsShort: '월,화,수,목,금,토,일',
+    prevMonth: '이전 달', nextMonth: '다음 달',
+    studiedLegend: '학습함', shieldedLegend: '방어막으로 보호됨',
+    followSystemTheme: '시스템 테마 따르기', followSystemThemeHint: '기기의 다크 모드가 켜져 있으면 Sumi가 자동으로 선택됩니다',
+    onLabel: '켜짐', offLabel: '꺼짐',
+    lockLabel: '잠금', unlockLabel: '잠금 해제',
+    iconLockedNote: '🔒 아이콘이 잠겨 있습니다 — 테마를 변경해도 이 아이콘이 유지됩니다.',
+    iconUnlockedNote: '테마를 변경하면 아이콘도 자동으로 바뀝니다. 현재 아이콘을 고정하려면 잠금을 누르세요.',
+    iconChangeNote: '휴대폰에서 새 아이콘을 보려면 앱을 홈 화면에서 삭제한 후 Safari/Chrome에서 다시 추가하세요.',
+    syncNotSetUp: '클라우드 동기화가 아직 설정되지 않았습니다.',
+    syncDevNote: '개발자 안내: index.html에서 SUPABASE_URL과 SUPABASE_ANON_KEY를 입력하세요 (KURULUM.md 참고).',
+    connectedCodeLabel: '연결된 동기화 코드:', syncCodeHint: '다른 기기(휴대폰/PC)에서 같은 코드를 입력하면 그곳에서도 이 카드를 볼 수 있습니다.',
+    syncNowBtn: '지금 동기화', disconnectBtn: '연결 해제',
+    syncSetupHint: '휴대폰과 컴퓨터가 자동으로 동기화되도록 코드를 만들고, 다른 기기에서 같은 코드를 입력하세요.',
+    createCodeBtn: '새 코드 만들기', enterExistingCodeLabel: '또는 기존 코드 입력',
+    codeExamplePlaceholder: '예: 482913', connectWithCodeBtn: '이 코드로 연결',
+    codeCreatedMsg: '코드가 생성되었습니다: {code}', invalidCodeMsg: '올바른 코드를 입력하세요 (4-8자리)',
+    syncedMsg: '동기화됨', syncErrorMsg: '동기화 오류',
+    disconnectConfirm: '이 기기를 동기화 코드에서 연결 해제하시겠습니까? 데이터는 이 기기에 그대로 남지만 자동 동기화는 중지됩니다.',
+    disconnectedMsg: '연결 해제됨', infoLabel: '정보',
+    stepsLabel: '학습 단계 (분)', stepsHint: '쉼표로 구분, 예: 1, 10',
+    gradLabel: '졸업 간격 (일)', gradHint: '"좋음"으로 졸업',
+    easyIvLabel: '쉬움 간격 (일)', easyIvHint: '"쉬움"으로 졸업',
+    easeLabel: '초기 난이도', easeHint: '1.3–5.0',
+    easyBonusLabel: '쉬움 보너스', easyBonusHint: '간격 배수',
+    masteryLabel: '습득 기준 (일)', masteryHint: '이 간격에 도달하면 ⭐ 표시',
+    dailyLabel: '하루 신규 카드 제한', dailyHint: '0 = 무제한',
+    fuzzLabel: '무작위 변동', fuzzHint: '간격에 ±5%',
+    shieldLabel: '방어막 자동 사용', shieldHint: '하루를 놓쳐도 연속 기록을 보호합니다',
+    saveSettingsBtn: '설정 저장', invalidStepsMsg: '단계 값이 올바르지 않습니다',
+    settingsSavedMsg: '설정이 저장되었습니다', errorMsg: '오류',
+    backupDesc: '모든 데이터(덱, 카드, SRS 상태)를 JSON으로 다운로드하거나 업로드합니다.',
+    exportBtn: '내보내기', importBtn: '가져오기',
+    dataNotPersistentTitle: '이번 세션에서는 데이터가 영구 저장되지 않습니다',
+    dataNotPersistentDesc: 'localStorage를 사용할 수 없습니다. 앱을 .html로 다운로드하여 로컬 브라우저에서 열면 데이터가 영구적으로 저장됩니다.',
+    dangerZone: '위험 구역', resetAllBtn: '모든 데이터 초기화',
+    resetAllConfirm: '모든 데이터(덱, 카드, 통계)가 삭제됩니다. 계속하시겠습니까?', resetAllDoneMsg: '모든 데이터가 초기화되었습니다',
+    renameModalTitle: '덱 이름 변경', newNameLabel: '새 이름', deckNamePlaceholder: '덱 이름',
+    newDeckModalTitle: '새 덱 만들기', newDeckPlaceholder: '예: JLPT N3 한자',
+    nameEmptyMsg: '이름은 비워둘 수 없습니다', deckCreatedMsg: '덱이 생성되었습니다: {name}',
+    deckNameUpdatedMsg: '덱 이름이 변경되었습니다', editCardModalTitle: '카드 편집',
+    furiganaSimpleLabel: '후리가나', exampleJpSimpleLabel: '예문 (일본어)', exampleTrSimpleLabel: '예문 번역 (한국어)',
+    cardUpdatedMsg: '카드가 수정되었습니다', deleteDeckConfirm: '"{name}" 덱과 모든 카드를 삭제하시겠습니까?',
+    deckDeletedMsg: '덱이 삭제되었습니다', deleteCardConfirm: '이 카드를 삭제하시겠습니까?', cardDeletedMsg: '카드가 삭제되었습니다',
+    moveToRootBtn: '최상위로 이동 (폴더에서 꺼내기)', createNewFolderHint: '새 폴더 만들기',
+    noOtherItemsMsg: '이동할 다른 덱/폴더가 없습니다.', movedMsg: '이동되었습니다', moveFailedMsg: '이동에 실패했습니다',
+    newFolderNameTitle: '새 폴더 이름', folderNameLabel: '폴더 이름', newFolderDefault: '새 폴더',
+    targetNotFoundMsg: '대상을 찾을 수 없습니다', folderCreatedMsg: '폴더가 생성되었습니다: {name}',
+    deleteFolderConfirmWithCards: '"{name}" 폴더와 그 안의 모든 덱({n}장의 카드)을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    deleteFolderConfirm: '"{name}" 폴더를 삭제하시겠습니까?', folderDeletedMsg: '폴더가 삭제되었습니다',
+    reviewPickModalTitle: '둘러보기 — 범위 선택',
+    reviewPickModalDesc: '이 모드에서는 카드를 단순히 둘러보는 것이며, 답변이 학습 진행도나 복습 일정에 영향을 주지 않습니다.',
+    normalCardsOpt: '일반 카드 ({n})', masteredOpt: '습득함 ({n})', allCardsOpt: '전체 카드 ({n})',
+    noCardsInScopeMsg: '이 범위에 카드가 없습니다',
+    iconChangeToastMsg: '새 아이콘을 보려면 앱을 홈 화면에서 삭제한 후 다시 추가하세요',
+    searchingReadingMsg: '읽기를 검색하는 중…', readingNotFoundMsg: '자동 읽기를 찾을 수 없습니다. 직접 입력할 수 있습니다',
+    blockSplitMsg: '"{text}"에 대한 자동 읽기를 찾을 수 없어 한자 단위로 나누었습니다 — 하나를 선택하세요.',
+    manualReadingLabel: '"{text}"의 읽기 (직접 입력)', tapToMarkHint: '후리가나를 추가할 한자/단어를 누르세요.',
+    shieldsUsedMsg: '방어막 {n}개가 사용되어 연속 기록이 보호되었습니다', weeklyShieldEarnedMsg: '일주일 연속 학습을 완료했습니다, +1 방어막!',
+    invalidFormatMsg: '형식이 올바르지 않습니다', dataImportedMsg: '데이터를 가져왔습니다: 덱 {n}개', importErrorMsg: '가져오기 오류',
+    bulkInputPlaceholder: '한 줄에 카드 하나, |로 구분:\n漢字 | かんじ | 한자, 중국 문자 | 毎日漢字を勉強します。 | 저는 매일 한자를 공부합니다.\n水 | みず | 물 | 水を飲みます。\n食べる | たべる | 먹다 | パンを食べる。',
+    syncNotConfiguredMsg: '클라우드 동기화가 아직 설정되지 않았습니다 (KURULUM.md 참고)',
+    connectionErrorMsg: '연결 오류', connectedAndSyncedMsg: '연결 및 동기화 완료',
+    dataExportedMsg: '데이터가 내보내졌습니다',
+    syncIdleLabel: '연결 안 됨', syncingLabel: '동기화 중…', syncedLabel: '동기화됨', offlineLabel: '오프라인',
+    serverWriteErrorMsg: '서버 쓰기 오류', createDeckFirstMsg: '먼저 덱을 만들어 주세요',
+    updateAvailableTitle: '새 업데이트가 있습니다', versionLabel: '버전 {v}', downloadBtn: '다운로드',
+    downloadingLabel: '다운로드 중…', updateReadyTitle: '업데이트 준비 완료', versionDownloadedLabel: '버전 {v} 다운로드 완료',
+    restartAndInstallBtn: '재시작하고 설치', cardMasteredMsg: '{name} → 습득함!',
+    totalTimeLabel: '총 학습 시간: {time}', noActivityThisDayMsg: '이 날은 학습 기록이 없습니다.', deletedDeckLabel: '(삭제된 덱)',
+  },
+};
+
+function detectInitialLang() {
+  const saved = localStorage.getItem(LANG_STORAGE_KEY);
+  if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
+  const browserLangs = navigator.languages || [navigator.language || 'en'];
+  for (const bl of browserLangs) {
+    const code = bl.toLowerCase().split('-')[0];
+    if (SUPPORTED_LANGS.includes(code)) return code;
+  }
+  return 'en'; // desteklenmeyen sistem dili -> varsayılan İngilizce
+}
+
+let currentLang = detectInitialLang();
+
+function setLang(lang) {
+  if (!SUPPORTED_LANGS.includes(lang)) return;
+  currentLang = lang;
+  localStorage.setItem(LANG_STORAGE_KEY, lang);
+  document.documentElement.setAttribute('lang', lang);
+  refreshSampleDeckForLanguage();
+  applyStaticTranslations();
+  // PC'de native menü (Dosya/Görünüm vb.) de aynı dile geçsin.
+  if (window.electronAPI?.setAppLang) window.electronAPI.setAppLang(lang);
+  // Görünür olan ekranı yeniden render et ki dinamik metinler de güncellensin.
+  rerenderCurrentView();
+}
+
+function t(key, vars) {
+  const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+  let str = dict[key] ?? TRANSLATIONS.en[key] ?? key;
+  if (vars) {
+    for (const k in vars) str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+  }
+  return str;
+}
+
+// Sayfadaki [data-i18n] attribute'lu statik elementleri doldurur.
+// data-i18n="key" -> textContent; data-i18n-placeholder="key" -> placeholder;
+// data-i18n-aria="key" -> aria-label.
+function applyStaticTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
+  });
+  document.title = t('appTitle');
 }
 
 // learnSteps Anki'nin gerçek varsayılanıdır: [1 dakika, 10 dakika]
@@ -1268,7 +2013,6 @@ const SYNC_TABLE = 'app_state';
 const SYNC_CODE_KEY = 'kanji_srs_sync_code';
 
 let syncCode = null;          // aktif giriş kodu
-let lastSyncedAt = null;      // son senkronun updated_at değeri
 let syncEnabled = false;      // Supabase bilgileri girilmiş mi
 let syncStatus = 'idle';      // idle | syncing | synced | error | offline
 
@@ -1317,7 +2061,7 @@ async function cloudPush(code, stateObj) {
     headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({ code, state: stateObj }),
   });
-  if (!res.ok) throw new Error('Sunucuya yazma hatası');
+  if (!res.ok) throw new Error(t('serverWriteErrorMsg'));
   const rows = await res.json();
   return rows[0] || null;
 }
@@ -1330,7 +2074,9 @@ function pickNewerState(local, remote) {
   if (!local) return remote;
   const score = (s) => {
     let cards = 0, reviews = 0;
-    for (const d of (s.decks || [])) cards += d.cards.length;
+    // collectLeafCards klasör/deste ayrımını kendi içinde halleder;
+    // düz deste listelerinde de (eski veri) sorunsuz çalışır.
+    for (const d of (s.decks || [])) cards += collectLeafCards(d).length;
     for (const k in (s.stats?.reviewsByDate || {})) reviews += s.stats.reviewsByDate[k];
     return cards * 1000 + reviews;
   };
@@ -1357,7 +2103,7 @@ function scheduleCloudPush() {
 
 async function connectSyncCode(code) {
   if (!syncConfigured()) {
-    showToast('⚠ Bulut senkron henüz yapılandırılmadı (KURULUM.md\'ye bak)', 4000);
+    showToast('⚠ ' + t('syncNotConfiguredMsg'), 4000);
     return false;
   }
   syncStatus = 'syncing';
@@ -1378,7 +2124,7 @@ async function connectSyncCode(code) {
   } catch (e) {
     syncStatus = 'error';
     renderSyncBadge();
-    showToast('⚠ Bağlantı hatası: ' + e.message, 3500);
+    showToast('⚠ ' + t('connectionErrorMsg') + ': ' + e.message, 3500);
     return false;
   }
 }
@@ -1395,11 +2141,11 @@ function renderSyncBadge() {
   if (!el) return;
   if (!syncEnabled) { el.innerHTML = ''; return; }
   const map = {
-    idle:    ['dot',   'var(--ink-soft)', 'Bağlı değil',          false],
-    syncing: ['sync',  'var(--sky)',      'Senkronize ediliyor…', true ],
-    synced:  ['check', 'var(--jade)',     'Senkron',              false],
-    error:   ['alert', 'var(--hanko)',    'Bağlantı hatası',      false],
-    offline: ['dot',   'var(--ink-soft)', 'Çevrimdışı',           false],
+    idle:    ['dot',   'var(--ink-soft)', t('syncIdleLabel'),    false],
+    syncing: ['sync',  'var(--sky)',      t('syncingLabel'),     true ],
+    synced:  ['check', 'var(--jade)',     t('syncedLabel'),      false],
+    error:   ['alert', 'var(--hanko)',    t('connectionErrorMsg'), false],
+    offline: ['dot',   'var(--ink-soft)', t('offlineLabel'),     false],
   };
   const [name, color, label, spin] = map[syncStatus] || map.idle;
   el.innerHTML = `<span title="${label}" class="${spin ? 'spin' : ''}" style="color:${color};display:inline-flex">${icon(name, name === 'dot' ? 'ic-fill' : '')}</span>`;
@@ -1422,7 +2168,17 @@ const THEME_STORAGE_KEY = 'stacks-theme';
 const THEME_FOLLOW_SYSTEM_KEY = 'stacks-theme-follow-system';
 
 function getCurrentTheme() {
-  return localStorage.getItem(THEME_STORAGE_KEY) || 'washi';
+  const saved = localStorage.getItem(THEME_STORAGE_KEY);
+  if (saved) return saved;
+  // Hiç manuel seçim yoksa: sistem takibi açıksa ve cihaz dark
+  // moddaysa, GERÇEKTE uygulanan tema sumi'dir (bkz. boot script).
+  // Bu fonksiyon, görünen tema ile seçicinin işaretlediği temanın
+  // tutarlı olması için bunu yansıtmalı.
+  const followSystem = getFollowSystemTheme();
+  if (followSystem && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'sumi';
+  }
+  return 'washi';
 }
 function getFollowSystemTheme() {
   return localStorage.getItem(THEME_FOLLOW_SYSTEM_KEY) !== '0'; // varsayılan: açık
@@ -1433,6 +2189,10 @@ function applyTheme(themeId) {
 }
 function setTheme(themeId) {
   localStorage.setItem(THEME_STORAGE_KEY, themeId);
+  // Kullanıcı elle bir tema seçtiğinde, bu seçim her zaman önceliklidir —
+  // "Sistem temasını takip et" otomatik kapanır (aksi halde sistem teması
+  // değiştiğinde kullanıcının az önceki bilinçli seçimi sessizce ezilirdi).
+  localStorage.setItem(THEME_FOLLOW_SYSTEM_KEY, '0');
   applyTheme(themeId);
   // Tema değişince ikon de otomatik o temanın ikonuna geçer — TABİİ Kİ
   // kullanıcı ikon kilidi açtıysa (bkz. APP_ICONS). Kilitliyse dokunulmaz.
@@ -1443,11 +2203,14 @@ function setTheme(themeId) {
 function setFollowSystemTheme(on) {
   localStorage.setItem(THEME_FOLLOW_SYSTEM_KEY, on ? '1' : '0');
   if (on) {
-    // Sistem temasını hemen kontrol edip uygula; kullanıcı daha önce
-    // elle bir tema seçmiş olsa bile "takip et" açıldığında sistem önceliklidir.
+    // "Takip et" açıkken localStorage'a SABİT bir tema YAZILMAZ — aksi
+    // halde sistem teması sonradan değişse bile uygulama eski kayıtlı
+    // temada takılı kalır. getCurrentTheme() zaten sistem durumunu canlı
+    // kontrol ediyor; burada sadece önceki manuel seçimi temizleyip
+    // görsel olarak doğru temayı anında uyguluyoruz.
+    localStorage.removeItem(THEME_STORAGE_KEY);
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     const themeId = prefersDark ? 'sumi' : 'washi';
-    localStorage.setItem(THEME_STORAGE_KEY, themeId);
     applyTheme(themeId);
     if (!getIconLocked()) setAppIcon(themeId, true);
   }
@@ -1464,7 +2227,7 @@ function setFollowSystemTheme(on) {
 const APP_ICON_STORAGE_KEY = 'stacks-app-icon';
 const APP_ICON_LOCK_KEY = 'stacks-app-icon-locked';
 // THEMES listesindeki id'lerle birebir eşleşir (her temanın kendi ikonu)
-const APP_ICONS = THEMES.map(t => ({ id: t.id, label: t.label, manifestSrc: t.id === 'washi' ? 'manifest.json' : `manifest-${t.id}.json`, thumb: t.id === 'washi' ? 'icons/icon-120.png' : `icons/${t.id}/icon-120.png` }));
+const APP_ICONS = THEMES.map(th => ({ id: th.id, label: th.label, manifestSrc: th.id === 'washi' ? 'manifest.json' : `manifest-${th.id}.json`, thumb: th.id === 'washi' ? 'icons/icon-120.png' : `icons/${th.id}/icon-120.png` }));
 
 function getCurrentAppIcon() {
   return localStorage.getItem(APP_ICON_STORAGE_KEY) || getCurrentTheme();
@@ -1481,6 +2244,20 @@ function setAppIcon(iconId, fromThemeChange) {
   const found = APP_ICONS.find(i => i.id === iconId);
   const link = document.querySelector('link[rel="manifest"]');
   if (link && found) link.setAttribute('href', found.manifestSrc);
+
+  // iOS Safari "Ana Ekrana Ekle" sırasında manifest'teki icons listesini
+  // DEĞİL, sayfadaki <link rel="apple-touch-icon"> etiketlerini esas alır.
+  // Bu yüzden tema/ikon değişince bu linkleri de güncellemek ZORUNLU,
+  // yoksa iOS'ta her zaman Washi ikonu eklenir.
+  const iconFolder = iconId === 'washi' ? 'icons' : `icons/${iconId}`;
+  document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(el => {
+    const sizes = el.getAttribute('sizes');
+    const size = sizes ? sizes.split('x')[0] : '180';
+    el.setAttribute('href', `${iconFolder}/icon-${size}.png`);
+  });
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) favicon.setAttribute('href', `${iconFolder}/icon-192.png`);
+
   if (!fromThemeChange) {
     renderAppIconSection();
     showAppIconChangeNotice();
@@ -1488,7 +2265,7 @@ function setAppIcon(iconId, fromThemeChange) {
 }
 
 function showAppIconChangeNotice() {
-  showToast('İkonu değiştirmek için uygulamayı ana ekrandan silip tekrar ekle', 4200);
+  showToast(t('iconChangeToastMsg'), 4200);
 }
 
 function renderAppIconSection() {
@@ -1502,10 +2279,10 @@ function renderAppIconSection() {
     return `
       <div class="app-icon-option${isActive ? ' is-active' : ''}">
         <div class="app-icon-thumb-wrap">
-          <button type="button" class="app-icon-thumb tap" onclick="setAppIcon('${i.id}')" aria-label="${esc(i.label)} ikonu">
+          <button type="button" class="app-icon-thumb tap" onclick="setAppIcon('${i.id}')" aria-label="${esc(i.label)}">
             <img src="${i.thumb}" alt="${esc(i.label)}">
           </button>
-          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? 'Kilidi aç' : 'Kilitle'}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
+          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? t('unlockLabel') : t('lockLabel')}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
         </div>
         <span class="app-icon-label">${esc(i.label)}</span>
       </div>
@@ -1514,8 +2291,27 @@ function renderAppIconSection() {
 
   box.innerHTML = `
     <div class="app-icon-grid">${itemsHTML}</div>
-    <div class="app-icon-note">${locked ? '🔒 İkon kilitli — tema değiştirse de bu ikon sabit kalır.' : 'Tema değiştirdiğinde ikon de otomatik değişir. Kilitlemek için aktif ikonun üzerindeki kilide dokun.'}<br>Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome\'dan tekrar eklemen gerekir.</div>
+    <div class="app-icon-note">${locked ? t('iconLockedNote') : t('iconUnlockedNote')}<br>${t('iconChangeNote')}</div>
   `;
+}
+
+// ─── DİL SEÇİCİ (Ayarlar > Dil) ─────────────────────────────────────────
+function renderLangSection() {
+  const box = document.getElementById('lang-section');
+  if (!box) return;
+  const flagOf = { tr: '🇹🇷', en: '🇬🇧', zh: '🇨🇳', mn: '🇲🇳', ko: '🇰🇷' };
+  const optionsHTML = SUPPORTED_LANGS.map(lng => {
+    const isActive = currentLang === lng;
+    return `
+      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setLang('${lng}')">
+        <span class="theme-swatch" style="background:var(--paper-2);font-size:1.4rem">
+          ${isActive ? `<span class="theme-swatch-check" style="color:var(--hanko)">${icon('check')}</span>` : flagOf[lng]}
+        </span>
+        <span class="theme-label">${esc(LANG_NAMES[lng])}</span>
+      </button>
+    `;
+  }).join('');
+  box.innerHTML = `<div class="theme-grid">${optionsHTML}</div>`;
 }
 
 function renderThemeSection() {
@@ -1524,14 +2320,14 @@ function renderThemeSection() {
   const current = getCurrentTheme();
   const followSystem = getFollowSystemTheme();
 
-  const swatchesHTML = THEMES.map(t => {
-    const isActive = current === t.id;
+  const swatchesHTML = THEMES.map(th => {
+    const isActive = current === th.id;
     return `
-      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${t.id}')">
-        <span class="theme-swatch" style="background:${t.paper}">
-          ${isActive ? `<span class="theme-swatch-check" style="color:${t.accent}">${icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${t.accent}"></span>`}
+      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${th.id}')">
+        <span class="theme-swatch" style="background:${th.paper}">
+          ${isActive ? `<span class="theme-swatch-check" style="color:${th.accent}">${icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${th.accent}"></span>`}
         </span>
-        <span class="theme-label">${esc(t.label)}</span>
+        <span class="theme-label">${esc(th.label)}</span>
       </button>
     `;
   }).join('');
@@ -1539,10 +2335,10 @@ function renderThemeSection() {
   box.innerHTML = `
     <div class="theme-grid">${swatchesHTML}</div>
     <div class="settings-item" style="border-top:var(--bd) solid var(--line);padding-top:.8rem">
-      <div class="si-label">Sistem temasını takip et<small>Cihazın karanlık modu açıksa Sumi otomatik seçilir</small></div>
+      <div class="si-label">${t('followSystemTheme')}<small>${t('followSystemThemeHint')}</small></div>
       <select class="si-input" id="cfg-follow-system" style="text-align:left" onchange="setFollowSystemTheme(this.value === '1')">
-        <option value="1" ${followSystem ? 'selected' : ''}>Açık</option>
-        <option value="0" ${!followSystem ? 'selected' : ''}>Kapalı</option>
+        <option value="1" ${followSystem ? 'selected' : ''}>${t('onLabel')}</option>
+        <option value="0" ${!followSystem ? 'selected' : ''}>${t('offLabel')}</option>
       </select>
     </div>
   `;
@@ -1554,33 +2350,33 @@ function renderSyncSection() {
 
   if (!syncConfigured()) {
     el.innerHTML = `
-      <p class="text-muted">Bulut senkron henüz kurulmadı.</p>
-      <p class="form-hint mt-1">Geliştirici notu: index.html içinde SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurman gerekiyor (bkz. KURULUM.md).</p>
+      <p class="text-muted">${t('syncNotSetUp')}</p>
+      <p class="form-hint mt-1">${t('syncDevNote')}</p>
     `;
     return;
   }
 
   if (syncEnabled && syncCode) {
     el.innerHTML = `
-      <p style="font-weight:700">Bağlı giriş kodu:</p>
+      <p style="font-weight:700">${t('connectedCodeLabel')}</p>
       <p style="font-size:1.8rem;font-weight:800;letter-spacing:.1em;margin:.3rem 0;color:var(--hanko)">${esc(syncCode)}</p>
-      <p class="text-muted">Diğer cihazda (telefon/PC) aynı kodu girerek bu kartları orada da görebilirsin.</p>
+      <p class="text-muted">${t('syncCodeHint')}</p>
       <div class="btn-row">
-        <button class="btn btn-ghost tap" onclick="manualSync()">${icon('sync')}Şimdi senkronize et</button>
-        <button class="btn btn-danger tap" onclick="confirmDisconnectSync()">Bağlantıyı kes</button>
+        <button class="btn btn-ghost tap" onclick="manualSync()">${icon('sync')}${t('syncNowBtn')}</button>
+        <button class="btn btn-danger tap" onclick="confirmDisconnectSync()">${t('disconnectBtn')}</button>
       </div>
     `;
   } else {
     el.innerHTML = `
-      <p class="text-muted" style="margin-bottom:.8rem">Telefon ve bilgisayarın otomatik senkronize olması için bir giriş kodu oluştur, diğer cihazda da aynı kodu gir.</p>
+      <p class="text-muted" style="margin-bottom:.8rem">${t('syncSetupHint')}</p>
       <div class="btn-row">
-        <button class="btn btn-primary tap" onclick="createAndConnectCode()">${icon('spark')}Yeni kod oluştur</button>
+        <button class="btn btn-primary tap" onclick="createAndConnectCode()">${icon('spark')}${t('createCodeBtn')}</button>
       </div>
       <div class="form-group mt-2">
-        <label>Veya var olan bir kodu gir</label>
-        <input id="sync-code-input" placeholder="ör: 482913" inputmode="numeric" maxlength="6">
+        <label>${t('enterExistingCodeLabel')}</label>
+        <input id="sync-code-input" placeholder="${t('codeExamplePlaceholder')}" inputmode="numeric" maxlength="6">
       </div>
-      <button class="btn btn-block btn-ghost tap" onclick="enterSyncCode()">Bu kodla bağlan</button>
+      <button class="btn btn-block btn-ghost tap" onclick="enterSyncCode()">${t('connectWithCodeBtn')}</button>
     `;
   }
 }
@@ -1590,18 +2386,18 @@ async function createAndConnectCode() {
   const ok = await connectSyncCode(code);
   if (ok) {
     renderSyncSection();
-    showToast('✓ Kod oluşturuldu: ' + code, 3500);
+    showToast('✓ ' + t('codeCreatedMsg', {code}), 3500);
   }
 }
 
 async function enterSyncCode() {
   const input = document.getElementById('sync-code-input');
   const code = input.value.trim();
-  if (!/^[0-9]{4,8}$/.test(code)) { showToast('⚠ Geçerli bir kod gir (4-8 hane)'); return; }
+  if (!/^[0-9]{4,8}$/.test(code)) { showToast('⚠ ' + t('invalidCodeMsg')); return; }
   const ok = await connectSyncCode(code);
   if (ok) {
     renderSyncSection();
-    showToast('✓ Bağlandı ve senkronize edildi');
+    showToast('✓ ' + t('connectedAndSyncedMsg'));
   }
 }
 
@@ -1617,28 +2413,28 @@ async function manualSync() {
     saveState(state);
     await cloudPush(syncCode, state);
     syncStatus = 'synced';
-    showToast('✓ Senkronize edildi');
+    showToast('✓ ' + t('syncedMsg'));
     renderDeckList();
     renderGlobalStats();
   } catch (e) {
     syncStatus = 'error';
-    showToast('⚠ Senkron hatası: ' + e.message);
+    showToast('⚠ ' + t('syncErrorMsg') + ': ' + e.message);
   }
   renderSyncBadge();
 }
 
 function confirmDisconnectSync() {
-  if (!confirm('Bu cihazı senkron koddan ayırmak istediğine emin misin? Veriler bu cihazda yerel olarak kalır, ama otomatik senkron durur.')) return;
+  if (!confirm(t('disconnectConfirm'))) return;
   disconnectSync();
   renderSyncSection();
-  showToast('Bağlantı kesildi');
+  showToast(t('disconnectedMsg'));
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────
 let state = {
   version: 1,
   settings: { ...CONFIG },
-  stats: { reviewsByDate: {}, streak: 0, shields: 1, lastShieldWeekStart: null },
+  stats: { reviewsByDate: {}, streak: 0, shields: 1, lastShieldWeekStart: null, dailyActivity: {}, totalAppSeconds: 0 },
   decks: [],
 };
 
@@ -1667,19 +2463,32 @@ function migrateStats(stats) {
   if (typeof s.lastShieldWeekStart === 'undefined') s.lastShieldWeekStart = null;
   if (typeof s.reviewsByDate !== 'object' || !s.reviewsByDate) s.reviewsByDate = {};
   if (typeof s.streak !== 'number') s.streak = 0;
+  // v1.2.1: Günlük aktivite detayı (deste bazlı kart/süre dökümü) eklendi.
+  // Eski kullanıcılarda yoktur; boş objeyle başlatılır, geçmiş günler
+  // için veri olmaz (zaten o zaman ölçülmüyordu) ama yeni günlerden
+  // itibaren dolmaya başlar.
+  if (typeof s.dailyActivity !== 'object' || !s.dailyActivity) s.dailyActivity = {};
+  if (typeof s.totalAppSeconds !== 'number') s.totalAppSeconds = 0;
   return s;
 }
 
 async function loadApp() {
+  applyStaticTranslations();
+  // PC'de native menü ilk açılışta da (kullanıcı hiç dil değiştirmese
+  // bile) algılanan/kayıtlı dile göre kurulsun.
+  if (window.electronAPI?.setAppLang) window.electronAPI.setAppLang(currentLang);
   const saved = loadState();
   if (saved) {
     state = saved;
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
-    state.stats = migrateStats(state.stats);
   }
+  // Kayıtlı state olsun ya da olmasın (ilk açılış dahil) HER ZAMAN
+  // migrateStats çalışır — varsayılan state objesi eksiksiz olsa bile,
+  // gelecekte yeni bir stats alanı eklenirse burası tek güvenlik ağı olur.
+  state.stats = migrateStats(state.stats);
   if (!testStorage()) {
     document.getElementById('storage-warning').style.display = 'block';
-    showToast('⚠ Veriler bu oturumda kalıcı değil', 4000);
+    showToast('⚠ ' + t('dataNotPersistentTitle'), 4000);
   }
 
   // Daha önce bağlanılmış bir senkron kodu varsa otomatik bağlan
@@ -1854,13 +2663,13 @@ function _computeSRS(card, grade, preview) {
 
 function fmtDur(ms) {
   const min = Math.round(ms / 60000);
-  if (min < 60) return min + ' dk';
-  if (min < 1440) return Math.round(min / 60) + ' sa';
-  return Math.round(min / 1440) + ' gün';
+  if (min < 60) return min + t('unitMin');
+  if (min < 1440) return Math.round(min / 60) + t('unitHour');
+  return Math.round(min / 1440) + t('unitDay');
 }
 
 // ─── QUEUE BUILDER ────────────────────────────────────────────────────
-function buildQueue(deck, masteredOnly = false) {
+function buildQueue(deck, masteredOnly = false, outCardDeckMap) {
   const now = nowMs();
   const todayStr = today();
   const newToday = state.stats.reviewsByDate[todayStr + '_new'] || 0;
@@ -1868,7 +2677,14 @@ function buildQueue(deck, masteredOnly = false) {
 
   let learning = [], review = [], newCards = [];
 
-  for (const card of deck.cards) {
+  let cards;
+  if (isFolder(deck)) {
+    cards = collectLeafCards(deck, outCardDeckMap);
+  } else {
+    cards = deck.cards;
+    if (outCardDeckMap) for (const c of cards) outCardDeckMap.set(c.id, deck.id);
+  }
+  for (const card of cards) {
     if (masteredOnly && !card.srs.mastered) continue;
     if (!masteredOnly && card.srs.mastered) {
       if (card.srs.state === 'review' && card.srs.due <= now) review.push(card);
@@ -1886,19 +2702,30 @@ function buildQueue(deck, masteredOnly = false) {
 }
 
 // ─── STATS HELPERS ────────────────────────────────────────────────────
-function recordReview(isNew) {
-  const t = today();
-  const isFirstReviewToday = !state.stats.reviewsByDate[t];
-  state.stats.reviewsByDate[t] = (state.stats.reviewsByDate[t] || 0) + 1;
+function recordReview(isNew, deckId) {
+  const todayStr = today();
+  const isFirstReviewToday = !state.stats.reviewsByDate[todayStr];
+  state.stats.reviewsByDate[todayStr] = (state.stats.reviewsByDate[todayStr] || 0) + 1;
   if (isNew) {
-    const k = t + '_new';
+    const k = todayStr + '_new';
     state.stats.reviewsByDate[k] = (state.stats.reviewsByDate[k] || 0) + 1;
   }
+  if (deckId) recordDeckActivity(todayStr, deckId, isNew);
   if (isFirstReviewToday) {
     applyShieldsForMissedDays();
   }
   updateStreak();
   awardWeeklyShieldIfEarned();
+}
+
+// Günlük aktivite dökümüne (hangi destede kaç yeni/tekrar kart) bir kart
+// daha ekler. Süre buraya değil, ayrı bir interval (recordStudySeconds)
+// tarafından eklenir — kart sayısı ile süre farklı tetikleyicilere bağlı.
+function recordDeckActivity(dateStr, deckId, isNew) {
+  const day = state.stats.dailyActivity[dateStr] || (state.stats.dailyActivity[dateStr] = {});
+  const deck = day[deckId] || (day[deckId] = { newCards: 0, reviewCards: 0, seconds: 0 });
+  if (isNew) deck.newCards++;
+  else deck.reviewCards++;
 }
 
 // Bugün ilk kez tekrar yapılıyorsa, son çalışılan günden bugüne kadar
@@ -1908,11 +2735,11 @@ function recordReview(isNew) {
 function applyShieldsForMissedDays() {
   if (!cfg().autoUseShield) return;
   const dates = Object.keys(state.stats.reviewsByDate).filter(k => !k.includes('_new')).sort();
-  const t = today();
-  const priorDates = dates.filter(d => d !== t);
+  const todayStr = today();
+  const priorDates = dates.filter(d => d !== todayStr);
   if (!priorDates.length) return;
   const lastActive = priorDates[priorDates.length - 1];
-  const gap = dateStrDiffDays(t, lastActive) - 1; // aradaki tamamen boş gün sayısı
+  const gap = dateStrDiffDays(todayStr, lastActive) - 1; // aradaki tamamen boş gün sayısı
   if (gap <= 0) return;
 
   let shieldsUsed = 0;
@@ -1924,7 +2751,7 @@ function applyShieldsForMissedDays() {
     shieldsUsed++;
   }
   if (shieldsUsed > 0) {
-    showToast(`🛡 ${shieldsUsed} kalkan kullanıldı, streak korundu`, 2600);
+    showToast(`🛡 ${t('shieldsUsedMsg', {n: shieldsUsed})}`, 2600);
   }
 }
 
@@ -1935,13 +2762,13 @@ function hasActivityOn(dateStr) {
 }
 
 function updateStreak() {
-  const t = today();
-  if (!hasActivityOn(t)) {
-    const yest = addDaysToDateStr(t, -1);
+  const todayStr = today();
+  if (!hasActivityOn(todayStr)) {
+    const yest = addDaysToDateStr(todayStr, -1);
     if (!hasActivityOn(yest)) { state.stats.streak = 0; return; }
   }
   let streak = 0;
-  let cursor = t;
+  let cursor = todayStr;
   while (hasActivityOn(cursor)) {
     streak++;
     cursor = addDaysToDateStr(cursor, -1);
@@ -1953,8 +2780,8 @@ function updateStreak() {
 // bitince (yani bugün o haftanın son günüyse ya da sonraki haftaya
 // geçildiyse) +1 kalkan verir. Sınırsız birikebilir.
 function awardWeeklyShieldIfEarned() {
-  const t = today();
-  const curWeekStart = weekStartOf(t);
+  const todayStr = today();
+  const curWeekStart = weekStartOf(todayStr);
   const lastAwardedWeek = state.stats.lastShieldWeekStart;
 
   if (lastAwardedWeek === curWeekStart) return; // bu hafta için zaten kontrol edildi
@@ -1973,7 +2800,7 @@ function awardWeeklyShieldIfEarned() {
     const fullyActiveWeek = allSevenDays.every(d => hasActivityOn(d));
     if (fullyActiveWeek) {
       state.stats.shields++;
-      showToast('🛡 Bir haftayı kesintisiz tamamladın, +1 kalkan!', 2600);
+      showToast('🛡 ' + t('weeklyShieldEarnedMsg'), 2600);
     }
     weekCursor = addDaysToDateStr(weekCursor, 7);
   }
@@ -1982,14 +2809,14 @@ function awardWeeklyShieldIfEarned() {
 
 function globalStats() {
   let total = 0, mastered = 0;
-  const t = today();
+  const todayStr = today();
   for (const deck of state.decks) {
-    for (const card of deck.cards) {
+    for (const card of collectLeafCards(deck)) {
       total++;
       if (card.srs.mastered) mastered++;
     }
   }
-  return { total, mastered, todayCount: state.stats.reviewsByDate[t] || 0, streak: state.stats.streak || 0 };
+  return { total, mastered, todayCount: state.stats.reviewsByDate[todayStr] || 0, streak: state.stats.streak || 0 };
 }
 
 // Streak gün sayısına göre alevin görsel evrimi. Eşikler: 0-6 soluk,
@@ -2010,15 +2837,15 @@ function renderStreakCard() {
 
   // Son 7 gün (bugün dahil, en eskiden en yeniye — bugün en sağda).
   // Henüz yaşanmamış gelecek günler hiç gösterilmez.
-  const t = today();
-  const days = Array.from({ length: 7 }, (_, i) => addDaysToDateStr(t, i - 6));
-  const dayLabels = ['Pzt','Sal','Çar','Prş','Cum','Cmt','Paz']; // 0=Pzt
+  const todayStr = today();
+  const days = Array.from({ length: 7 }, (_, i) => addDaysToDateStr(todayStr, i - 6));
+  const dayLabels = t('dayLabelsShort').split(','); // 0=Pzt
 
   const dotsHTML = days.map(d => {
     const dow = ((dateStrToEpochDay(d) % 7) + 10) % 7; // 0=Pzt
     const active = !!state.stats.reviewsByDate[d];
     const shielded = !active && !!state.stats.reviewsByDate[d + '_shielded'];
-    const isToday = d === t;
+    const isToday = d === todayStr;
     const dotCls = ['streak-day-dot'];
     if (active) dotCls.push('is-active');
     else if (shielded) dotCls.push('is-shielded');
@@ -2031,8 +2858,8 @@ function renderStreakCard() {
   card.innerHTML = `
     <div class="streak-flame ${lvl}">${icon('flame')}</div>
     <div class="streak-info">
-      <div class="streak-count">${streak}<span class="unit">günlük seri</span></div>
-      <div class="streak-sub">${icon('shield')} ${shields} kalkanın var</div>
+      <div class="streak-count">${streak}<span class="unit">${t('streakDays')}</span></div>
+      <div class="streak-sub">${icon('shield')} ${t('shieldsCount', {n: shields})}</div>
     </div>
     <div class="streak-week-grid">${dotsHTML}</div>
   `;
@@ -2049,23 +2876,23 @@ function renderStreakScreen() {
   const streak = state.stats.streak || 0;
   const shields = state.stats.shields || 0;
   const lvl = flameLevel(streak);
-  const milestoneText = streak >= 100 ? 'Efsanevi seri! 🔥'
-    : streak >= 30 ? 'Alev büyüyor, devam!'
-    : streak >= 7 ? 'Güzel bir tempo tuttun'
-    : 'Her gün biraz çalış, alev büyüsün';
+  const milestoneText = streak >= 100 ? t('milestone100')
+    : streak >= 30 ? t('milestone30')
+    : streak >= 7 ? t('milestone7')
+    : t('milestone0');
 
   screen.innerHTML = `
     <div class="card streak-detail-head">
       <div class="streak-detail-flame ${lvl}">${icon('flame')}</div>
       <div>
-        <div class="streak-detail-count">${streak} gün</div>
+        <div class="streak-detail-count">${streak === 1 && currentLang === 'en' ? '1 day' : t('streakDayCount', {n: streak})}</div>
         <div class="streak-detail-label">${esc(milestoneText)}</div>
       </div>
     </div>
 
     <div class="card shield-row">
       <div class="shield-icon">${icon('shield')}</div>
-      <div class="shield-text"><span class="shield-count">${shields}</span> kalkanın var — bir gün kaçırırsan serini otomatik korur.</div>
+      <div class="shield-text"><span class="shield-count">${shields}</span> ${t('shieldExplain')}</div>
     </div>
 
     <div class="card" id="cal-container"></div>
@@ -2080,16 +2907,66 @@ function changeCalendarMonth(delta) {
   renderCalendarGrid();
 }
 
+// O günkü toplam (genel) süreye göre takvim hücresine bir yoğunluk
+// seviyesi (0-3) atar — daha çok çalışılan gün, daha koyu/belirgin
+// görünsün diye. Eşikler: <5dk hafif, <20dk orta, 20dk+ yoğun.
+function activityLevelClass(dateStr) {
+  const day = state.stats.dailyActivity[dateStr];
+  const seconds = day?._totalSeconds || 0;
+  if (seconds >= 1200) return 'lvl-3'; // 20+ dk
+  if (seconds >= 300) return 'lvl-2';  // 5-20 dk
+  if (seconds > 0) return 'lvl-1';     // 0-5 dk
+  return 'lvl-0';
+}
+
+function showDayDetailModal(dateStr) {
+  const day = state.stats.dailyActivity[dateStr] || {};
+  const totalSeconds = day._totalSeconds || 0;
+  const deckEntries = Object.entries(day).filter(([k]) => k !== '_totalSeconds');
+
+  const dateLabel = formatDateForDisplay(dateStr);
+
+  let bodyHTML = `<div class="day-detail-total">${icon('clock')} ${t('totalTimeLabel', {time: fmtDur(totalSeconds * 1000)})}</div>`;
+
+  if (!deckEntries.length) {
+    bodyHTML += `<p class="text-muted mt-2">${t('noActivityThisDayMsg')}</p>`;
+  } else {
+    bodyHTML += `<div class="day-detail-list">`;
+    for (const [deckId, info] of deckEntries) {
+      const deck = findDeck(deckId);
+      const deckName = deck ? esc(deck.name) : t('deletedDeckLabel');
+      bodyHTML += `
+        <div class="day-detail-item">
+          <div class="ddi-name">${deckName}</div>
+          <div class="ddi-stats">
+            ${info.newCards ? `<span class="badge badge-sky">${info.newCards} ${t('newC')}</span>` : ''}
+            ${info.reviewCards ? `<span class="badge badge-hanko">${info.reviewCards} ${t('dueC')}</span>` : ''}
+            <span class="ddi-time">${fmtDur(info.seconds * 1000)}</span>
+          </div>
+        </div>`;
+    }
+    bodyHTML += `</div>`;
+  }
+
+  openModal(dateLabel, bodyHTML);
+}
+
+function formatDateForDisplay(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const monthNames = t('monthNames').split(',');
+  return `${d} ${monthNames[m-1]} ${y}`;
+}
+
 function renderCalendarGrid() {
   const container = document.getElementById('cal-container');
   if (!container) return;
 
   const [y, m] = calendarViewMonth.split('-').map(Number);
-  const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const monthNames = t('monthNames').split(',');
   const firstOfMonth = `${y}-${String(m).padStart(2,'0')}-01`;
   const firstDow = ((dateStrToEpochDay(firstOfMonth) % 7) + 10) % 7; // 0=Pzt
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const t = today();
+  const todayStr = today();
 
   let cellsHTML = '';
   for (let i = 0; i < firstDow; i++) cellsHTML += `<div class="cal-day is-empty"></div>`;
@@ -2097,51 +2974,160 @@ function renderCalendarGrid() {
     const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const active = !!state.stats.reviewsByDate[dateStr];
     const shielded = !active && !!state.stats.reviewsByDate[dateStr + '_shielded'];
-    const isToday = dateStr === t;
+    const isToday = dateStr === todayStr;
     const cls = ['cal-day'];
     if (active) cls.push('is-active');
     else if (shielded) cls.push('is-shielded');
     if (isToday) cls.push('is-today');
-    cellsHTML += `<div class="${cls.join(' ')}">${day}</div>`;
+    if (active) cls.push(activityLevelClass(dateStr));
+    cellsHTML += `<button type="button" class="${cls.join(' ')}" onclick="showDayDetailModal('${dateStr}')">${day}</button>`;
   }
 
+  const weekdayLetters = t('weekdayLetters').split(',');
   container.innerHTML = `
     <div class="cal-nav">
-      <button class="icon-btn tap" onclick="changeCalendarMonth(-1)" aria-label="Önceki ay">${icon('chevL')}</button>
+      <button class="icon-btn tap" onclick="changeCalendarMonth(-1)" aria-label="${t('prevMonth')}">${icon('chevL')}</button>
       <span class="cal-nav-title">${monthNames[m-1]} ${y}</span>
-      <button class="icon-btn tap" onclick="changeCalendarMonth(1)" aria-label="Sonraki ay">${icon('chevR')}</button>
+      <button class="icon-btn tap" onclick="changeCalendarMonth(1)" aria-label="${t('nextMonth')}">${icon('chevR')}</button>
     </div>
     <div class="cal-grid">
-      ${['P','S','Ç','P','C','C','P'].map(d => `<div class="cal-weekday">${d}</div>`).join('')}
+      ${weekdayLetters.map(d => `<div class="cal-weekday">${d}</div>`).join('')}
       ${cellsHTML}
     </div>
     <div class="cal-legend">
-      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--hanko)"></span>Çalışıldı</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--sky)"></span>Kalkanla korundu</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--hanko)"></span>${t('studiedLegend')}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--sky)"></span>${t('shieldedLegend')}</span>
     </div>
   `;
 }
 
 function deckStats(deck) {
   const now = nowMs();
+  const cards = isFolder(deck) ? collectLeafCards(deck) : deck.cards;
   let newC = 0, learning = 0, due = 0, mastered = 0;
-  for (const c of deck.cards) {
+  for (const c of cards) {
     if (c.srs.mastered) mastered++;
     else if (c.srs.state === 'new') newC++;
     else if (c.srs.state === 'learning') learning++;
     if (c.srs.state !== 'new' && c.srs.due <= now) due++;
   }
-  return { newC, learning, due, mastered, total: deck.cards.length };
+  return { newC, learning, due, mastered, total: cards.length };
+}
+
+// ─── KLASÖR / HİYERARŞİ HELPERS ─────────────────────────────────────────
+// state.decks artık iç içe olabilir: her öğe ya bir DESTE
+// ({ id, name, cards: [...] }) ya da bir KLASÖR
+// ({ id, name, type: 'folder', children: [...] }) olabilir. Eski kayıtlı
+// verilerde type alanı hiç yoktur — bu yüzden isFolder() açıkça
+// type === 'folder' kontrolü yapar, yoksa her zaman "deste" sayılır
+// (geriye dönük tam uyumluluk).
+function isFolder(item) { return !!item && item.type === 'folder'; }
+
+// Tüm ağaçta (iç içe klasörler dahil) id'ye göre derinlemesine arama.
+function findDeckDeep(id, list) {
+  list = list || state.decks;
+  for (const item of list) {
+    if (item.id === id) return item;
+    if (isFolder(item)) {
+      const found = findDeckDeep(id, item.children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// Bir öğenin İÇİNDE BULUNDUĞU diziyi (parent array) bulur — taşıma/silme
+// işlemlerinde "buradan çıkar, oraya ekle" yapabilmek için gerekli.
+// Bulunamazsa null döner.
+function findParentArray(id, list) {
+  list = list || state.decks;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].id === id) return list;
+    if (isFolder(list[i])) {
+      const found = findParentArray(id, list[i].children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// Bir klasörün (iç içe alt klasörler dahil) içindeki TÜM yaprak
+// destelerin kartlarını tek bir düz listede toplar — "Tümünü Çalış" için.
+// outMap verilirse (Map), her kartın id'sini gerçek (yaprak) deste id'sine
+// eşler — klasörün "Tümünü Çalış" modunda, çalışılan bir kartın HANGİ
+// alt destede olduğunu bilmek için (günlük aktivite dökümünde kullanılır).
+function collectLeafCards(item, outMap) {
+  if (!isFolder(item)) {
+    if (outMap) for (const c of item.cards) outMap.set(c.id, item.id);
+    return item.cards.slice();
+  }
+  let all = [];
+  for (const child of item.children) all = all.concat(collectLeafCards(child, outMap));
+  return all;
+}
+
+// Bir klasörün altındaki tüm yaprak desteleri (kendisi hariç) düz liste
+// olarak toplar — istatistik toplama ve "klasöre taşı" hedef listesi için.
+function collectLeafDecks(item) {
+  if (!isFolder(item)) return [item];
+  let all = [];
+  for (const child of item.children) all = all.concat(collectLeafDecks(child));
+  return all;
 }
 
 // ─── DECK / CARD HELPERS ──────────────────────────────────────────────
-function findDeck(id) { return state.decks.find(d => d.id === id); }
+function findDeck(id) { return findDeckDeep(id); }
 function createDeck(name) {
   const d = { id: uid(), name, createdAt: Date.now(), cards: [] };
   state.decks.push(d);
   save();
   return d;
 }
+function createFolder(name) {
+  const f = { id: uid(), name, createdAt: Date.now(), type: 'folder', children: [] };
+  state.decks.push(f);
+  save();
+  return f;
+}
+
+// Bir öğeyi (deste ya da klasör) hedef klasörün içine taşır. targetFolderId
+// null ise kök seviyeye (state.decks) taşır. SRS verisi/kart içeriği hiç
+// dokunulmadan aynen korunur — sadece hangi dizide durduğu değişir.
+function moveItemToFolder(itemId, targetFolderId) {
+  const item = findDeckDeep(itemId);
+  if (!item) return false;
+  if (itemId === targetFolderId) return false; // kendi içine taşınamaz
+
+  const sourceArray = findParentArray(itemId);
+  if (!sourceArray) return false;
+
+  // Bir klasörü, kendi alt klasörlerinden birinin içine taşımayı engelle
+  // (döngüsel referans oluşturmasın).
+  if (isFolder(item) && targetFolderId) {
+    const targetIsDescendant = (function check(children) {
+      for (const c of children) {
+        if (c.id === targetFolderId) return true;
+        if (isFolder(c) && check(c.children)) return true;
+      }
+      return false;
+    })(item.children);
+    if (targetIsDescendant) return false;
+  }
+
+  const idx = sourceArray.indexOf(item);
+  sourceArray.splice(idx, 1);
+
+  if (targetFolderId) {
+    const target = findDeckDeep(targetFolderId);
+    if (!target || !isFolder(target)) { sourceArray.push(item); return false; } // geri al, hedef geçersiz
+    target.children.push(item);
+  } else {
+    state.decks.push(item);
+  }
+  save();
+  return true;
+}
+
 function makeCard(kanji, furigana, meaningTr, exampleJp, exampleTr, exampleFuriganaMap) {
   return {
     id: uid(), kanji, furigana, meaningTr,
@@ -2275,18 +3261,21 @@ function setupFuriganaAssist(kanjiInputId, furiganaInputId, suggestBoxId) {
   const fresh = kanjiInput.cloneNode(true);
   kanjiInput.parentNode.replaceChild(fresh, kanjiInput);
   kanjiInput = fresh;
+  // cloneNode dataset'i de kopyalar ama event listener'ları kopyalamaz;
+  // setupLivePreview'in bu elemente tekrar bağlanabilmesi için bayrağı temizle.
+  delete kanjiInput.dataset.livePreviewBound;
 
   const runLookup = debounce(async () => {
     const text = kanjiInput.value.trim();
     if (!text) { box.innerHTML = ''; return; }
-    box.innerHTML = `<span class="furigana-chip is-loading">Okunuş aranıyor…</span>`;
+    box.innerHTML = `<span class="furigana-chip is-loading">${t('searchingReadingMsg')}</span>`;
     const readings = await fetchReadingSuggestions(text);
     // Kullanıcı bu sırada alanı değiştirmiş olabilir; güncel değeri tekrar kontrol et
     if (kanjiInput.value.trim() !== text) return;
     if (!readings || !readings.length) {
       box.innerHTML = furiganaInput.value.trim()
         ? ''
-        : `<span class="furigana-chip is-empty">Otomatik okunuş bulunamadı, elle yazabilirsin</span>`;
+        : `<span class="furigana-chip is-empty">${t('readingNotFoundMsg')}</span>`;
       return;
     }
     box.innerHTML = readings.map(r => `<button type="button" class="furigana-chip tap">${esc(r)}</button>`).join('');
@@ -2340,6 +3329,9 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   const freshInput = input.cloneNode(true);
   input.parentNode.replaceChild(freshInput, input);
   input = freshInput;
+  // cloneNode dataset'i de kopyalar ama event listener'ları kopyalamaz;
+  // setupLivePreview'in bu elemente tekrar bağlanabilmesi için bayrağı temizle.
+  delete input.dataset.livePreviewBound;
   const freshBtn = btn.cloneNode(true);
   btn.parentNode.replaceChild(freshBtn, btn);
   btn = freshBtn;
@@ -2389,14 +3381,14 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
       return html;
     }
 
-    const tokensHTML = tokens.map((t, i) => {
-      if (!t.isKanji) return esc(t.text);
-      return renderKanjiBlock(t.text);
+    const tokensHTML = tokens.map((tok) => {
+      if (!tok.isKanji) return esc(tok.text);
+      return renderKanjiBlock(tok.text);
     }).join('');
 
     editor.innerHTML = `
       <div class="fm-editor">
-        <div class="fm-editor-hint">Furigana eklemek istediğin kanjiye/kelimeye dokun.</div>
+        <div class="fm-editor-hint">${t('tapToMarkHint')}</div>
         <div class="fm-sentence">${tokensHTML}</div>
         <div id="${editorId}-popover"></div>
       </div>
@@ -2410,7 +3402,7 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   async function onTokenClick(text) {
     const pop = document.getElementById(`${editorId}-popover`);
     if (!pop) return;
-    pop.innerHTML = `<div class="fm-token-popover">Okunuş aranıyor…</div>`;
+    pop.innerHTML = `<div class="fm-token-popover">${t('searchingReadingMsg')}</div>`;
     const readings = await fetchReadingSuggestions(text);
     if (!readings || !readings.length) {
       const chars = [...text];
@@ -2420,16 +3412,16 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
         splitBlocks.add(text);
         renderTokenEditor();
         const pop2 = document.getElementById(`${editorId}-popover`);
-        if (pop2) pop2.innerHTML = `<div class="fm-token-popover fm-editor-hint">"${esc(text)}" için otomatik okunuş bulunamadı, kelimeyi tek tek kanjiye böldüm — birini seç.</div>`;
+        if (pop2) pop2.innerHTML = `<div class="fm-token-popover fm-editor-hint">${t('blockSplitMsg', {text: esc(text)})}</div>`;
         return;
       }
       pop.innerHTML = `
         <div class="fm-token-popover">
           <div class="form-group" style="margin-bottom:.5rem">
-            <label>"${esc(text)}" için okunuş (elle yaz)</label>
+            <label>${t('manualReadingLabel', {text: esc(text)})}</label>
             <input type="text" id="${editorId}-manual">
           </div>
-          <button type="button" class="btn btn-primary tap btn-sm" id="${editorId}-manual-save">Kaydet</button>
+          <button type="button" class="btn btn-primary tap btn-sm" id="${editorId}-manual-save">${t('saveBtn')}</button>
         </div>
       `;
       document.getElementById(`${editorId}-manual-save`).addEventListener('click', () => {
@@ -2460,7 +3452,82 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
 // ─── ROUTER ───────────────────────────────────────────────────────────
 let currentView = 'decks';
 let currentDeckId = null;
-let studyMastered = false;
+
+// ─── SÜRE TAKİBİ (genel uygulama kullanımı + deste bazlı çalışma) ──────
+// İki ayrı sayaç: (1) appSessionStart — sayfa her ne ekranda olursa
+// olsun, GÖRÜNÜR olduğu sürece geçen süreyi ölçer (genel kullanım).
+// (2) studySessionStart — SADECE study/review ekranındayken, hangi
+// destenin açık olduğunu bilerek ayrı ölçer (deste bazlı döküm).
+// Her ikisi de sekme/uygulama arka plana alınınca (visibilitychange)
+// duraklatılır; gerçek geçen süre setInterval'a değil Date.now() farkına
+// dayanır (arka planda interval'lar yavaşlayabilir/durabilir, ama
+// document.visibilityState her zaman güvenilirdir).
+let appSessionStart = null;
+let studySessionStart = null;
+let studySessionDeckId = null;
+
+function flushAppSeconds() {
+  if (appSessionStart === null) return;
+  const elapsed = Math.floor((Date.now() - appSessionStart) / 1000);
+  appSessionStart = Date.now();
+  if (elapsed <= 0) return;
+  state.stats.totalAppSeconds = (state.stats.totalAppSeconds || 0) + elapsed;
+  const todayStr = today();
+  const day = state.stats.dailyActivity[todayStr] || (state.stats.dailyActivity[todayStr] = {});
+  day._totalSeconds = (day._totalSeconds || 0) + elapsed;
+}
+
+function flushStudySeconds() {
+  if (studySessionStart === null || !studySessionDeckId) return;
+  const elapsed = Math.floor((Date.now() - studySessionStart) / 1000);
+  studySessionStart = Date.now();
+  if (elapsed <= 0) return;
+  const todayStr = today();
+  const day = state.stats.dailyActivity[todayStr] || (state.stats.dailyActivity[todayStr] = {});
+  const deck = day[studySessionDeckId] || (day[studySessionDeckId] = { newCards: 0, reviewCards: 0, seconds: 0 });
+  deck.seconds += elapsed;
+}
+
+function startStudySessionTimer(deckId) {
+  flushStudySeconds(); // önceki deste varsa (nadir) kapat
+  studySessionDeckId = deckId;
+  studySessionStart = Date.now();
+}
+
+function stopStudySessionTimer() {
+  flushStudySeconds();
+  studySessionStart = null;
+  studySessionDeckId = null;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushAppSeconds();
+    appSessionStart = null;
+    if (studySessionStart !== null) { flushStudySeconds(); studySessionStart = null; }
+    save();
+  } else {
+    appSessionStart = Date.now();
+    if (studySessionDeckId && (currentView === 'study' || currentView === 'review')) {
+      studySessionStart = Date.now();
+    }
+  }
+});
+// Sekme/pencere tamamen kapanırken son saniyeleri de kaydet.
+window.addEventListener('beforeunload', () => {
+  flushAppSeconds();
+  flushStudySeconds();
+  saveState(state);
+});
+// Periyodik olarak (her 20 sn) diske yazalım — uzun bir oturumda
+// tarayıcı/uygulama beklenmedik kapanırsa veri kaybı minimuma insin.
+setInterval(() => {
+  if (document.visibilityState !== 'hidden') {
+    flushAppSeconds();
+    if (studySessionStart !== null) flushStudySeconds();
+    save();
+  }
+}, 20000);
 
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -2477,26 +3544,50 @@ function showView(name) {
   addBtn.style.display = 'flex';
   title.innerHTML = 'Stacks';
 
+  // study/review ekranından ÇIKILIYORSA (başka bir ekrana geçiliyorsa)
+  // deste-bazlı süre sayacını kapat. startStudy() zaten kendi sayacını
+  // açıyor; review modunun kendi başlatma noktası aşağıda ayrıca var.
+  if ((currentView === 'study' || currentView === 'review') && name !== currentView) {
+    stopStudySessionTimer();
+  }
+
   currentView = name;
   window.scrollTo(0, 0);
 
   if (name === 'decks') { renderDeckList(); renderGlobalStats(); }
   else if (name === 'deck') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; renderDeckDetail(); }
-  else if (name === 'study') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = '読む'; renderStudy(); }
-  else if (name === 'review') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = 'Gözden Geçir'; renderReview(); }
-  else if (name === 'streak') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = 'Çalışma Takvimi'; renderStreakScreen(); }
+  else if (name === 'study') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('studyTitle'); renderStudy(); }
+  else if (name === 'review') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('reviewTitle'); renderReview(); }
+  else if (name === 'streak') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('streakTitle'); renderStreakScreen(); }
   else if (name === 'add') { addBtn.style.display = 'none'; renderAddForm(); }
   else if (name === 'settings') { addBtn.style.display = 'none'; renderSettings(); }
+}
+
+// Dil değiştiğinde, o an açık olan ekranı baştan render eder ki dinamik
+// (JS içinde üretilen) metinler de yeni dile güncellensin.
+function rerenderCurrentView() {
+  if (typeof currentView === 'undefined' || !currentView) return;
+  showView(currentView);
 }
 
 function renderGlobalStats() {
   const s = globalStats();
   document.getElementById('global-stats').innerHTML = `
-    <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam kart</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşılan</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">Bugün</div></div>
+    <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${t('totalCards')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${t('mastered')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">${t('today')}</div></div>
   `;
   renderStreakCard();
+}
+
+// Hangi klasörlerin açık (genişletilmiş) olduğunu tutar — sayfa
+// yenilenince sıfırlanır, kalıcı olmasına gerek yok.
+let expandedFolders = new Set();
+
+function toggleFolderExpand(folderId) {
+  if (expandedFolders.has(folderId)) expandedFolders.delete(folderId);
+  else expandedFolders.add(folderId);
+  renderDeckList();
 }
 
 function renderDeckList() {
@@ -2504,32 +3595,274 @@ function renderDeckList() {
   const empty = document.getElementById('deck-list-empty');
   if (!state.decks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
+  container.innerHTML = renderDeckListItems(state.decks, 0);
+}
 
-  container.innerHTML = state.decks.map(deck => {
-    const s = deckStats(deck);
-    const qLen = buildQueue(deck).length;
-    return `
-    <div class="card">
+// list: o seviyedeki öğeler (deste/klasör karışık). depth: iç içe
+// girinti seviyesi (görsel olarak hafif kayma vermek için).
+function renderDeckListItems(list, depth) {
+  return list.map(item => isFolder(item) ? renderFolderCard(item, depth) : renderDeckCard(item, depth)).join('');
+}
+
+// ─── DESTE/KLASÖR ÜÇ-NOKTA MENÜSÜ ───────────────────────────────────────
+function closeAllItemMenus() {
+  document.querySelectorAll('.dropdown-menu').forEach(m => { m.style.display = 'none'; m.innerHTML = ''; });
+}
+
+function toggleItemMenu(itemId) {
+  const menu = document.getElementById(`menu-${itemId}`);
+  if (!menu) return;
+  const wasOpen = menu.style.display === 'block';
+  closeAllItemMenus();
+  if (wasOpen) return; // sadece kapatmak istiyorduysa burada dur
+
+  const item = findDeck(itemId);
+  if (!item) return;
+  const folder = isFolder(item);
+
+  menu.innerHTML = `
+    <button class="dropdown-item tap" onclick="event.stopPropagation(); closeAllItemMenus(); showMoveToFolderModal('${itemId}')">${icon('folder')}${t('moveToFolder')}</button>
+    <button class="dropdown-item tap" onclick="event.stopPropagation(); closeAllItemMenus(); showRenameModal('${itemId}')">${icon('edit')}${t('rename')}</button>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item is-danger tap" onclick="event.stopPropagation(); closeAllItemMenus(); ${folder ? `deleteFolder('${itemId}')` : `deleteDeck('${itemId}')`}">${icon('trash')}${t('delete')}</button>
+  `;
+  menu.style.display = 'block';
+}
+
+// Menü dışına tıklanınca kapansın
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.dropdown-wrap')) closeAllItemMenus();
+});
+
+// ─── KLASÖRE TAŞI MODALI ─────────────────────────────────────────────
+function showMoveToFolderModal(itemId) {
+  const item = findDeck(itemId);
+  if (!item) return;
+
+  // Hedef olabilecek klasörleri (kendisi ve kendi alt ağacı HARİÇ) topla.
+  function collectFolderOptions(list, depth, exclude) {
+    let opts = [];
+    for (const it of list) {
+      if (!isFolder(it)) continue;
+      const disabled = exclude.has(it.id);
+      opts.push({ id: it.id, name: it.name, depth, disabled });
+      if (!disabled) opts = opts.concat(collectFolderOptions(it.children, depth + 1, exclude));
+    }
+    return opts;
+  }
+  const excludeIds = new Set([itemId]);
+  if (isFolder(item)) {
+    (function addDescendants(children) {
+      for (const c of children) { excludeIds.add(c.id); if (isFolder(c)) addDescendants(c.children); }
+    })(item.children);
+  }
+  const folderOptions = collectFolderOptions(state.decks, 0, excludeIds);
+
+  // Hedef olabilecek desteleri de topla (deste + deste = otomatik yeni klasör senaryosu)
+  function collectDeckOptions(list, depth, exclude) {
+    let opts = [];
+    for (const it of list) {
+      if (isFolder(it)) { opts = opts.concat(collectDeckOptions(it.children, depth + 1, exclude)); continue; }
+      if (exclude.has(it.id)) continue;
+      opts.push({ id: it.id, name: it.name, depth });
+    }
+    return opts;
+  }
+  const deckOptions = isFolder(item) ? [] : collectDeckOptions(state.decks, 0, excludeIds);
+
+  const currentParent = findParentArray(itemId);
+  const isAtRoot = currentParent === state.decks;
+
+  let html = `<div class="move-target-list">`;
+  if (!isAtRoot) {
+    html += `<button class="move-target-item tap" onclick="confirmMoveToFolder('${itemId}', null)">${icon('chevL')}${t('moveToRootBtn')}</button>`;
+  }
+  for (const opt of folderOptions) {
+    html += `<button class="move-target-item tap${opt.disabled ? ' is-disabled' : ''}" style="padding-left:${1 + opt.depth * .9}rem" onclick="confirmMoveToFolder('${itemId}', '${opt.id}')">${icon('folder')}${esc(opt.name)}</button>`;
+  }
+  for (const opt of deckOptions) {
+    html += `<button class="move-target-item tap" style="padding-left:${1 + opt.depth * .9}rem" onclick="showCreateFolderForMergeModal('${itemId}', '${opt.id}')">${icon('layers')}${esc(opt.name)} <span class="text-muted" style="margin-left:.3rem">(${t('createNewFolderHint')})</span></button>`;
+  }
+  html += `</div>`;
+  if (!folderOptions.length && !deckOptions.length && isAtRoot) {
+    html = `<p class="text-muted">${t('noOtherItemsMsg')}</p>`;
+  }
+
+  openModal(`"${esc(item.name)}" — ${t('moveToFolder')}`, html);
+}
+
+function confirmMoveToFolder(itemId, targetFolderId) {
+  const ok = moveItemToFolder(itemId, targetFolderId);
+  closeModal();
+  if (ok) { showToast('✓ ' + t('movedMsg')); renderDeckList(); }
+  else showToast('⚠ ' + t('moveFailedMsg'));
+}
+
+// İki deste birleştirilirken (biri diğerinin "klasöre taşı" hedefi
+// olarak seçilince) otomatik bir klasör oluşturulur, ama önce isim sorulur.
+function showCreateFolderForMergeModal(itemId, targetDeckId) {
+  openModal(t('newFolderNameTitle'), `
+    <div class="form-group">
+      <label>${t('folderNameLabel')}</label>
+      <input type="text" id="merge-folder-name" placeholder="例: N3 Kelimeler" value="${t('newFolderDefault')}">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="confirmCreateFolderForMerge('${itemId}', '${targetDeckId}')">${t('create')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
+    </div>
+  `);
+  setTimeout(() => {
+    const inp = document.getElementById('merge-folder-name');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 50);
+}
+
+function confirmCreateFolderForMerge(itemId, targetDeckId) {
+  const nameInput = document.getElementById('merge-folder-name');
+  const name = (nameInput?.value || '').trim() || t('newFolderDefault');
+
+  const targetArray = findParentArray(targetDeckId);
+  const targetItem = findDeck(targetDeckId);
+  if (!targetArray || !targetItem) { closeModal(); showToast('⚠ ' + t('targetNotFoundMsg')); return; }
+
+  // targetDeckId'yi kendi yerinde bir klasörle değiştir, ikisini de içine koy.
+  const idx = targetArray.indexOf(targetItem);
+  const folder = { id: uid(), name, createdAt: Date.now(), type: 'folder', children: [] };
+  targetArray[idx] = folder;
+  folder.children.push(targetItem);
+
+  moveItemToFolder(itemId, folder.id);
+  expandedFolders.add(folder.id);
+  closeModal();
+  showToast('✓ ' + t('folderCreatedMsg', {name}));
+  renderDeckList();
+}
+
+function deleteFolder(folderId) {
+  const folder = findDeck(folderId);
+  if (!folder) return;
+  const totalCards = collectLeafCards(folder).length;
+  const msg = totalCards > 0
+    ? t('deleteFolderConfirmWithCards', {name: folder.name, n: totalCards})
+    : t('deleteFolderConfirm', {name: folder.name});
+  if (!confirm(msg)) return;
+  const arr = findParentArray(folderId);
+  if (!arr) return;
+  const idx = arr.indexOf(folder);
+  arr.splice(idx, 1);
+  expandedFolders.delete(folderId);
+  save();
+  renderDeckList();
+  renderGlobalStats();
+  showToast('🗑 ' + t('folderDeletedMsg'));
+}
+
+// ─── PC SÜRÜKLE-BIRAK (sadece geniş ekranda, ≥768px) ───────────────────
+// Telefon/dar ekranda HTML5 drag olayları zaten dokunmatikle doğal
+// olarak tetiklenmez; ek olarak burada da genişlik kontrolü yapılır,
+// böylece davranış net ve kasıtlıdır (telefon: sadece menüden taşı).
+let dragSourceId = null;
+
+document.getElementById('deck-list').addEventListener('dragstart', (e) => {
+  if (window.innerWidth < 768) return;
+  const card = e.target.closest('.drag-item');
+  if (!card) return;
+  dragSourceId = card.dataset.itemId;
+  e.dataTransfer.effectAllowed = 'move';
+  card.style.opacity = '.4';
+});
+
+document.getElementById('deck-list').addEventListener('dragend', (e) => {
+  const card = e.target.closest('.drag-item');
+  if (card) card.style.opacity = '';
+  document.querySelectorAll('.drop-target.is-drag-over').forEach(el => el.classList.remove('is-drag-over'));
+  dragSourceId = null;
+});
+
+document.getElementById('deck-list').addEventListener('dragover', (e) => {
+  if (window.innerWidth < 768 || !dragSourceId) return;
+  const target = e.target.closest('.drop-target');
+  if (!target || target.dataset.itemId === dragSourceId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  target.classList.add('is-drag-over');
+});
+
+document.getElementById('deck-list').addEventListener('dragleave', (e) => {
+  const target = e.target.closest('.drop-target');
+  if (target) target.classList.remove('is-drag-over');
+});
+
+document.getElementById('deck-list').addEventListener('drop', (e) => {
+  if (window.innerWidth < 768 || !dragSourceId) return;
+  const target = e.target.closest('.drop-target');
+  if (!target) return;
+  e.preventDefault();
+  target.classList.remove('is-drag-over');
+  const targetFolderId = target.dataset.folderTarget;
+  if (targetFolderId === dragSourceId) return;
+  const ok = moveItemToFolder(dragSourceId, targetFolderId);
+  dragSourceId = null;
+  if (ok) { showToast('✓ ' + t('movedMsg')); renderDeckList(); }
+});
+
+function renderFolderCard(folder, depth) {
+  const s = deckStats(folder);
+  const qLen = buildQueue(folder).length;
+  const isOpen = expandedFolders.has(folder.id);
+  const indent = depth > 0 ? `style="margin-left:${depth * .9}rem"` : '';
+  return `
+  <div class="card folder-card drag-item drop-target" ${indent} draggable="true" data-item-id="${folder.id}" data-folder-target="${folder.id}">
+    <div class="card-row">
+      <button class="tap folder-toggle-btn" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="toggleFolderExpand('${folder.id}')">
+        <span class="folder-chevron ${isOpen ? 'is-open' : ''}">${icon('chevR')}</span>
+        <span>${icon('folder')}</span>
+        <span style="min-width:0">
+          <span class="card-title" style="display:block">${esc(folder.name)}</span>
+          <span class="deck-meta">${t('folderItems', {n: folder.children.length})} · ${t('folderTotalCards', {n: s.total})}</span>
+        </span>
+      </button>
+      <div class="dropdown-wrap">
+        <button class="icon-btn tap" onclick="toggleItemMenu('${folder.id}')" aria-label="${t('moreOptions')}">${icon('moreV')}</button>
+        <div class="dropdown-menu" id="menu-${folder.id}" style="display:none"></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:.6rem">
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${folder.id}',false)">${icon('play','ic-fill')}${t('studyAll')} (${qLen})</button>` : `<span class="btn-row-empty-msg">${t('noCardsToStudy')}</span>`}
+    </div>
+    ${isOpen ? `<div class="folder-children">${renderDeckListItems(folder.children, depth + 1)}</div>` : ''}
+  </div>`;
+}
+
+function renderDeckCard(deck, depth) {
+  const s = deckStats(deck);
+  const qLen = buildQueue(deck).length;
+  const indent = depth > 0 ? `style="margin-left:${depth * .9}rem"` : '';
+  return `
+    <div class="card drag-item" ${indent} draggable="true" data-item-id="${deck.id}">
       <div class="card-row">
         <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
           <span>
             <span class="card-title" style="display:block">${esc(deck.name)}</span>
-            <span class="deck-meta">${s.total} kart · ${s.mastered} ustalaşıldı</span>
+            <span class="deck-meta">${t('cardsCountLabel', {n: s.total})} · ${t('masteredCountLabel', {n: s.mastered})}</span>
           </span>
         </button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn tap" onclick="toggleItemMenu('${deck.id}')" aria-label="${t('moreOptions')}">${icon('moreV')}</button>
+          <div class="dropdown-menu" id="menu-${deck.id}" style="display:none"></div>
+        </div>
       </div>
       <div class="btn-row" style="margin-top:.6rem">
-        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalış (${qLen})</button>` : '<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>'}
-        <button class="btn btn-ghost tap" style="flex:0" onclick="openDeck('${deck.id}')">Detay</button>
+        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}${t('study')} (${qLen})</button>` : `<span class="btn-row-empty-msg">${t('noCardsToStudy')}</span>`}
+        <button class="btn btn-ghost tap" style="flex:0 1 auto;min-width:0" onclick="openDeck('${deck.id}')">${t('detail')}</button>
       </div>
       <div class="btn-row" style="margin-top:.5rem">
-        ${s.newC ? `<span class="badge badge-sky">${s.newC} yeni</span>` : ''}
-        ${s.learning ? `<span class="badge badge-gold">${s.learning} öğreniliyor</span>` : ''}
-        ${s.due ? `<span class="badge badge-hanko">${s.due} tekrar</span>` : ''}
+        ${s.newC ? `<span class="badge badge-sky">${s.newC} ${t('newC')}</span>` : ''}
+        ${s.learning ? `<span class="badge badge-gold">${s.learning} ${t('learningC')}</span>` : ''}
+        ${s.due ? `<span class="badge badge-hanko">${s.due} ${t('dueC')}</span>` : ''}
         ${s.mastered ? `<span class="badge badge-jade">${icon('star')}${s.mastered}</span>` : ''}
       </div>
     </div>`;
-  }).join('');
 }
 
 function renderDeckDetail() {
@@ -2539,7 +3872,7 @@ function renderDeckDetail() {
   document.getElementById('topbar-title').innerHTML = `
     <span style="display:flex;align-items:center;gap:.4rem;min-width:0">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(deck.name)}</span>
-      <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="Adlandır">${icon('edit')}</button>
+      <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="${t('rename')}">${icon('edit')}</button>
     </span>`;
   const s = deckStats(deck);
   const qLen = buildQueue(deck).length;
@@ -2549,22 +3882,22 @@ function renderDeckDetail() {
 
   document.getElementById('deck-detail-content').innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">Yeni</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">Öğreniliyor</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">Bugün tekrar</div></div>
-      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşıldı</div></div>
-      <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">Kuyrukta</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">${t('newC')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">${t('learningC')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">${t('dueToday')}</div></div>
+      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${t('totalLabel')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${t('mastered')}</div></div>
+      <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">${t('inQueue')}</div></div>
     </div>
 
     <div class="btn-row" style="margin-bottom:1rem">
-      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalışmaya başla (${qLen})</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>`}
-      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${icon('plus')}Kart Ekle</button>
-      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${icon('trash')}Sil</button>
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}${t('startStudying')} (${qLen})</button>` : `<span class="btn-row-empty-msg">${t('noCardsToStudy')}</span>`}
+      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${icon('plus')}${t('addCardBtn')}</button>
+      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${icon('trash')}${t('delete')}</button>
     </div>
 
     <div class="btn-row" style="margin-bottom:1rem">
-      <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${icon('eye')}Gözden Geçir</button>
+      <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${icon('eye')}${t('reviewTitle')}</button>
     </div>
 
     ${masteredCards.length ? `
@@ -2572,26 +3905,26 @@ function renderDeckDetail() {
       <div class="mb-top">
         <span class="mb-icon">${icon('star')}</span>
         <span style="flex:1">
-          <span class="mb-title" style="display:block">İyi Bildiklerim</span>
-          <span class="mb-sub">${masteredCards.length} kart ustalaşıldı</span>
+          <span class="mb-title" style="display:block">${t('masteredBucket')}</span>
+          <span class="mb-sub">${t('masteredCountLabel', {n: masteredCards.length})}</span>
         </span>
       </div>
       <div class="btn-row">
-        ${mLen > 0 ? `<button class="btn btn-ghost tap" onclick="startStudy('${deck.id}',true)">${icon('play','ic-fill')}Çalış (${mLen})</button>` : ''}
-        <button class="btn btn-ghost tap" onclick="toggleMasteredList()">${icon('eye')}Listele</button>
+        ${mLen > 0 ? `<button class="btn btn-ghost tap" onclick="startStudy('${deck.id}',true)">${icon('play','ic-fill')}${t('study')} (${mLen})</button>` : ''}
+        <button class="btn btn-ghost tap" onclick="toggleMasteredList()">${icon('eye')}${t('listBtn')}</button>
       </div>
     </div>
     <div id="mastered-list" style="display:none">
       ${masteredCards.map(c => cardListItemHTML(c, deck.id)).join('')}
     </div>` : ''}
 
-    <div class="section-hd">Kartlar (${normalCards.length})</div>
-    ${normalCards.length ? normalCards.map(c => cardListItemHTML(c, deck.id)).join('') : `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>Bu destede henüz kart yok.</p></div>`}
+    <div class="section-hd">${t('cardsSection', {n: normalCards.length})}</div>
+    ${normalCards.length ? normalCards.map(c => cardListItemHTML(c, deck.id)).join('') : `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>${t('noCardsInDeck')}</p></div>`}
   `;
 }
 
 function cardListItemHTML(c, deckId) {
-  const stateLabel = {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[c.srs.state] || '';
+  const stateLabel = {new:t('newC'), learning:t('learningC'), review:t('dueC')}[c.srs.state] || '';
   const badgeCls = {new:'badge-sky', learning:'badge-gold', review:'badge-hanko'}[c.srs.state] || 'badge-soft';
   return `
   <div class="card-list-item">
@@ -2602,8 +3935,8 @@ function cardListItemHTML(c, deckId) {
     </div>
     ${c.srs.mastered ? `<span class="badge badge-jade" style="padding:.28rem .5rem">${icon('star')}</span>` : `<span class="badge ${badgeCls}">${stateLabel}</span>`}
     <div class="cli-actions">
-      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="Düzenle">${icon('edit')}</button>
-      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="Sil">${icon('trash')}</button>
+      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="${t('editLabel')}">${icon('edit')}</button>
+      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="${t('delete')}">${icon('trash')}</button>
     </div>
   </div>`;
 }
@@ -2618,15 +3951,19 @@ let studyQueue = [];
 let studyCardIndex = 0;
 let studyDoneToday = 0;
 let studyShowingBack = false;
+// Klasörde "Tümünü Çalış" yapılırken, her kartın GERÇEKTE hangi (yaprak)
+// destede olduğunu tutar — günlük aktivite dökümü için gerekli.
+let studyCardDeckMap = new Map();
 
 function startStudy(deckId, masteredOnly) {
   currentDeckId = deckId;
-  studyMastered = masteredOnly;
-  studyQueue = buildQueue(findDeck(deckId), masteredOnly);
+  studyCardDeckMap = new Map();
+  studyQueue = buildQueue(findDeck(deckId), masteredOnly, studyCardDeckMap);
   studyCardIndex = 0;
   studyDoneToday = 0;
   studyShowingBack = false;
   showView('study');
+  startStudySessionTimer(deckId);
 }
 
 // ─── GÖZDEN GEÇİR MODU (Preview) ───────────────────────────────────────
@@ -2641,14 +3978,14 @@ function showReviewPickModal(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
   const masteredCount = deck.cards.filter(c => c.srs.mastered).length;
-  openModal('Gözden Geçir — Kapsam Seç', `
-    <p class="text-muted" style="margin-bottom:1rem">Bu modda kartlara sadece göz atarsın; cevapların ilerlemeni veya tekrar planını etkilemez.</p>
+  openModal(t('reviewPickModalTitle'), `
+    <p class="text-muted" style="margin-bottom:1rem">${t('reviewPickModalDesc')}</p>
     <div class="btn-row" style="flex-direction:column">
-      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">Normal kartlar (${deck.cards.length - masteredCount})</button>
-      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">İyi Bildiklerim (${masteredCount})</button>` : ''}
-      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">Tüm kartlar (${deck.cards.length})</button>
+      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">${t('normalCardsOpt', {n: deck.cards.length - masteredCount})}</button>
+      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">${t('masteredOpt', {n: masteredCount})}</button>` : ''}
+      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">${t('allCardsOpt', {n: deck.cards.length})}</button>
     </div>
-    <button class="btn btn-ghost btn-block tap mt-2" onclick="closeModal()">İptal</button>
+    <button class="btn btn-ghost btn-block tap mt-2" onclick="closeModal()">${t('cancel')}</button>
   `);
 }
 
@@ -2659,19 +3996,20 @@ function startReview(deckId, scope) {
   else if (scope === 'mastered') reviewQueue = deck.cards.filter(c => c.srs.mastered);
   else reviewQueue = deck.cards.slice();
 
-  if (!reviewQueue.length) { showToast('⚠ Bu kapsamda kart yok'); return; }
+  if (!reviewQueue.length) { showToast('⚠ ' + t('noCardsInScopeMsg')); return; }
 
   currentDeckId = deckId;
   reviewIndex = 0;
   reviewShowingBack = false;
   closeModal();
   showView('review');
+  startStudySessionTimer(deckId);
 }
 
 function renderReview() {
   const screen = document.getElementById('review-screen');
   if (!reviewQueue.length) {
-    screen.innerHTML = `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>Gösterilecek kart yok.</p></div>`;
+    screen.innerHTML = `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>${t('noCardsToShow')}</p></div>`;
     return;
   }
 
@@ -2684,17 +4022,17 @@ function renderReview() {
       <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
     </div>
     <div class="flashcard">
-      <span class="fc-state-badge badge badge-soft">${icon('eye')}Göz at</span>
+      <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('peekBadge')}</span>
       <div class="fc-kanji">${esc(card.kanji)}</div>
     </div>
   `;
 
   if (!reviewShowingBack) {
     screen.innerHTML = frontHTML + `
-      <button id="btn-show" class="tap" onclick="showReviewBack()">${icon('eye')}Cevabı göster</button>
+      <button id="btn-show" class="tap" onclick="showReviewBack()">${icon('eye')}${t('showAnswer')}</button>
       <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}Önceki</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>Sonraki${icon('chevR')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prevBtn')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('nextBtn')}${icon('chevR')}</button>
       </div>
     `;
   } else {
@@ -2705,7 +4043,7 @@ function renderReview() {
         <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
       </div>
       <div class="flashcard">
-        <span class="fc-state-badge badge badge-soft">${icon('eye')}Göz at</span>
+        <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('peekBadge')}</span>
         <div class="fc-back">
           <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
           <div class="fc-meaning">${esc(card.meaningTr)}</div>
@@ -2716,8 +4054,8 @@ function renderReview() {
         </div>
       </div>
       <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}Önceki</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>Sonraki${icon('chevR')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prevBtn')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('nextBtn')}${icon('chevR')}</button>
       </div>
     `;
   }
@@ -2740,9 +4078,9 @@ function renderStudy() {
     screen.innerHTML = `
       <div class="study-done">
         <div class="done-icon">${icon('done','ic-lg')}</div>
-        <h2>Oturum tamamlandı</h2>
-        <p>${studyDoneToday} kart çalışıldı. Bugün için kalan: 0.</p>
-        <button class="btn btn-primary tap" onclick="showView('deck')">Desteye dön</button>
+        <h2>${t('sessionDoneTitle')}</h2>
+        <p>${t('sessionDoneMsg', {n: studyDoneToday})}</p>
+        <button class="btn btn-primary tap" onclick="showView('deck')">${t('backToDeck')}</button>
       </div>`;
     return;
   }
@@ -2762,7 +4100,7 @@ function renderStudy() {
         <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
         <div class="fc-kanji">${esc(card.kanji)}</div>
       </div>
-      <button id="btn-show" class="tap" onclick="showBack()">${icon('eye')}Cevabı göster</button>
+      <button id="btn-show" class="tap" onclick="showBack()">${icon('eye')}${t('showAnswer')}</button>
     `;
   } else {
     const previews = [0,1,2,3].map(g => previewSRS(card, g).label);
@@ -2784,10 +4122,10 @@ function renderStudy() {
         </div>
       </div>
       <div class="answer-grid">
-        <button class="ans-btn ans-again tap" onclick="gradeCard(0)">Tekrar<span class="next-time">${previews[0]}</span></button>
-        <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">Zor<span class="next-time">${previews[1]}</span></button>
-        <button class="ans-btn ans-good tap" onclick="gradeCard(2)">İyi<span class="next-time">${previews[2]}</span></button>
-        <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">Kolay<span class="next-time">${previews[3]}</span></button>
+        <button class="ans-btn ans-again tap" onclick="gradeCard(0)">${t('gradeAgain')}<span class="next-time">${previews[0]}</span></button>
+        <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">${t('gradeHard')}<span class="next-time">${previews[1]}</span></button>
+        <button class="ans-btn ans-good tap" onclick="gradeCard(2)">${t('gradeGood')}<span class="next-time">${previews[2]}</span></button>
+        <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${t('gradeEasy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
   }
@@ -2799,7 +4137,7 @@ function stateBadgeCls(srs) {
 }
 function stateLabel(srs) {
   if (srs.mastered) return icon('star');
-  return {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[srs.state] || '';
+  return {new:t('newC'), learning:t('learningC'), review:t('dueC')}[srs.state] || '';
 }
 
 function showBack() { studyShowingBack = true; renderStudy(); }
@@ -2809,9 +4147,10 @@ function gradeCard(grade) {
   const wasNew = card.srs.state === 'new';
   const wasMastered = card.srs.mastered;
   applySRS(card, grade);
-  recordReview(wasNew);
+  const realDeckId = studyCardDeckMap.get(card.id) || currentDeckId;
+  recordReview(wasNew, realDeckId);
   if (card.srs.mastered && !wasMastered) {
-    showToast('⭐ ' + card.kanji + ' → İyi Bildiklerim!', 2200);
+    showToast('⭐ ' + t('cardMasteredMsg', {name: card.kanji}), 2200);
   }
   studyDoneToday++;
   studyCardIndex++;
@@ -2825,11 +4164,117 @@ function renderAddForm() {
   populateDeckSelects();
   setupFuriganaAssist('add-kanji', 'add-furigana', 'add-furigana-suggest');
   setupExampleFuriganaAssist('add-example-jp', 'add-example-mark-row', 'add-example-mark-btn', 'add-example-furigana-editor');
+  setupLivePreview('add');
+}
+
+// ─── KART EKLEME CANLI ÖNİZLEMESİ ───────────────────────────────────────
+// Form alanlarına yazarken/odaklanırken, gerçek flashcard'ın nasıl
+// görüneceğini canlı gösterir. Bir input'a TIKLANINCA (focus), kart o
+// inputun ait olduğu yüze (ön/arka) otomatik döner — yazmaya başlamak
+// gerekmez. prefix: 'add' (ana form) ya da 'modal-add' (modal formu).
+function setupLivePreview(prefix) {
+  const previewEl = document.getElementById(`${prefix}-fc-preview`);
+  if (!previewEl) return;
+
+  const ids = {
+    kanji: `${prefix}-kanji`,
+    furigana: `${prefix}-furigana`,
+    meaning: `${prefix}-meaning`,
+    exampleJp: `${prefix}-example-jp`,
+    exampleTr: `${prefix}-example-tr`,
+  };
+  // ÖNEMLİ: kanji/furigana/exampleJp input'ları setupFuriganaAssist /
+  // setupExampleFuriganaAssist tarafından ZATEN klonlanmış olabilir —
+  // burada onları TEKRAR klonlarsak o fonksiyonların event listener'ları
+  // silinir (furigana otomasyonu bozulur). Bu yüzden klonlamak yerine,
+  // her elemente bir kez "live-preview bağlandı" bayrağı (dataset)
+  // koyup, zaten bağlıysa tekrar listener eklemiyoruz.
+  const els = {};
+  for (const key in ids) els[key] = document.getElementById(ids[key]);
+  if (!els.kanji || !els.furigana) return; // form henüz DOM'da değil
+
+  let face = 'front'; // 'front' | 'back'
+
+  function getFuriganaMap() {
+    try { return JSON.parse(els.exampleJp?.dataset.furiganaMap || '{}'); } catch (e) { return {}; }
+  }
+
+  function render() {
+    const kanji = (els.kanji?.value || '').trim();
+    const furigana = (els.furigana?.value || '').trim();
+    const meaning = (els.meaning?.value || '').trim();
+    const exampleJp = (els.exampleJp?.value || '').trim();
+    const exampleTr = (els.exampleTr?.value || '').trim();
+
+    const hasAnyInput = kanji || furigana || meaning || exampleJp;
+    if (!hasAnyInput) {
+      previewEl.innerHTML = `<div class="fc-preview-empty">${t('previewEmptyMsg')}</div>`;
+      return;
+    }
+
+    if (face === 'front') {
+      previewEl.innerHTML = `
+        ${kanji ? `<div class="fc-kanji">${esc(kanji)}</div>` : `<div class="fc-preview-empty">${t('previewTypeKanji')}</div>`}
+        <div class="fc-preview-hint">${t('frontSide')}</div>
+      `;
+    } else {
+      const exHighlight = exampleJp ? highlightKanji(exampleJp, kanji, getFuriganaMap()) : '';
+      previewEl.innerHTML = `
+        <div class="fc-back">
+          ${furigana || kanji ? `<div class="fc-ruby">${buildRuby(esc(kanji || '?'), esc(furigana || '…'))}</div>` : ''}
+          <div class="fc-meaning">${meaning ? esc(meaning) : `<span class="fc-preview-empty">${t('previewTypeMeaning')}</span>`}</div>
+          ${exampleJp ? `
+          <hr class="fc-divider">
+          <div class="fc-example">${exHighlight}</div>
+          ${exampleTr ? `<div class="fc-exampletr">${esc(exampleTr)}</div>` : ''}` : ''}
+        </div>
+        <div class="fc-preview-hint">${t('backSide')}</div>
+      `;
+    }
+  }
+
+  function showFront() { face = 'front'; render(); }
+  function showBack() { face = 'back'; render(); }
+
+  // Ön yüzü tetikleyen alanlar
+  [els.kanji, els.furigana].forEach(el => {
+    if (!el || el.dataset.livePreviewBound) return;
+    el.dataset.livePreviewBound = '1';
+    el.addEventListener('focus', showFront);
+    el.addEventListener('input', render);
+  });
+  // Arka yüzü tetikleyen alanlar
+  [els.meaning, els.exampleJp, els.exampleTr].forEach(el => {
+    if (!el || el.dataset.livePreviewBound) return;
+    el.dataset.livePreviewBound = '1';
+    el.addEventListener('focus', showBack);
+    el.addEventListener('input', render);
+  });
+
+  render();
+}
+
+// Sadece kart eklenebilecek YAPRAK desteleri (klasör olmayanları) listeler;
+// klasörler kendi başına seçilemez ama hiyerarşiyi görsel olarak korumak
+// için optgroup benzeri girintili etiketler kullanılır.
+function buildDeckSelectOptions(list, depth) {
+  let html = '';
+  for (const item of list) {
+    if (isFolder(item)) {
+      html += `<optgroup label="${'　'.repeat(depth)}📁 ${esc(item.name)}">`;
+      html += buildDeckSelectOptions(item.children, depth + 1);
+      html += `</optgroup>`;
+    } else {
+      html += `<option value="${item.id}">${'　'.repeat(depth)}${esc(item.name)}</option>`;
+    }
+  }
+  return html;
 }
 
 function populateDeckSelects() {
-  const opts = state.decks.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
-  const placeholder = state.decks.length ? '' : '<option disabled selected>Önce bir deste oluştur</option>';
+  const leafCount = collectLeafDecks({ type: 'folder', children: state.decks }).length;
+  const opts = buildDeckSelectOptions(state.decks, 0);
+  const placeholder = leafCount ? '' : `<option disabled selected>${t('createDeckFirstMsg')}</option>`;
   document.getElementById('add-deck-select').innerHTML = placeholder + opts;
   document.getElementById('bulk-deck-select').innerHTML = placeholder + opts;
 }
@@ -2845,13 +4290,13 @@ function saveCard() {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch (e) {}
 
-  if (!kanji || !furigana || !meaning) { showToast('⚠ Kanji, furigana ve anlam zorunlu'); return; }
+  if (!kanji || !furigana || !meaning) { showToast('⚠ ' + t('requiredFieldsMsg')); return; }
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast('⚠ ' + t('deckNotFoundMsg')); return; }
 
   deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   save();
-  showToast('✓ Kart eklendi: ' + kanji);
+  showToast('✓ ' + t('cardAddedMsg', {name: kanji}));
   document.getElementById('add-kanji').value = '';
   document.getElementById('add-furigana').value = '';
   document.getElementById('add-meaning').value = '';
@@ -2867,7 +4312,7 @@ function bulkImport() {
   const deckId = document.getElementById('bulk-deck-select').value;
   const raw = document.getElementById('bulk-input').value;
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast('⚠ ' + t('deckNotFoundMsg')); return; }
 
   const lines = raw.split('\n');
   let added = 0, skipped = 0;
@@ -2883,22 +4328,71 @@ function bulkImport() {
   }
   save();
   document.getElementById('bulk-input').value = '';
-  showToast(`✓ ${added} kart eklendi${skipped ? ', ' + skipped + ' satır atlandı' : ''}`, 3000);
+  showToast(`✓ ${t('bulkAddedMsg', {n: added})}${skipped ? ', ' + t('bulkSkippedMsg', {n: skipped}) : ''}`, 3000);
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────
 // Her ayarın detaylı açıklaması (ⓘ ikonuna tıklayınca gösterilir)
 const SETTING_INFO = {
-  'steps': 'Yeni bir kart ilk kez çalışıldığında bu sırayla gösterilir (dakika). Örnek "1, 10": Tekrar dersen 1 dakika sonra, İyi dersen sıradaki adıma (10 dakika) geçer. Tüm adımlar İyi ile geçildiğinde kart "mezun olur" ve normal tekrar moduna girer.',
-  'grad': 'Bir kart son öğrenme adımını İyi ile geçtiğinde, bir sonraki tekrara kadar kaç gün bekleneceğini belirler. Anki varsayılanı 1 gündür.',
-  'easy-iv': 'Yeni bir kart için doğrudan Kolay dersen, öğrenme adımlarını atlayıp kaç gün sonraya planlanacağını belirler.',
-  'ease': 'Her doğru tekrarda aralığın kaç katına çıkacağını belirleyen çarpan. Yüksek ease, kartın daha hızlı seyrekleşmesi anlamına gelir. Anki varsayılanı 2.5 (yani %250) dir.',
-  'easy-bonus': 'Tekrar modundaki bir kart için Kolay dediğinde, normal İyi aralığına ek olarak uygulanan çarpan. 1.3 demek, İyi den %30 daha uzun bir aralık demektir.',
-  'mastery': 'Bir kartın aralığı bu gün sayısına ulaştığında otomatik olarak "İyi Bildiklerim" alt destesine taşınır. Düşürürsen kartlar daha çabuk "ustalaşılmış" sayılır.',
-  'daily': 'Bir günde en fazla kaç YENİ kartın çalışma kuyruğuna gireceğini sınırlar. 0 yaparsan sınır olmaz, tüm yeni kartlar aynı gün gösterilebilir.',
-  'fuzz': 'Açıkken, hesaplanan aralıklara küçük bir rastgelelik (±%5) eklenir; böylece aynı gün eklenen kartlar hep aynı günde üst üste binmez. Kapatırsan aralıklar tam hesaplanan sayıya sabitlenir.',
-  'shield': 'Bir günü tamamen kaçırırsan ve kalkanın varsa, açıkken o gün otomatik olarak kalkan harcanıp serin korunur. Kapatırsan kalkanın olsa da kaçırdığın gün serini bozar; kalkanlar yine de kazanılmaya devam eder.',
+  tr: {
+    'steps': 'Yeni bir kart ilk kez çalışıldığında bu sırayla gösterilir (dakika). Örnek "1, 10": Tekrar dersen 1 dakika sonra, İyi dersen sıradaki adıma (10 dakika) geçer. Tüm adımlar İyi ile geçildiğinde kart "mezun olur" ve normal tekrar moduna girer.',
+    'grad': 'Bir kart son öğrenme adımını İyi ile geçtiğinde, bir sonraki tekrara kadar kaç gün bekleneceğini belirler. Anki varsayılanı 1 gündür.',
+    'easy-iv': 'Yeni bir kart için doğrudan Kolay dersen, öğrenme adımlarını atlayıp kaç gün sonraya planlanacağını belirler.',
+    'ease': 'Her doğru tekrarda aralığın kaç katına çıkacağını belirleyen çarpan. Yüksek ease, kartın daha hızlı seyrekleşmesi anlamına gelir. Anki varsayılanı 2.5 (yani %250) dir.',
+    'easy-bonus': 'Tekrar modundaki bir kart için Kolay dediğinde, normal İyi aralığına ek olarak uygulanan çarpan. 1.3 demek, İyi den %30 daha uzun bir aralık demektir.',
+    'mastery': 'Bir kartın aralığı bu gün sayısına ulaştığında otomatik olarak "İyi Bildiklerim" alt destesine taşınır. Düşürürsen kartlar daha çabuk "ustalaşılmış" sayılır.',
+    'daily': 'Bir günde en fazla kaç YENİ kartın çalışma kuyruğuna gireceğini sınırlar. 0 yaparsan sınır olmaz, tüm yeni kartlar aynı gün gösterilebilir.',
+    'fuzz': 'Açıkken, hesaplanan aralıklara küçük bir rastgelelik (±%5) eklenir; böylece aynı gün eklenen kartlar hep aynı günde üst üste binmez. Kapatırsan aralıklar tam hesaplanan sayıya sabitlenir.',
+    'shield': 'Bir günü tamamen kaçırırsan ve kalkanın varsa, açıkken o gün otomatik olarak kalkan harcanıp serin korunur. Kapatırsan kalkanın olsa da kaçırdığın gün serini bozar; kalkanlar yine de kazanılmaya devam eder.',
+  },
+  en: {
+    'steps': 'Shown in this order (minutes) the first time a new card is studied. Example "1, 10": pressing Again shows it again in 1 minute; pressing Good moves to the next step (10 minutes). Once all steps are passed with Good, the card "graduates" into normal review mode.',
+    'grad': 'How many days to wait until the next review once a card passes its last learning step with Good. Anki default is 1 day.',
+    'easy-iv': 'For a brand-new card, pressing Easy skips the learning steps entirely and schedules it this many days ahead.',
+    'ease': 'The multiplier applied to the interval on every correct review. A higher ease means the card spaces out faster. Anki default is 2.5 (250%).',
+    'easy-bonus': "Extra multiplier applied on top of the normal Good interval when you press Easy on a card in review mode. 1.3 means 30% longer than Good.",
+    'mastery': 'Once a card\'s interval reaches this many days, it\'s automatically moved to the "Mastered" sub-deck. Lowering this makes cards count as "mastered" sooner.',
+    'daily': 'Caps how many NEW cards can enter the study queue per day. Set to 0 for no limit — all new cards can show up the same day.',
+    'fuzz': 'When on, a small amount of randomness (±5%) is added to calculated intervals so cards added the same day don\'t all pile up on the same future date. Turn off to use exact calculated intervals.',
+    'shield': "If you miss a day entirely and have a shield, it's automatically spent to protect your streak when this is on. Turn it off and a missed day breaks your streak even if you have shields — you'll still keep earning them.",
+  },
+  zh: {
+    'steps': '新卡片首次学习时会按此顺序显示（分钟）。例如"1, 10"：选择"重来"会在 1 分钟后再次显示；选择"良好"则进入下一步（10 分钟）。所有步骤都以"良好"通过后，卡片即"毕业"进入正常复习模式。',
+    'grad': '卡片以"良好"通过最后一个学习步骤后，到下次复习需要等待的天数。Anki 默认值为 1 天。',
+    'easy-iv': '对于全新卡片，直接选择"简单"会跳过学习步骤，并按此天数安排下次复习。',
+    'ease': '每次正确复习时应用于间隔的倍数。难度系数越高，卡片间隔拉开得越快。Anki 默认值为 2.5（即 250%）。',
+    'easy-bonus': '在复习模式下对卡片选择"简单"时，在正常"良好"间隔基础上额外应用的倍数。1.3 表示比"良好"长 30%。',
+    'mastery': '当卡片的间隔达到此天数时，会自动移至"已掌握"子卡组。调低此值会让卡片更快被视为"已掌握"。',
+    'daily': '限制每天进入学习队列的新卡片数量上限。设为 0 则无限制，所有新卡片可在同一天出现。',
+    'fuzz': '开启后，会在计算出的间隔上添加少量随机性（±5%），避免同一天添加的卡片全部堆积在同一天复习。关闭则使用精确计算的间隔。',
+    'shield': '如果你完全错过一天且拥有护盾，开启此项后会自动消耗护盾来保护你的连续记录。关闭后，即使有护盾，错过的一天仍会中断连续记录；但护盾仍会继续获得。',
+  },
+  mn: {
+    'steps': 'Шинэ карт анх удаа судлагдахад энэ дарааллаар (минутаар) харагдана. Жишээ нь "1, 10": Дахин гэвэл 1 минутын дараа дахин харагдана; Сайн гэвэл дараагийн алхам руу (10 минут) шилжинэ. Бүх алхмыг Сайнаар давсны дараа карт "төгсөж" энгийн давталтын горимд орно.',
+    'grad': 'Карт сүүлийн сургалтын алхмыг Сайнаар давсны дараа дараагийн давталт хүртэл хэдэн өдөр хүлээхийг тодорхойлно. Anki-н үндсэн утга 1 өдөр.',
+    'easy-iv': 'Шинэ картанд шууд Амархан гэвэл сургалтын алхмуудыг алгасаад хэдэн өдрийн дараа товлохыг тодорхойлно.',
+    'ease': 'Зөв давталт бүрт интервалыг хэдэн дахин нэмэгдүүлэхийг тодорхойлох үржигч. Өндөр ease нь картын интервал хурдан уртасна гэсэн үг. Anki-н үндсэн утга 2.5 (өөрөөр хэлбэл 250%).',
+    'easy-bonus': 'Давталтын горимд байгаа картанд Амархан гэхэд энгийн Сайн интервал дээр нэмж хэрэглэгдэх үржигч. 1.3 гэдэг нь Сайнаас 30% удаан гэсэн үг.',
+    'mastery': 'Картын интервал энэ хоног тоонд хүрэхэд автоматаар "Эзэмшсэн" дэд дэвтэр рүү шилжинэ. Энэ утгыг багасгавал карт хурдан "эзэмшсэн" гэж тооцогдоно.',
+    'daily': 'Өдөрт хамгийн ихдээ хэдэн ШИНЭ карт судлах дараалалд орохыг хязгаарлана. 0 болговол хязгааргүй — бүх шинэ карт нэг өдөрт харагдаж болно.',
+    'fuzz': 'Асаалттай үед тооцоолсон интервалд бага зэргийн санамсаргүй байдал (±5%) нэмэгдэнэ; ингэснээр нэг өдөр нэмэгдсэн карт бүгд ижил өдөрт давхцахгүй. Унтраавал яг тооцоолсон интервалыг ашиглана.',
+    'shield': 'Хэрэв та өдрийг бүхэлд нь алгасаад бамбайтай бол энэ асаалттай үед бамбай автоматаар зарцуулагдаж дарааллыг чинь хамгаална. Унтраавал бамбайтай байсан ч алгассан өдөр дараалал чинь тасарна; гэхдээ бамбай олжих хэвээр байна.',
+  },
+  ko: {
+    'steps': '새 카드를 처음 학습할 때 이 순서(분 단위)로 표시됩니다. 예시 "1, 10": "다시"를 누르면 1분 후 다시 표시되고, "좋음"을 누르면 다음 단계(10분)로 넘어갑니다. 모든 단계를 "좋음"으로 통과하면 카드가 "졸업"하여 일반 복습 모드로 들어갑니다.',
+    'grad': '카드가 마지막 학습 단계를 "좋음"으로 통과한 후 다음 복습까지 며칠을 기다릴지 정합니다. Anki 기본값은 1일입니다.',
+    'easy-iv': '완전히 새 카드에서 바로 "쉬움"을 누르면 학습 단계를 건너뛰고 며칠 후로 예정할지 정합니다.',
+    'ease': '매번 정답을 맞출 때마다 간격에 곱해지는 배수입니다. 난이도 값이 높을수록 카드 간격이 더 빨리 늘어납니다. Anki 기본값은 2.5(즉 250%)입니다.',
+    'easy-bonus': '복습 모드의 카드에서 "쉬움"을 눌렀을 때 일반 "좋음" 간격에 추가로 곱해지는 배수입니다. 1.3은 "좋음"보다 30% 더 길다는 의미입니다.',
+    'mastery': '카드의 간격이 이 일수에 도달하면 자동으로 "습득함" 하위 덱으로 이동합니다. 이 값을 낮추면 카드가 더 빨리 "습득함"으로 분류됩니다.',
+    'daily': '하루에 학습 대기열에 들어갈 수 있는 신규 카드의 최대 수를 제한합니다. 0으로 설정하면 무제한이며, 모든 신규 카드가 같은 날 표시될 수 있습니다.',
+    'fuzz': '켜져 있으면 계산된 간격에 약간의 무작위성(±5%)이 추가되어, 같은 날 추가된 카드들이 모두 같은 날짜에 몰리지 않습니다. 끄면 정확히 계산된 간격을 사용합니다.',
+    'shield': '하루를 완전히 놓쳤고 방어막이 있는 경우, 이 옵션이 켜져 있으면 방어막이 자동으로 소모되어 연속 기록을 보호합니다. 끄면 방어막이 있어도 놓친 날에 연속 기록이 끊기지만, 방어막은 계속 획득됩니다.',
+  },
 };
+function getSettingInfo(key) {
+  return (SETTING_INFO[currentLang] && SETTING_INFO[currentLang][key]) || SETTING_INFO.en[key] || '';
+}
 
 function toggleSettingInfo(key) {
   const panel = document.getElementById('info-' + key);
@@ -2913,52 +4407,53 @@ function settingItemHTML(key, label, smallText, inputHTML) {
     <div class="settings-item">
       <div class="si-row">
         <div class="si-label">${label}<small>${smallText}</small></div>
-        <button class="si-info-btn tap" type="button" onclick="toggleSettingInfo('${key}')" aria-label="Bilgi">${icon('info')}</button>
+        <button class="si-info-btn tap" type="button" onclick="toggleSettingInfo('${key}')" aria-label="${t('infoLabel')}">${icon('info')}</button>
         ${inputHTML}
       </div>
-      <div class="si-info-panel" id="info-${key}">${SETTING_INFO[key]}</div>
+      <div class="si-info-panel" id="info-${key}">${getSettingInfo(key)}</div>
     </div>
   `;
 }
 
 function renderSettings() {
+  renderLangSection();
   renderThemeSection();
   renderAppIconSection();
   renderSyncSection();
   const s = state.settings;
   document.getElementById('settings-fields').innerHTML =
-    settingItemHTML('steps', 'Öğrenme adımları (dk)', 'Virgülle ayır, ör: 1, 10',
+    settingItemHTML('steps', t('stepsLabel'), t('stepsHint'),
       `<input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">`) +
-    settingItemHTML('grad', 'Mezun olma aralığı (gün)', 'İyi ile mezun',
+    settingItemHTML('grad', t('gradLabel'), t('gradHint'),
       `<input class="si-input" id="cfg-grad" type="number" min="1" value="${s.graduateInterval}">`) +
-    settingItemHTML('easy-iv', 'Kolay aralık (gün)', 'Kolay ile mezun',
+    settingItemHTML('easy-iv', t('easyIvLabel'), t('easyIvHint'),
       `<input class="si-input" id="cfg-easy-iv" type="number" min="1" value="${s.easyInterval}">`) +
-    settingItemHTML('ease', 'Varsayılan ease', '1.3–5.0',
+    settingItemHTML('ease', t('easeLabel'), t('easeHint'),
       `<input class="si-input" id="cfg-ease" type="number" min="1.3" max="5" step="0.05" value="${s.defaultEase}">`) +
-    settingItemHTML('easy-bonus', 'Kolay bonusu', 'Aralık çarpanı',
+    settingItemHTML('easy-bonus', t('easyBonusLabel'), t('easyBonusHint'),
       `<input class="si-input" id="cfg-easy-bonus" type="number" min="1" step="0.05" value="${s.easyBonus}">`) +
-    settingItemHTML('mastery', 'Ustalaşma eşiği (gün)', 'Bu aralığa ulaşınca ⭐',
+    settingItemHTML('mastery', t('masteryLabel'), t('masteryHint'),
       `<input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">`) +
-    settingItemHTML('daily', 'Günlük yeni kart limiti', '0 = sınırsız',
+    settingItemHTML('daily', t('dailyLabel'), t('dailyHint'),
       `<input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">`) +
-    settingItemHTML('fuzz', 'Rastgele fuzz', 'Aralıklara ±%5',
+    settingItemHTML('fuzz', t('fuzzLabel'), t('fuzzHint'),
       `<select class="si-input" id="cfg-fuzz" style="text-align:left">
-        <option value="1" ${s.fuzz?'selected':''}>Açık</option>
-        <option value="0" ${!s.fuzz?'selected':''}>Kapalı</option>
+        <option value="1" ${s.fuzz?'selected':''}>${t('onLabel')}</option>
+        <option value="0" ${!s.fuzz?'selected':''}>${t('offLabel')}</option>
       </select>`) +
-    settingItemHTML('shield', 'Otomatik kalkan kullanımı', 'Gün kaçırınca seriyi korur',
+    settingItemHTML('shield', t('shieldLabel'), t('shieldHint'),
       `<select class="si-input" id="cfg-shield" style="text-align:left">
-        <option value="1" ${s.autoUseShield?'selected':''}>Açık</option>
-        <option value="0" ${!s.autoUseShield?'selected':''}>Kapalı</option>
+        <option value="1" ${s.autoUseShield?'selected':''}>${t('onLabel')}</option>
+        <option value="0" ${!s.autoUseShield?'selected':''}>${t('offLabel')}</option>
       </select>`) +
-    `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
+    `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">${t('saveSettingsBtn')}</button>
     <div class="version-tag">Stacks · v${APP_VERSION}<br><span class="version-motto">Keep stacking.</span></div>`;
 }
 
 function saveSettings() {
   try {
     const steps = document.getElementById('cfg-steps').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-    if (!steps.length) { showToast('⚠ Geçersiz adım değerleri'); return; }
+    if (!steps.length) { showToast('⚠ ' + t('invalidStepsMsg')); return; }
     state.settings.learnSteps = steps;
     state.settings.graduateInterval = parseInt(document.getElementById('cfg-grad').value) || 1;
     state.settings.easyInterval = parseInt(document.getElementById('cfg-easy-iv').value) || 4;
@@ -2969,8 +4464,8 @@ function saveSettings() {
     state.settings.fuzz = document.getElementById('cfg-fuzz').value === '1';
     state.settings.autoUseShield = document.getElementById('cfg-shield').value === '1';
     save();
-    showToast('✓ Ayarlar kaydedildi');
-  } catch (e) { showToast('⚠ Hata: ' + e.message); }
+    showToast('✓ ' + t('settingsSavedMsg'));
+  } catch (e) { showToast('⚠ ' + t('errorMsg') + ': ' + e.message); }
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────────
@@ -2985,7 +4480,7 @@ function exportData() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('✓ Veriler dışa aktarıldı');
+  showToast('✓ ' + t('dataExportedMsg'));
 }
 
 function importData(file) {
@@ -2993,15 +4488,15 @@ function importData(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.decks || !Array.isArray(data.decks)) throw new Error('Geçersiz format');
+      if (!data.decks || !Array.isArray(data.decks)) throw new Error(t('invalidFormatMsg'));
       state = { ...state, ...data };
       state.settings = migrateSettings({ ...CONFIG, ...state.settings });
       save();
-      showToast('✓ Veriler içe aktarıldı: ' + state.decks.length + ' deste');
+      showToast('✓ ' + t('dataImportedMsg', {n: state.decks.length}));
       renderDeckList();
       renderGlobalStats();
     } catch (err) {
-      showToast('⚠ İçe aktarma hatası: ' + err.message);
+      showToast('⚠ ' + t('importErrorMsg') + ': ' + err.message);
     }
   };
   reader.readAsText(file);
@@ -3017,14 +4512,14 @@ function closeModal() { document.getElementById('modal-bg').classList.remove('sh
 
 function showRenameModal(deckId) {
   const deck = findDeck(deckId);
-  openModal('Desteyi yeniden adlandır', `
+  openModal(t('renameModalTitle'), `
     <div class="form-group">
-      <label>Yeni isim</label>
-      <input id="rename-input" value="${esc(deck.name)}" placeholder="Deste adı">
+      <label>${t('newNameLabel')}</label>
+      <input id="rename-input" value="${esc(deck.name)}" placeholder="${t('deckNamePlaceholder')}">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="renameDeck('${deckId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="renameDeck('${deckId}')">${t('saveBtn')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
 }
@@ -3032,39 +4527,43 @@ function showRenameModal(deckId) {
 function showAddCardModal(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  openModal(`${esc(deck.name)} — Kart Ekle`, `
+  openModal(`${esc(deck.name)} — ${t('addCardSection')}`, `
+    <div class="fc-preview-sticky fc-preview-sticky-modal">
+      <div class="flashcard fc-preview" id="modal-add-fc-preview"></div>
+    </div>
     <div class="form-group">
-      <label>Kanji / Kelime <span class="required">*</span></label>
+      <label>${t('kanjiWord')} <span class="required">*</span></label>
       <input type="text" id="modal-add-kanji" placeholder="例: 漢字">
     </div>
     <div class="form-group">
-      <label>Furigana (okunuş) <span class="required">*</span></label>
+      <label>${t('furiganaLabel')} <span class="required">*</span></label>
       <input type="text" id="modal-add-furigana" placeholder="例: かんじ">
       <div class="furigana-suggest" id="modal-add-furigana-suggest"></div>
     </div>
     <div class="form-group">
-      <label>Türkçe anlam <span class="required">*</span></label>
+      <label>${t('meaningLabel')} <span class="required">*</span></label>
       <input type="text" id="modal-add-meaning" placeholder="例: kanji, Çince karakter">
     </div>
     <div class="form-group">
-      <label>Örnek cümle (Japonca)</label>
+      <label>${t('exampleJpLabel')}</label>
       <input type="text" id="modal-add-example-jp" placeholder="例: 毎日漢字を勉強します。">
       <div class="furigana-mark-row" id="modal-add-example-mark-row" style="display:none">
-        <button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${icon('spark')} Kelimeleri işaretle (furigana ekle)</button>
+        <button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${icon('spark')} ${t('markWordsBtn')}</button>
       </div>
       <div id="modal-add-example-furigana-editor"></div>
     </div>
     <div class="form-group">
-      <label>Örnek çeviri (Türkçe, opsiyonel)</label>
+      <label>${t('exampleTrLabel')}</label>
       <input type="text" id="modal-add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">${t('saveBtn')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   setupFuriganaAssist('modal-add-kanji', 'modal-add-furigana', 'modal-add-furigana-suggest');
   setupExampleFuriganaAssist('modal-add-example-jp', 'modal-add-example-mark-row', 'modal-add-example-mark-btn', 'modal-add-example-furigana-editor');
+  setupLivePreview('modal-add');
   ['modal-add-kanji','modal-add-furigana','modal-add-meaning','modal-add-example-jp','modal-add-example-tr'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') saveCardFromModal(deckId); });
   });
@@ -3072,7 +4571,7 @@ function showAddCardModal(deckId) {
 
 function saveCardFromModal(deckId) {
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast('⚠ ' + t('deckNotFoundMsg')); return; }
   const kanji = document.getElementById('modal-add-kanji').value.trim();
   const furigana = document.getElementById('modal-add-furigana').value.trim();
   const meaning = document.getElementById('modal-add-meaning').value.trim();
@@ -3082,11 +4581,11 @@ function saveCardFromModal(deckId) {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch (e) {}
 
-  if (!kanji || !furigana || !meaning) { showToast('⚠ Kanji, furigana ve anlam zorunlu'); return; }
+  if (!kanji || !furigana || !meaning) { showToast('⚠ ' + t('requiredFieldsMsg')); return; }
 
   deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   save();
-  showToast('✓ Kart eklendi: ' + kanji);
+  showToast('✓ ' + t('cardAddedMsg', {name: kanji}));
   renderDeckDetail();
 
   // Modalı kapatmadan formu temizle, kullanıcı art arda kart eklemek isteyebilir
@@ -3105,39 +4604,39 @@ function saveCardFromModal(deckId) {
 function renameDeck(deckId) {
   const deck = findDeck(deckId);
   const newName = document.getElementById('rename-input').value.trim();
-  if (!newName) { showToast('⚠ İsim boş olamaz'); return; }
+  if (!newName) { showToast('⚠ ' + t('nameEmptyMsg')); return; }
   deck.name = newName;
   save();
   closeModal();
   if (currentView === 'deck') { renderDeckDetail(); }
   else renderDeckList();
-  showToast('✓ Deste adı güncellendi');
+  showToast('✓ ' + t('deckNameUpdatedMsg'));
 }
 
 function showEditModal(deckId, cardId) {
   const deck = findDeck(deckId);
   const card = deck?.cards.find(c => c.id === cardId);
   if (!card) return;
-  openModal('Kartı düzenle', `
-    <div class="form-group"><label>Kanji / Kelime</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
+  openModal(t('editCardModalTitle'), `
+    <div class="form-group"><label>${t('kanjiWord')}</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
     <div class="form-group">
-      <label>Furigana</label>
+      <label>${t('furiganaSimpleLabel')}</label>
       <input id="edit-furigana" value="${esc(card.furigana)}">
       <div class="furigana-suggest" id="edit-furigana-suggest"></div>
     </div>
-    <div class="form-group"><label>Türkçe anlam</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
+    <div class="form-group"><label>${t('meaningLabel')}</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
     <div class="form-group">
-      <label>Örnek cümle (JP)</label>
+      <label>${t('exampleJpSimpleLabel')}</label>
       <input id="edit-example-jp" value="${esc(card.exampleJp)}">
       <div class="furigana-mark-row" id="edit-example-mark-row" style="display:${card.exampleJp ? 'flex' : 'none'}">
-        <button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${icon('spark')} Kelimeleri işaretle (furigana ekle)</button>
+        <button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${icon('spark')} ${t('markWordsBtn')}</button>
       </div>
       <div id="edit-example-furigana-editor"></div>
     </div>
-    <div class="form-group"><label>Örnek çeviri (TR)</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
+    <div class="form-group"><label>${t('exampleTrSimpleLabel')}</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">${t('saveBtn')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   document.getElementById('edit-example-jp').dataset.furiganaMap = JSON.stringify(card.exampleFuriganaMap || {});
@@ -3159,50 +4658,53 @@ function saveEditCard(deckId, cardId) {
   save();
   closeModal();
   renderDeckDetail();
-  showToast('✓ Kart güncellendi');
+  showToast('✓ ' + t('cardUpdatedMsg'));
 }
 
 function deleteDeck(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  if (!confirm(`"${deck.name}" destesini ve tüm kartlarını silmek istediğine emin misin?`)) return;
-  state.decks = state.decks.filter(d => d.id !== deckId);
+  if (!confirm(t('deleteDeckConfirm', {name: deck.name}))) return;
+  const arr = findParentArray(deckId);
+  if (!arr) return;
+  const idx = arr.indexOf(deck);
+  arr.splice(idx, 1);
   save();
   showView('decks');
-  showToast('🗑 Deste silindi');
+  showToast('🗑 ' + t('deckDeletedMsg'));
 }
 
 function deleteCard(deckId, cardId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  if (!confirm('Bu kartı silmek istediğine emin misin?')) return;
+  if (!confirm(t('deleteCardConfirm'))) return;
   deck.cards = deck.cards.filter(c => c.id !== cardId);
   save();
   renderDeckDetail();
-  showToast('🗑 Kart silindi');
+  showToast('🗑 ' + t('cardDeletedMsg'));
 }
 
 function showAddDeckModal() {
-  openModal('Yeni deste oluştur', `
+  openModal(t('newDeckModalTitle'), `
     <div class="form-group">
-      <label>Deste adı</label>
-      <input id="new-deck-name" placeholder="ör: JLPT N3 Kanji">
+      <label>${t('newDeckName')}</label>
+      <input id="new-deck-name" placeholder="${t('newDeckPlaceholder')}">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="addDeck()">Oluştur</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="addDeck()">${t('create')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
 }
 
 function addDeck() {
   const name = document.getElementById('new-deck-name').value.trim();
-  if (!name) { showToast('⚠ İsim boş olamaz'); return; }
+  if (!name) { showToast('⚠ ' + t('nameEmptyMsg')); return; }
   createDeck(name);
   closeModal();
   renderDeckList();
   renderGlobalStats();
-  showToast('✓ Deste oluşturuldu: ' + name);
+  showToast('✓ ' + t('deckCreatedMsg', {name}));
 }
 
 function openDeck(deckId) { currentDeckId = deckId; showView('deck'); }
@@ -3266,11 +4768,11 @@ document.getElementById('import-file').addEventListener('change', e => {
   e.target.value = '';
 });
 document.getElementById('btn-reset-all').addEventListener('click', () => {
-  if (!confirm('TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?')) return;
-  state = { version:1, settings:{...CONFIG}, stats:{reviewsByDate:{},streak:0}, decks:[] };
+  if (!confirm(t('resetAllConfirm'))) return;
+  state = { version:1, settings:{...CONFIG}, stats:{reviewsByDate:{},streak:0,shields:1,lastShieldWeekStart:null}, decks:[] };
   save();
   showView('decks');
-  showToast('✓ Tüm veri sıfırlandı');
+  showToast('✓ ' + t('resetAllDoneMsg'));
 });
 document.getElementById('modal-bg').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-bg')) closeModal();
@@ -3280,27 +4782,102 @@ document.getElementById('modal-bg').addEventListener('click', e => {
 });
 
 // ─── BOOT ─────────────────────────────────────────────────────────────
+// Örnek deste içeriği: kanji/furigana HER ZAMAN Japonca kalır (değişmez),
+// sadece anlam ve örnek cümle çevirisi seçili dile göre değişir.
+const SAMPLE_DECK_NAME = {
+  tr: 'JLPT N3 Kanji (Örnek)', en: 'JLPT N3 Kanji (Sample)',
+  zh: 'JLPT N3 汉字（示例）', mn: 'JLPT N3 Канжи (Жишээ)', ko: 'JLPT N3 한자 (샘플)',
+};
+const SAMPLE_CARDS = {
+  tr: [
+    ['漢字','かんじ','kanji, Çince karakter','毎日漢字を勉強します。','Her gün kanji çalışıyorum.'],
+    ['水','みず','su','水を飲みます。','Su içiyorum.'],
+    ['食べる','たべる','yemek (fiil)','パンを食べる。','Ekmek yerim.'],
+    ['学校','がっこう','okul','学校に行きます。','Okula gidiyorum.'],
+    ['友達','ともだち','arkadaş','友達と遊びます。','Arkadaşımla oynuyorum.'],
+    ['電車','でんしゃ','tren','電車で来ました。','Trenle geldim.'],
+    ['仕事','しごと','iş','仕事が終わりました。','İş bitti.'],
+    ['勉強','べんきょう','çalışmak','毎日勉強します。','Her gün ders çalışıyorum.'],
+  ],
+  en: [
+    ['漢字','かんじ','kanji, Chinese character','毎日漢字を勉強します。','I study kanji every day.'],
+    ['水','みず','water','水を飲みます。','I drink water.'],
+    ['食べる','たべる','to eat','パンを食べる。','I eat bread.'],
+    ['学校','がっこう','school','学校に行きます。','I go to school.'],
+    ['友達','ともだち','friend','友達と遊びます。','I play with my friend.'],
+    ['電車','でんしゃ','train','電車で来ました。','I came by train.'],
+    ['仕事','しごと','work, job','仕事が終わりました。','Work is finished.'],
+    ['勉強','べんきょう','to study','毎日勉強します。','I study every day.'],
+  ],
+  zh: [
+    ['漢字','かんじ','汉字','毎日漢字を勉強します。','我每天学习汉字。'],
+    ['水','みず','水','水を飲みます。','我喝水。'],
+    ['食べる','たべる','吃','パンを食べる。','我吃面包。'],
+    ['学校','がっこう','学校','学校に行きます。','我去学校。'],
+    ['友達','ともだち','朋友','友達と遊びます。','我和朋友一起玩。'],
+    ['電車','でんしゃ','电车','電車で来ました。','我坐电车来的。'],
+    ['仕事','しごと','工作','仕事が終わりました。','工作结束了。'],
+    ['勉強','べんきょう','学习','毎日勉強します。','我每天学习。'],
+  ],
+  mn: [
+    ['漢字','かんじ','канжи, хятад үсэг','毎日漢字を勉強します。','Би өдөр бүр канжи судалдаг.'],
+    ['水','みず','ус','水を飲みます。','Би ус уудаг.'],
+    ['食べる','たべる','идэх (үйл үг)','パンを食べる。','Би талх иддэг.'],
+    ['学校','がっこう','сургууль','学校に行きます。','Би сургууль руу явдаг.'],
+    ['友達','ともだち','найз','友達と遊びます。','Би найзтайгаа тоглодог.'],
+    ['電車','でんしゃ','галт тэрэг','電車で来ました。','Би галт тэргээр ирсэн.'],
+    ['仕事','しごと','ажил','仕事が終わりました。','Ажил дууслаа.'],
+    ['勉強','べんきょう','суралцах','毎日勉強します。','Би өдөр бүр суралцдаг.'],
+  ],
+  ko: [
+    ['漢字','かんじ','한자, 중국 문자','毎日漢字を勉強します。','저는 매일 한자를 공부합니다.'],
+    ['水','みず','물','水を飲みます。','저는 물을 마십니다.'],
+    ['食べる','たべる','먹다 (동사)','パンを食べる。','빵을 먹습니다.'],
+    ['学校','がっこう','학교','学校に行きます。','학교에 갑니다.'],
+    ['友達','ともだち','친구','友達と遊びます。','친구와 놉니다.'],
+    ['電車','でんしゃ','전철','電車で来ました。','전철을 타고 왔습니다.'],
+    ['仕事','しごと','일, 직장','仕事が終わりました。','일이 끝났습니다.'],
+    ['勉強','べんきょう','공부하다','毎日勉強します。','저는 매일 공부합니다.'],
+  ],
+};
+
 async function boot() {
   await loadApp();
+  appSessionStart = Date.now();
   showView('decks');
 
   if (!state.decks.length) {
-    const demo = createDeck('JLPT N3 Kanji (Örnek)');
-    const sampleCards = [
-      ['漢字','かんじ','kanji, Çince karakter','毎日漢字を勉強します。','Her gün kanji çalışıyorum.'],
-      ['水','みず','su','水を飲みます。','Su içiyorum.'],
-      ['食べる','たべる','yemek (fiil)','パンを食べる。','Ekmek yerim.'],
-      ['学校','がっこう','okul','学校に行きます。','Okula gidiyorum.'],
-      ['友達','ともだち','arkadaş','友達と遊びます。','Arkadaşımla oynuyorum.'],
-      ['電車','でんしゃ','tren','電車で来ました。','Trenle geldim.'],
-      ['仕事','しごと','iş','仕事が終わりました。','İş bitti.'],
-      ['勉強','べんきょう','çalışmak','毎日勉強します。','Her gün ders çalışıyorum.'],
-    ];
-    for (const [k,f,m,ej,et] of sampleCards) demo.cards.push(makeCard(k,f,m,ej,et));
+    createSampleDeck();
     save();
     renderDeckList();
     renderGlobalStats();
   }
+}
+
+// Örnek desteyi (mevcut dile göre) oluşturur. isSampleDeck:true işareti
+// sayesinde, kullanıcı dilini değiştirdiğinde bu deste SİLİNİP yeniden
+// oluşturulabilir — çünkü bu kalıcı kullanıcı verisi değil, demo
+// içeriğidir (bkz. setLang). Kullanıcının kendi eklediği kartlar bu
+// işarete sahip olmadığı için ASLA dokunulmaz/silinmez.
+function createSampleDeck() {
+  const lang = SAMPLE_CARDS[currentLang] ? currentLang : 'en';
+  const demo = createDeck(SAMPLE_DECK_NAME[lang]);
+  demo.isSampleDeck = true;
+  for (const [k,f,m,ej,et] of SAMPLE_CARDS[lang]) demo.cards.push(makeCard(k,f,m,ej,et));
+  return demo;
+}
+
+// Dil değiştiğinde, eğer hâlâ (hiç dokunulmamış ya da çalışılmış olsa
+// bile) örnek deste varsa, onu mevcut dildeki haliyle SIFIRDAN yeniden
+// oluşturur — eski SRS ilerlemesi dahil silinir. Bu BİLEREK kullanıcının
+// kendi eklediği desteleri/kartları HİÇ etkilemez (sadece isSampleDeck
+// işaretli olan deste hedef alınır).
+function refreshSampleDeckForLanguage() {
+  const idx = state.decks.findIndex(d => !isFolder(d) && d.isSampleDeck);
+  if (idx === -1) return; // örnek deste hiç yok ya da kullanıcı sildi — dokunma
+  state.decks.splice(idx, 1);
+  createSampleDeck();
+  save();
 }
 boot();
 
@@ -3332,12 +4909,12 @@ setTimeout(() => {
     if (currentState === 'available') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">Yeni güncelleme mevcut</span>
+          <span class="update-pop-title">${t('updateAvailableTitle')}</span>
           <button class="update-pop-close tap" id="up-close">${icon('close')}</button>
         </div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)}</div>
+        <div class="update-pop-version">${t('versionLabel', {v: esc(currentInfo.version)})}</div>
         ${currentInfo.releaseNotes ? `<div class="update-pop-notes">${esc(currentInfo.releaseNotes)}</div>` : ''}
-        <button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} İndir</button>
+        <button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} ${t('downloadBtn')}</button>
       `;
       document.getElementById('up-download').addEventListener('click', () => {
         currentState = 'downloading';
@@ -3347,19 +4924,19 @@ setTimeout(() => {
     } else if (currentState === 'downloading') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">İndiriliyor…</span>
+          <span class="update-pop-title">${t('downloadingLabel')}</span>
         </div>
         <div class="update-pop-progress"><div class="update-pop-progress-fill" id="up-progress-fill" style="width:0%"></div></div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)}</div>
+        <div class="update-pop-version">${t('versionLabel', {v: esc(currentInfo.version)})}</div>
       `;
     } else if (currentState === 'downloaded') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">Güncelleme hazır</span>
+          <span class="update-pop-title">${t('updateReadyTitle')}</span>
           <button class="update-pop-close tap" id="up-close">${icon('close')}</button>
         </div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)} indirildi</div>
-        <button class="btn btn-primary btn-block tap" id="up-install">Yeniden Başlat ve Kur</button>
+        <div class="update-pop-version">${t('versionDownloadedLabel', {v: esc(currentInfo.version)})}</div>
+        <button class="btn btn-primary btn-block tap" id="up-install">${t('restartAndInstallBtn')}</button>
       `;
       document.getElementById('up-install').addEventListener('click', () => api.installUpdate());
     }
@@ -3423,18 +5000,3 @@ if ('serviceWorker' in navigator) {
 </body>
 </html>
 
-<style id="__om-edit-overrides">
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { width: 1px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { width: 14px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { height: 1px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { height: 10px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { height: 1000px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { height: 100px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { height: 14px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] >.ic { width: 104px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] { width: 220px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] { width: 2200px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] { height: 220px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] { height: 22px !important }
-#settings-fields [onclick="toggleSettingInfo('steps')"] { width: 22px !important }
-</style>
