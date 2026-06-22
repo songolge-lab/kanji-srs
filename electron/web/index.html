@@ -692,6 +692,61 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
 .fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
 
+/* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
+.fc-preview-wrap {
+  display: none;
+  margin-bottom: .75rem;
+}
+.fc-preview-wrap.has-content { display: block; }
+.fc-preview {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 180px;
+  perspective: 800px;
+  position: relative;
+  overflow: hidden;
+}
+.fc-preview-inner {
+  min-height: 180px;
+  position: relative;
+  transition: transform .45s ease;
+  transform-style: preserve-3d;
+}
+.fc-preview-wrap.show-back .fc-preview-inner {
+  transform: rotateY(180deg);
+}
+.fc-preview-front,
+.fc-preview-back {
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem 1rem;
+  min-height: 180px;
+}
+.fc-preview-back {
+  transform: rotateY(180deg);
+  position: absolute;
+  inset: 0;
+}
+.fc-preview .fc-kanji { font-size: clamp(2.5rem, 14vw, 4.5rem); }
+.fc-preview .fc-ruby { font-size: 1.4rem; line-height: 2; margin-bottom: .2rem; }
+.fc-preview .fc-furigana { font-size: 1rem; }
+.fc-preview .fc-meaning { font-size: 1rem; font-weight: 700; margin-bottom: .6rem; }
+.fc-preview .fc-divider { border: none; border-top: 1px solid var(--line); margin: .5rem 0; width: 100%; }
+.fc-preview .fc-example { font-size: .9rem; line-height: 1.7; }
+.fc-preview .fc-exampletr { font-size: .78rem; }
+.fc-preview-label {
+  font-size: .7rem;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: .3rem 0 .5rem;
+  letter-spacing: .03em;
+}
+
 #btn-show {
   width: 100%;
   min-height: 56px;
@@ -990,6 +1045,87 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   .nav-item.active { background: var(--hanko-bg, var(--paper-2)); }
   .nav-item:active { background: var(--paper-2); }
 }
+
+/* =====================================================================
+   MASAÜSTÜ OPTİMİZASYONU (1024px+)
+   Geniş ekranlarda daha iyi alan kullanımı: grid deste listesi,
+   büyük flashcard, yan yana form, ortada modal.
+   ===================================================================== */
+@media (min-width: 1024px) {
+  #app {
+    max-width: 960px;
+    padding: calc(var(--safe-t) + 1.5rem) 2.5rem 2.5rem;
+  }
+
+  /* Deste listesi: otomatik 2-3 sütun grid */
+  #deck-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: .75rem;
+  }
+  #deck-list > .card { margin-bottom: 0; }
+
+  /* İstatistik kutuları */
+  .stats-grid { gap: .85rem; }
+  .stat-box { padding: 1rem .6rem; }
+  .stat-num { font-size: 1.7rem; }
+
+  /* Deste detay: 6 sütun istatistik */
+  #deck-detail-content .stats-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  /* Flashcard: daha büyük, ortada */
+  .flashcard {
+    min-height: 340px;
+    padding: 3rem 2rem;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .fc-kanji { font-size: clamp(5.5rem, 12vw, 9rem); }
+  .fc-ruby { font-size: 2.5rem; }
+  .fc-meaning { font-size: 1.4rem; }
+  .fc-example { font-size: 1.15rem; }
+  #btn-show,
+  .answer-grid {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #btn-show { display: block; }
+
+  /* Kart ekleme: preview + form yan yana */
+  .add-form-desktop-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .add-form-desktop-wrap .fc-preview-wrap {
+    position: sticky;
+    top: calc(var(--safe-t) + 1.5rem);
+  }
+
+  /* Ayarlar: 2 sütun grid */
+  #settings-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem 1.5rem;
+  }
+
+  /* Modal: ortada, tam yuvarlak köşeler */
+  #modal-bg { align-items: center; }
+  #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+
+  /* Genel spacing */
+  .section-hd { font-size: .95rem; margin-top: 1.5rem; }
+  .btn { padding: .65rem 1.3rem; }
+  .form-group { margin-bottom: 1rem; }
+}
 </style>
 <link id="gfont-Libre-Baskerville" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@300;400;500;600;700&amp;display=swap">
 <link id="gfont-Pacifico" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico:wght@300;400;500;600;700&amp;display=swap">
@@ -1060,40 +1196,43 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <!-- VIEW: ADD CARD -->
   <div id="view-add" class="view">
     <div class="section-hd">Kart ekle</div>
-    <div class="card">
-      <div class="form-group">
-        <label>Hedef deste</label>
-        <select id="add-deck-select"></select>
-      </div>
-      <div class="form-group">
-        <label>Kanji / Kelime <span class="required">*</span></label>
-        <input type="text" id="add-kanji" placeholder="例: 漢字">
-      </div>
-      <div class="form-group">
-        <label>Furigana (okunuş) <span class="required">*</span></label>
-        <input type="text" id="add-furigana" placeholder="例: かんじ">
-        <div class="furigana-suggest" id="add-furigana-suggest"></div>
-      </div>
-      <div class="form-group">
-        <label>Türkçe anlam <span class="required">*</span></label>
-        <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
-      </div>
-      <div class="form-group">
-        <label>Örnek cümle (Japonca)</label>
-        <input type="text" id="add-example-jp" placeholder="例: 毎日漢字を勉強します。">
-        <div class="furigana-mark-row" id="add-example-mark-row" style="display:none">
-          <button type="button" class="btn btn-ghost tap btn-sm" id="add-example-mark-btn">
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/><path d="M7.6 7.6l2 2M14.4 14.4l2 2M16.4 7.6l-2 2M9.6 14.4l-2 2"/></svg>
-            Kelimeleri işaretle (furigana ekle)
-          </button>
+    <div class="add-form-desktop-wrap">
+      <div id="add-preview-wrap" class="fc-preview-wrap"></div>
+      <div class="card">
+        <div class="form-group">
+          <label>Hedef deste</label>
+          <select id="add-deck-select"></select>
         </div>
-        <div id="add-example-furigana-editor"></div>
+        <div class="form-group">
+          <label>Kanji / Kelime <span class="required">*</span></label>
+          <input type="text" id="add-kanji" placeholder="例: 漢字">
+        </div>
+        <div class="form-group">
+          <label>Furigana (okunuş) <span class="required">*</span></label>
+          <input type="text" id="add-furigana" placeholder="例: かんじ">
+          <div class="furigana-suggest" id="add-furigana-suggest"></div>
+        </div>
+        <div class="form-group">
+          <label>Türkçe anlam <span class="required">*</span></label>
+          <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
+        </div>
+        <div class="form-group">
+          <label>Örnek cümle (Japonca)</label>
+          <input type="text" id="add-example-jp" placeholder="例: 毎日漢字を勉強します。">
+          <div class="furigana-mark-row" id="add-example-mark-row" style="display:none">
+            <button type="button" class="btn btn-ghost tap btn-sm" id="add-example-mark-btn">
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/><path d="M7.6 7.6l2 2M14.4 14.4l2 2M16.4 7.6l-2 2M9.6 14.4l-2 2"/></svg>
+              Kelimeleri işaretle (furigana ekle)
+            </button>
+          </div>
+          <div id="add-example-furigana-editor"></div>
+        </div>
+        <div class="form-group">
+          <label>Örnek çeviri (Türkçe, opsiyonel)</label>
+          <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+        </div>
+        <button class="btn btn-block btn-primary tap" id="btn-save-card">Kaydet</button>
       </div>
-      <div class="form-group">
-        <label>Örnek çeviri (Türkçe, opsiyonel)</label>
-        <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
-      </div>
-      <button class="btn btn-block btn-primary tap" id="btn-save-card">Kaydet</button>
     </div>
 
     <div class="section-hd">Toplu içe aktar</div>
@@ -1179,7 +1318,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -1208,6 +1347,7 @@ const ICONS = {
   shield: '<path d="M12 3 4.5 6v6c0 5 3.4 7.6 7.5 9 4.1-1.4 7.5-4 7.5-9V6L12 3Z"/>',
   lock:   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   unlock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>',
+  folder: '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.3a1.5 1.5 0 0 1 1.2.6L11.5 8H19.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11Z"/>',
 };
 
 function icon(name, cls) {
@@ -1368,6 +1508,7 @@ async function connectSyncCode(code) {
     const merged = pickNewerState(state, remoteState);
     state = merged;
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
+    state.decks = migrateDecks(state.decks || []);
     setSyncCode(code);
     syncEnabled = true;
     save(); // local + cloud push tetikler
@@ -1614,6 +1755,7 @@ async function manualSync() {
     const remoteState = remote ? remote.state : null;
     state = pickNewerState(state, remoteState);
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
+    state.decks = migrateDecks(state.decks || []);
     saveState(state);
     await cloudPush(syncCode, state);
     syncStatus = 'synced';
@@ -1670,12 +1812,20 @@ function migrateStats(stats) {
   return s;
 }
 
+function migrateDecks(decks) {
+  for (const d of decks) {
+    if (!('parentId' in d)) d.parentId = null;
+  }
+  return decks;
+}
+
 async function loadApp() {
   const saved = loadState();
   if (saved) {
     state = saved;
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
     state.stats = migrateStats(state.stats);
+    state.decks = migrateDecks(state.decks || []);
   }
   if (!testStorage()) {
     document.getElementById('storage-warning').style.display = 'block';
@@ -1693,6 +1843,7 @@ async function loadApp() {
       const remoteState = remote ? remote.state : null;
       state = pickNewerState(state, remoteState);
       state.settings = migrateSettings({ ...CONFIG, ...state.settings });
+      state.decks = migrateDecks(state.decks || []);
       save();
       syncStatus = 'synced';
     } catch (e) {
@@ -1860,7 +2011,7 @@ function fmtDur(ms) {
 }
 
 // ─── QUEUE BUILDER ────────────────────────────────────────────────────
-function buildQueue(deck, masteredOnly = false) {
+function buildQueueFromCards(cards, masteredOnly = false) {
   const now = nowMs();
   const todayStr = today();
   const newToday = state.stats.reviewsByDate[todayStr + '_new'] || 0;
@@ -1868,7 +2019,7 @@ function buildQueue(deck, masteredOnly = false) {
 
   let learning = [], review = [], newCards = [];
 
-  for (const card of deck.cards) {
+  for (const card of cards) {
     if (masteredOnly && !card.srs.mastered) continue;
     if (!masteredOnly && card.srs.mastered) {
       if (card.srs.state === 'review' && card.srs.due <= now) review.push(card);
@@ -1883,6 +2034,10 @@ function buildQueue(deck, masteredOnly = false) {
     }
   }
   return [...learning, ...review, ...newCards];
+}
+
+function buildQueue(deck, masteredOnly = false) {
+  return buildQueueFromCards(deck.cards, masteredOnly);
 }
 
 // ─── STATS HELPERS ────────────────────────────────────────────────────
@@ -2136,11 +2291,86 @@ function deckStats(deck) {
 
 // ─── DECK / CARD HELPERS ──────────────────────────────────────────────
 function findDeck(id) { return state.decks.find(d => d.id === id); }
-function createDeck(name) {
-  const d = { id: uid(), name, createdAt: Date.now(), cards: [] };
+function createDeck(name, parentId = null) {
+  const d = { id: uid(), name, parentId, createdAt: Date.now(), cards: [] };
   state.decks.push(d);
   save();
   return d;
+}
+
+function getChildDecks(parentId) {
+  return state.decks.filter(d => d.parentId === parentId);
+}
+
+function getDescendantDecks(deckId) {
+  const visited = new Set();
+  const result = [];
+  function walk(pid) {
+    for (const d of state.decks) {
+      if (d.parentId === pid && !visited.has(d.id)) {
+        visited.add(d.id);
+        result.push(d);
+        walk(d.id);
+      }
+    }
+  }
+  walk(deckId);
+  return result;
+}
+
+function getAllCardsForDeck(deckId) {
+  const deck = findDeck(deckId);
+  if (!deck) return [];
+  let cards = [...deck.cards];
+  for (const desc of getDescendantDecks(deckId)) {
+    cards = cards.concat(desc.cards);
+  }
+  return cards;
+}
+
+function getDecksInTreeOrder() {
+  const result = [];
+  function walk(parentId, depth) {
+    for (const d of state.decks) {
+      if ((d.parentId || null) === parentId) {
+        result.push({ deck: d, depth });
+        walk(d.id, depth + 1);
+      }
+    }
+  }
+  walk(null, 0);
+  return result;
+}
+
+function getDeckPath(deckId) {
+  const path = [];
+  let cur = findDeck(deckId);
+  while (cur) {
+    path.unshift(cur);
+    cur = cur.parentId ? findDeck(cur.parentId) : null;
+  }
+  return path;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function aggregateDeckStats(deckId) {
+  const allCards = getAllCardsForDeck(deckId);
+  const now = nowMs();
+  let newC = 0, learning = 0, due = 0, mastered = 0;
+  for (const c of allCards) {
+    if (c.srs.mastered) mastered++;
+    else if (c.srs.state === 'new') newC++;
+    else if (c.srs.state === 'learning') learning++;
+    if (c.srs.state !== 'new' && c.srs.due <= now) due++;
+  }
+  return { newC, learning, due, mastered, total: allCards.length };
 }
 function makeCard(kanji, furigana, meaningTr, exampleJp, exampleTr, exampleFuriganaMap) {
   return {
@@ -2505,16 +2735,24 @@ function renderDeckList() {
   if (!state.decks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
 
-  container.innerHTML = state.decks.map(deck => {
-    const s = deckStats(deck);
-    const qLen = buildQueue(deck).length;
+  const tree = getDecksInTreeOrder();
+  container.innerHTML = tree.map(({ deck, depth }) => {
+    const children = getChildDecks(deck.id);
+    const hasChildren = children.length > 0;
+    const s = hasChildren ? aggregateDeckStats(deck.id) : deckStats(deck);
+    const ownCards = deck.cards.length;
+    const qLen = hasChildren
+      ? buildQueueFromCards(getAllCardsForDeck(deck.id)).length
+      : buildQueue(deck).length;
+    const indent = depth * 1.2;
+    const subInfo = hasChildren ? ` · ${children.length} alt deste` : '';
     return `
-    <div class="card">
+    <div class="card" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
       <div class="card-row">
         <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
           <span>
-            <span class="card-title" style="display:block">${esc(deck.name)}</span>
-            <span class="deck-meta">${s.total} kart · ${s.mastered} ustalaşıldı</span>
+            <span class="card-title" style="display:block">${hasChildren ? icon('folder') + ' ' : ''}${esc(deck.name)}</span>
+            <span class="deck-meta">${s.total} kart · ${s.mastered} ustalaşıldı${subInfo}</span>
           </span>
         </button>
       </div>
@@ -2536,29 +2774,68 @@ function renderDeckDetail() {
   const deck = findDeck(currentDeckId);
   if (!deck) { showView('decks'); return; }
 
+  const path = getDeckPath(deck.id);
+  const breadcrumb = path.length > 1
+    ? `<div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:.5rem">${path.map((p, i) => i < path.length - 1 ? `<a href="#" onclick="event.preventDefault();openDeck('${p.id}')" style="color:var(--ink-soft);text-decoration:underline">${esc(p.name)}</a>` : `<strong>${esc(p.name)}</strong>`).join(' › ')}</div>`
+    : '';
+
   document.getElementById('topbar-title').innerHTML = `
     <span style="display:flex;align-items:center;gap:.4rem;min-width:0">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(deck.name)}</span>
       <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="Adlandır">${icon('edit')}</button>
     </span>`;
-  const s = deckStats(deck);
-  const qLen = buildQueue(deck).length;
-  const mLen = buildQueue(deck, true).length;
+
+  const children = getChildDecks(deck.id);
+  const hasChildren = children.length > 0;
+  const s = hasChildren ? aggregateDeckStats(deck.id) : deckStats(deck);
+  const ownStats = deckStats(deck);
+  const allCards = hasChildren ? getAllCardsForDeck(deck.id) : deck.cards;
+  const qLen = hasChildren
+    ? buildQueueFromCards(allCards).length
+    : buildQueue(deck).length;
+  const mLen = hasChildren
+    ? buildQueueFromCards(allCards, true).length
+    : buildQueue(deck, true).length;
   const masteredCards = deck.cards.filter(c => c.srs.mastered);
   const normalCards = deck.cards.filter(c => !c.srs.mastered);
 
+  const subDecksHTML = children.length ? `
+    <div class="section-hd">Alt desteler (${children.length})</div>
+    ${children.map(child => {
+      const cs = aggregateDeckStats(child.id);
+      const cq = buildQueueFromCards(getAllCardsForDeck(child.id)).length;
+      return `
+      <div class="card" style="border-left:3px solid var(--line)">
+        <div class="card-row">
+          <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${child.id}')">
+            <span>
+              <span class="card-title" style="display:block">${esc(child.name)}</span>
+              <span class="deck-meta">${cs.total} kart · ${cs.mastered} ustalaşıldı</span>
+            </span>
+          </button>
+        </div>
+        <div class="btn-row" style="margin-top:.4rem">
+          ${cq > 0 ? `<button class="btn btn-primary tap btn-sm" onclick="startStudy('${child.id}',false)">${icon('play','ic-fill')}Çalış (${cq})</button>` : '<span class="text-muted" style="font-size:.82rem">Çalışılacak kart yok</span>'}
+          <button class="btn btn-ghost tap btn-sm" style="flex:0" onclick="openDeck('${child.id}')">Detay</button>
+        </div>
+      </div>`;
+    }).join('')}
+    <button class="btn btn-ghost tap" style="margin-bottom:1rem" onclick="showAddSubDeckModal('${deck.id}')">${icon('plus')}Alt deste ekle</button>
+  ` : '';
+
   document.getElementById('deck-detail-content').innerHTML = `
+    ${breadcrumb}
     <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
       <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">Yeni</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">Öğreniliyor</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">Bugün tekrar</div></div>
-      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam</div></div>
+      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam${hasChildren ? ' (tümü)' : ''}</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşıldı</div></div>
       <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">Kuyrukta</div></div>
     </div>
 
     <div class="btn-row" style="margin-bottom:1rem">
-      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalışmaya başla (${qLen})</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>`}
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalışmaya başla (${qLen})${hasChildren ? ' — tümü' : ''}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>`}
       <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${icon('plus')}Kart Ekle</button>
       <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${icon('trash')}Sil</button>
     </div>
@@ -2566,6 +2843,8 @@ function renderDeckDetail() {
     <div class="btn-row" style="margin-bottom:1rem">
       <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${icon('eye')}Gözden Geçir</button>
     </div>
+
+    ${subDecksHTML}
 
     ${masteredCards.length ? `
     <div class="mastered-banner">
@@ -2622,7 +2901,12 @@ let studyShowingBack = false;
 function startStudy(deckId, masteredOnly) {
   currentDeckId = deckId;
   studyMastered = masteredOnly;
-  studyQueue = buildQueue(findDeck(deckId), masteredOnly);
+  const hasChildren = getChildDecks(deckId).length > 0;
+  if (hasChildren) {
+    studyQueue = shuffle(buildQueueFromCards(getAllCardsForDeck(deckId), masteredOnly));
+  } else {
+    studyQueue = buildQueue(findDeck(deckId), masteredOnly);
+  }
   studyCardIndex = 0;
   studyDoneToday = 0;
   studyShowingBack = false;
@@ -2640,13 +2924,16 @@ let reviewShowingBack = false;
 function showReviewPickModal(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  const masteredCount = deck.cards.filter(c => c.srs.mastered).length;
+  const allCards = getAllCardsForDeck(deckId);
+  const masteredCount = allCards.filter(c => c.srs.mastered).length;
+  const hasChildren = getChildDecks(deckId).length > 0;
+  const suffix = hasChildren ? ' (alt desteler dahil)' : '';
   openModal('Gözden Geçir — Kapsam Seç', `
     <p class="text-muted" style="margin-bottom:1rem">Bu modda kartlara sadece göz atarsın; cevapların ilerlemeni veya tekrar planını etkilemez.</p>
     <div class="btn-row" style="flex-direction:column">
-      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">Normal kartlar (${deck.cards.length - masteredCount})</button>
-      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">İyi Bildiklerim (${masteredCount})</button>` : ''}
-      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">Tüm kartlar (${deck.cards.length})</button>
+      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">Normal kartlar (${allCards.length - masteredCount})${suffix}</button>
+      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">İyi Bildiklerim (${masteredCount})${suffix}</button>` : ''}
+      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">Tüm kartlar (${allCards.length})${suffix}</button>
     </div>
     <button class="btn btn-ghost btn-block tap mt-2" onclick="closeModal()">İptal</button>
   `);
@@ -2655,9 +2942,12 @@ function showReviewPickModal(deckId) {
 function startReview(deckId, scope) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  if (scope === 'normal') reviewQueue = deck.cards.filter(c => !c.srs.mastered);
-  else if (scope === 'mastered') reviewQueue = deck.cards.filter(c => c.srs.mastered);
-  else reviewQueue = deck.cards.slice();
+  const allCards = getAllCardsForDeck(deckId);
+  if (scope === 'normal') reviewQueue = allCards.filter(c => !c.srs.mastered);
+  else if (scope === 'mastered') reviewQueue = allCards.filter(c => c.srs.mastered);
+  else reviewQueue = allCards.slice();
+
+  if (getChildDecks(deckId).length > 0) shuffle(reviewQueue);
 
   if (!reviewQueue.length) { showToast('⚠ Bu kapsamda kart yok'); return; }
 
@@ -2820,15 +3110,70 @@ function gradeCard(grade) {
   renderStudy();
 }
 
+// ─── FLASHCARD ÖNİZLEME ──────────────────────────────────────────────
+function updatePreview(prefix, containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const kanji    = (document.getElementById(prefix + 'kanji')?.value || '').trim();
+  const furigana = (document.getElementById(prefix + 'furigana')?.value || '').trim();
+  const meaning  = (document.getElementById(prefix + 'meaning')?.value || '').trim();
+  const exJp     = (document.getElementById(prefix + 'example-jp')?.value || '').trim();
+  const exTr     = (document.getElementById(prefix + 'example-tr')?.value || '').trim();
+
+  const hasAny = kanji || furigana || meaning || exJp || exTr;
+  const hasBack = furigana || meaning || exJp || exTr;
+
+  if (!hasAny) {
+    wrap.classList.remove('has-content', 'show-back');
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.classList.add('has-content');
+  wrap.classList.toggle('show-back', !!hasBack);
+
+  const frontHTML = `<div class="fc-kanji">${kanji ? esc(kanji) : '&nbsp;'}</div>`;
+  let backHTML = '';
+  if (kanji || furigana) {
+    backHTML += `<div class="fc-ruby">${buildRuby(esc(kanji || '?'), esc(furigana || '...'))}</div>`;
+  }
+  if (meaning) backHTML += `<div class="fc-meaning">${esc(meaning)}</div>`;
+  if (exJp) {
+    backHTML += `<hr class="fc-divider"><div class="fc-example">${esc(exJp)}</div>`;
+    if (exTr) backHTML += `<div class="fc-exampletr">${esc(exTr)}</div>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="fc-preview">
+      <div class="fc-preview-inner">
+        <div class="fc-preview-front">${frontHTML}</div>
+        <div class="fc-preview-back"><div class="fc-back" style="width:100%;text-align:center">${backHTML}</div></div>
+      </div>
+    </div>
+    <div class="fc-preview-label">${hasBack ? 'Arka yüz' : 'Ön yüz'}</div>`;
+}
+
+function attachPreviewListeners(prefix, containerId) {
+  [prefix + 'kanji', prefix + 'furigana', prefix + 'meaning', prefix + 'example-jp', prefix + 'example-tr'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => updatePreview(prefix, containerId));
+  });
+}
+
 // ─── ADD FORM ─────────────────────────────────────────────────────────
 function renderAddForm() {
   populateDeckSelects();
   setupFuriganaAssist('add-kanji', 'add-furigana', 'add-furigana-suggest');
   setupExampleFuriganaAssist('add-example-jp', 'add-example-mark-row', 'add-example-mark-btn', 'add-example-furigana-editor');
+  attachPreviewListeners('add-', 'add-preview-wrap');
+  updatePreview('add-', 'add-preview-wrap');
 }
 
 function populateDeckSelects() {
-  const opts = state.decks.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  const tree = getDecksInTreeOrder();
+  const opts = tree.map(({ deck, depth }) => {
+    const indent = '　'.repeat(depth);
+    return `<option value="${deck.id}">${indent}${esc(deck.name)}</option>`;
+  }).join('');
   const placeholder = state.decks.length ? '' : '<option disabled selected>Önce bir deste oluştur</option>';
   document.getElementById('add-deck-select').innerHTML = placeholder + opts;
   document.getElementById('bulk-deck-select').innerHTML = placeholder + opts;
@@ -2861,6 +3206,7 @@ function saveCard() {
   document.getElementById('add-example-furigana-editor').innerHTML = '';
   document.getElementById('add-example-mark-row').style.display = 'none';
   document.getElementById('add-furigana-suggest').innerHTML = '';
+  updatePreview('add-', 'add-preview-wrap');
 }
 
 function bulkImport() {
@@ -2996,6 +3342,7 @@ function importData(file) {
       if (!data.decks || !Array.isArray(data.decks)) throw new Error('Geçersiz format');
       state = { ...state, ...data };
       state.settings = migrateSettings({ ...CONFIG, ...state.settings });
+      state.decks = migrateDecks(state.decks || []);
       save();
       showToast('✓ Veriler içe aktarıldı: ' + state.decks.length + ' deste');
       renderDeckList();
@@ -3033,6 +3380,7 @@ function showAddCardModal(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
   openModal(`${esc(deck.name)} — Kart Ekle`, `
+    <div id="modal-add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="form-group">
       <label>Kanji / Kelime <span class="required">*</span></label>
       <input type="text" id="modal-add-kanji" placeholder="例: 漢字">
@@ -3068,6 +3416,7 @@ function showAddCardModal(deckId) {
   ['modal-add-kanji','modal-add-furigana','modal-add-meaning','modal-add-example-jp','modal-add-example-tr'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') saveCardFromModal(deckId); });
   });
+  attachPreviewListeners('modal-add-', 'modal-add-preview-wrap');
 }
 
 function saveCardFromModal(deckId) {
@@ -3099,6 +3448,7 @@ function saveCardFromModal(deckId) {
   document.getElementById('modal-add-example-furigana-editor').innerHTML = '';
   document.getElementById('modal-add-example-mark-row').style.display = 'none';
   document.getElementById('modal-add-furigana-suggest').innerHTML = '';
+  updatePreview('modal-add-', 'modal-add-preview-wrap');
   document.getElementById('modal-add-kanji').focus();
 }
 
@@ -3165,10 +3515,17 @@ function saveEditCard(deckId, cardId) {
 function deleteDeck(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  if (!confirm(`"${deck.name}" destesini ve tüm kartlarını silmek istediğine emin misin?`)) return;
-  state.decks = state.decks.filter(d => d.id !== deckId);
+  const descendants = getDescendantDecks(deckId);
+  const totalCards = getAllCardsForDeck(deckId).length;
+  const msg = descendants.length
+    ? `"${deck.name}" ve ${descendants.length} alt destesi (toplam ${totalCards} kart) silinecek. Emin misin?`
+    : `"${deck.name}" destesini ve tüm kartlarını (${deck.cards.length}) silmek istediğine emin misin?`;
+  if (!confirm(msg)) return;
+  const idsToDelete = new Set([deckId, ...descendants.map(d => d.id)]);
+  state.decks = state.decks.filter(d => !idsToDelete.has(d.id));
   save();
-  showView('decks');
+  if (deck.parentId) { currentDeckId = deck.parentId; showView('deck'); }
+  else showView('decks');
   showToast('🗑 Deste silindi');
 }
 
@@ -3183,25 +3540,55 @@ function deleteCard(deckId, cardId) {
 }
 
 function showAddDeckModal() {
+  const treeOpts = getDecksInTreeOrder().map(({ deck, depth }) => {
+    const indent = '　'.repeat(depth);
+    return `<option value="${deck.id}">${indent}${esc(deck.name)}</option>`;
+  }).join('');
   openModal('Yeni deste oluştur', `
     <div class="form-group">
       <label>Deste adı</label>
       <input id="new-deck-name" placeholder="ör: JLPT N3 Kanji">
+    </div>
+    <div class="form-group">
+      <label>Üst deste (opsiyonel)</label>
+      <select id="new-deck-parent">
+        <option value="">— Bağımsız (en üst düzey) —</option>
+        ${treeOpts}
+      </select>
     </div>
     <div class="btn-row">
       <button class="btn btn-primary tap" onclick="addDeck()">Oluştur</button>
       <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
     </div>
   `);
+  document.getElementById('new-deck-name').addEventListener('keydown', e => { if (e.key === 'Enter') addDeck(); });
 }
 
-function addDeck() {
+function showAddSubDeckModal(parentId) {
+  const parent = findDeck(parentId);
+  if (!parent) return;
+  openModal(`${esc(parent.name)} — Alt deste ekle`, `
+    <div class="form-group">
+      <label>Alt deste adı</label>
+      <input id="new-deck-name" placeholder="ör: Yiyecekler">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="addDeck('${parentId}')">Oluştur</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+    </div>
+  `);
+  document.getElementById('new-deck-name').addEventListener('keydown', e => { if (e.key === 'Enter') addDeck(parentId); });
+}
+
+function addDeck(parentId) {
   const name = document.getElementById('new-deck-name').value.trim();
   if (!name) { showToast('⚠ İsim boş olamaz'); return; }
-  createDeck(name);
+  const pId = parentId || (document.getElementById('new-deck-parent')?.value || null);
+  createDeck(name, pId);
   closeModal();
   renderDeckList();
   renderGlobalStats();
+  if (pId && currentView === 'deck') renderDeckDetail();
   showToast('✓ Deste oluşturuldu: ' + name);
 }
 
