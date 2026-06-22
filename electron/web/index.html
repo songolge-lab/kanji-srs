@@ -736,9 +736,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   inset: 0;
 }
 .fc-preview .fc-kanji { font-size: clamp(2.5rem, 14vw, 4.5rem); }
-.fc-preview .fc-ruby { font-size: 1.4rem; line-height: 2; margin-bottom: .2rem; }
-.fc-preview .fc-furigana { font-size: 1rem; }
-.fc-preview .fc-meaning { font-size: 1rem; font-weight: 700; margin-bottom: .6rem; }
+.fc-preview .fc-ruby { font-size: 1.8rem; line-height: 2; margin-bottom: .2rem; }
+.fc-preview .fc-furigana { font-size: 1.1rem; }
+.fc-preview .fc-meaning { font-size: 1.05rem; font-weight: 700; margin-bottom: .6rem; }
+.fc-preview-sparse .fc-preview .fc-ruby { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+.fc-preview-sparse .fc-preview .fc-meaning { font-size: 1.2rem; }
 .fc-preview .fc-divider { border: none; border-top: 1px solid var(--line); margin: .5rem 0; width: 100%; }
 .fc-preview .fc-example { font-size: .9rem; line-height: 1.7; }
 .fc-preview .fc-exampletr { font-size: .78rem; }
@@ -3132,6 +3134,8 @@ function updatePreview(prefix, containerId) {
 
   wrap.classList.add('has-content');
   wrap.classList.toggle('show-back', !!hasBack);
+  const sparse = !exJp && !exTr;
+  wrap.classList.toggle('fc-preview-sparse', sparse);
 
   const frontHTML = `<div class="fc-kanji">${kanji ? esc(kanji) : '&nbsp;'}</div>`;
   let backHTML = '';
