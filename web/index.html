@@ -1200,11 +1200,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <div id="view-decks" class="view active">
     <div class="stats-grid" id="global-stats"></div>
     <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
-    <div class="section-hd">Destelerim</div>
+    <div class="section-hd" data-t="my_decks">My Decks</div>
     <div id="deck-list"></div>
     <div id="deck-list-empty" class="empty" style="display:none">
       <div class="empty-icon"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg></div>
-      <p>Henüz bir deste yok.<br>Sağ üstteki + ile yeni deste ekle.</p>
+      <p data-t="no_decks">No decks yet. Tap + above to create one.</p>
     </div>
   </div>
 
@@ -1230,90 +1230,93 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 
   <!-- VIEW: ADD CARD -->
   <div id="view-add" class="view">
-    <div class="section-hd">Kart ekle</div>
+    <div class="section-hd" data-t="add_card_title">Add card</div>
     <div id="add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="card">
         <div class="form-group">
-          <label>Hedef deste</label>
+          <label data-t="target_deck">Target deck</label>
           <select id="add-deck-select"></select>
         </div>
         <div class="form-group">
-          <label>Kanji / Kelime <span class="required">*</span></label>
-          <input type="text" id="add-kanji" placeholder="例: 漢字">
+          <label><span data-t="kanji_label">Kanji / Word</span> <span class="required">*</span></label>
+          <input type="text" id="add-kanji" data-pt="kanji_placeholder" placeholder="e.g. 漢字">
         </div>
         <div class="form-group">
-          <label>Furigana (okunuş) <span class="required">*</span></label>
-          <input type="text" id="add-furigana" placeholder="例: かんじ">
+          <label><span data-t="furigana_label">Furigana (reading)</span> <span class="required">*</span></label>
+          <input type="text" id="add-furigana" data-pt="furigana_placeholder" placeholder="e.g. かんじ">
           <div class="furigana-suggest" id="add-furigana-suggest"></div>
         </div>
         <div class="form-group">
-          <label>Türkçe anlam <span class="required">*</span></label>
-          <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
+          <label><span data-t="meaning_label">Meaning</span> <span class="required">*</span></label>
+          <input type="text" id="add-meaning" data-pt="meaning_placeholder" placeholder="e.g. kanji, Chinese character">
         </div>
         <div class="form-group">
-          <label>Örnek cümle (Japonca)</label>
-          <input type="text" id="add-example-jp" placeholder="例: 毎日漢字を勉強します。">
+          <label data-t="example_jp_label">Example sentence (Japanese)</label>
+          <input type="text" id="add-example-jp" data-pt="example_jp_placeholder" placeholder="e.g. 毎日漢字を勉強します。">
           <div class="furigana-mark-row" id="add-example-mark-row" style="display:none">
             <button type="button" class="btn btn-ghost tap btn-sm" id="add-example-mark-btn">
               <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/><path d="M7.6 7.6l2 2M14.4 14.4l2 2M16.4 7.6l-2 2M9.6 14.4l-2 2"/></svg>
-              Kelimeleri işaretle (furigana ekle)
+              <span data-t="mark_words_btn">Mark words (add furigana)</span>
             </button>
           </div>
           <div id="add-example-furigana-editor"></div>
         </div>
         <div class="form-group">
-          <label>Örnek çeviri (Türkçe, opsiyonel)</label>
-          <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+          <label data-t="example_tr_label">Example translation (optional)</label>
+          <input type="text" id="add-example-tr" data-pt="example_tr_placeholder" placeholder="e.g. I study kanji every day.">
         </div>
-        <button class="btn btn-block btn-primary tap" id="btn-save-card">Kaydet</button>
+        <button class="btn btn-block btn-primary tap" id="btn-save-card" data-t="save">Save</button>
     </div>
 
-    <div class="section-hd">Toplu içe aktar</div>
+    <div class="section-hd" data-t="bulk_import_title">Bulk import</div>
     <div class="card">
       <div class="form-group">
-        <label>Hedef deste</label>
+        <label data-t="target_deck">Target deck</label>
         <select id="bulk-deck-select"></select>
       </div>
       <div class="form-group">
-        <label>Kart listesi</label>
+        <label data-t="card_list">Card list</label>
         <textarea id="bulk-input" rows="7"
-          placeholder="Her satır bir kart, | ile ayır:&#10;漢字 | かんじ | kanji, Çince karakter | 毎日漢字を勉強します。 | Her gün kanji çalışıyorum.&#10;水 | みず | su | 水を飲みます。&#10;食べる | たべる | yemek | パンを食べる。"></textarea>
-        <div class="form-hint">Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)</div>
+          placeholder="漢字 | かんじ | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | みず | water | 水を飲みます。&#10;食べる | たべる | to eat | パンを食べる。"></textarea>
+        <div class="form-hint" data-t="bulk_format">Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)</div>
       </div>
-      <button class="btn btn-block btn-primary tap" id="btn-bulk-import">İçe aktar</button>
+      <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-t="import_btn">Import</button>
     </div>
   </div>
 
   <!-- VIEW: SETTINGS -->
   <div id="view-settings" class="view">
-    <div class="section-hd">Görünüm</div>
+    <div class="section-hd" data-t="settings_lang">Language</div>
+    <div class="card" id="lang-section" style="display:flex;gap:.5rem;flex-wrap:wrap"></div>
+
+    <div class="section-hd" data-t="settings_theme">Appearance</div>
     <div class="card" id="theme-section"></div>
 
-    <div class="section-hd">Uygulama İkonu</div>
+    <div class="section-hd" data-t="settings_icon">App Icon</div>
     <div class="card" id="app-icon-section"></div>
 
-    <div class="section-hd">Cihazlar Arası Senkron</div>
+    <div class="section-hd" data-t="settings_sync">Cross-device Sync</div>
     <div id="sync-section" class="card"></div>
 
-    <div class="section-hd" style="width: 568px; height: 19px; gap: 8px; flex-direction: row">SRS ayarları</div>
+    <div class="section-hd" data-t="settings_srs">SRS settings</div>
     <div id="settings-fields"></div>
 
-    <div class="section-hd">Yedekleme</div>
+    <div class="section-hd" data-t="settings_backup">Backup</div>
     <div class="card">
-      <p class="text-muted mt-1" style="margin-bottom:.8rem">Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.</p>
+      <p class="text-muted mt-1" style="margin-bottom:.8rem" data-t="backup_desc">Download or upload all data as JSON.</p>
       <div class="btn-row">
-        <button class="btn btn-ghost tap" id="btn-export"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>Dışa aktar</button>
-        <button class="btn btn-ghost tap" id="btn-import-trigger"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>İçe aktar</button>
+        <button class="btn btn-ghost tap" id="btn-export"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-t="export_btn">Export</span></button>
+        <button class="btn btn-ghost tap" id="btn-import-trigger"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-t="import_data_btn">Import</span></button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
     <div id="storage-warning" class="card" style="display:none;border:var(--bd-ctrl) solid var(--hanko)">
-      <p style="color:var(--hanko);font-weight:700;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg>Veriler bu oturumda kalıcı değil</p>
-      <p class="text-muted mt-1">localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.</p>
+      <p style="color:var(--hanko);font-weight:700;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-t="storage_warning_title">Data is not persistent</span></p>
+      <p class="text-muted mt-1" data-t="storage_warning_text">localStorage is not accessible.</p>
     </div>
     <div class="danger-zone">
-      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg>Tehlikeli bölge</p>
-      <button class="btn btn-danger tap" id="btn-reset-all">Tüm veriyi sıfırla</button>
+      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-t="danger_zone">Danger zone</span></p>
+      <button class="btn btn-danger tap" id="btn-reset-all" data-t="reset_all">Reset all data</button>
     </div>
   </div>
 
@@ -1322,15 +1325,15 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 <nav id="bottom-nav">
   <button class="nav-item active tap" data-view="decks" id="nav-decks">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
-    Desteler
+    <span data-t="nav_decks">Decks</span>
   </button>
   <button class="nav-item tap" data-view="add" id="nav-add">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" style="width: 17px; height: 14px"/><path d="M12 9.3v5.4M9.3 12h5.4"/></svg>
-    Kart ekle
+    <span data-t="nav_add">Add card</span>
   </button>
   <button class="nav-item tap" data-view="settings" id="nav-settings">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>
-    Ayarlar
+    <span data-t="nav_settings">Settings</span>
   </button>
 </nav>
 
@@ -1351,7 +1354,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.2.0';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -1385,6 +1388,530 @@ const ICONS = {
 
 function icon(name, cls) {
   return `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+// ─── i18n ──────────────────────────────────────────────────────────────
+const LANG = {
+en: {
+nav_decks:'Decks',nav_add:'Add card',nav_settings:'Settings',back:'Back',update_available:'Update available',new_deck:'New deck',
+my_decks:'My Decks',total_cards:'Total cards',mastered_label:'Mastered',today_label:'Today',
+no_decks:'No decks yet.\nTap + above to create one.',
+deck_meta:'{total} cards · {mastered} mastered',sub_decks_count:'{count} sub-decks',
+study_btn:'Study ({count})',no_cards_to_study:'No cards to study right now',detail:'Detail',
+badge_new:'{count} new',badge_learning:'{count} learning',badge_review:'{count} review',
+sub_decks_section:'Sub-decks ({count})',add_sub_deck:'Add sub-deck',
+stat_new:'New',stat_learning:'Learning',stat_due:'Due today',stat_total:'Total',stat_total_all:'Total (all)',stat_mastered:'Mastered',stat_queue:'In queue',
+start_study:'Start studying ({count})',start_study_all:'Start studying ({count}) — all',
+add_card:'Add Card',delete_btn:'Delete',review_btn:'Browse',
+mastered_banner:'Well Known',cards_mastered:'{count} cards mastered',list_btn:'List',
+cards_section:'Cards ({count})',no_cards_in_deck:'No cards in this deck yet.',
+state_new:'New',state_learning:'Learning',state_review:'Review',
+show_answer:'Show answer',grade_again:'Again',grade_hard:'Hard',grade_good:'Good',grade_easy:'Easy',
+session_complete:'Session complete',cards_studied:'{count} cards studied. Remaining today: 0.',back_to_deck:'Back to deck',
+review_title:'Browse — Choose Scope',
+review_info:"In this mode you just browse cards; your answers won't affect progress or review schedule.",
+normal_cards:'Normal cards ({count})',mastered_cards:'Well Known ({count})',all_cards:'All cards ({count})',
+incl_subdecks:' (incl. sub-decks)',cancel:'Cancel',no_cards_scope:'No cards in this scope',
+browse_badge:'Browsing',prev_card:'Previous',next_card:'Next',no_cards_to_show:'No cards to show.',
+add_card_title:'Add card',target_deck:'Target deck',
+kanji_label:'Kanji / Word',kanji_placeholder:'e.g. 漢字',
+furigana_label:'Furigana (reading)',furigana_placeholder:'e.g. かんじ',
+meaning_label:'Meaning',meaning_placeholder:'e.g. kanji, Chinese character',
+example_jp_label:'Example sentence (Japanese)',example_jp_placeholder:'e.g. 毎日漢字を勉強します。',
+mark_words_btn:'Mark words (add furigana)',
+example_tr_label:'Example translation (optional)',example_tr_placeholder:'e.g. I study kanji every day.',
+save:'Save',bulk_import_title:'Bulk import',card_list:'Card list',
+bulk_format:'Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)',
+import_btn:'Import',create_deck_first:'Create a deck first',
+settings_lang:'Language',settings_theme:'Appearance',settings_icon:'App Icon',
+settings_sync:'Cross-device Sync',settings_srs:'SRS settings',settings_backup:'Backup',
+backup_desc:'Download or upload all data (decks, cards, SRS state) as JSON.',
+export_btn:'Export',import_data_btn:'Import',
+storage_warning_title:'Data is not persistent in this session',
+storage_warning_text:'localStorage is not accessible. Download the app as .html and open it in a local browser for persistent storage.',
+danger_zone:'Danger zone',reset_all:'Reset all data',
+follow_system:'Follow system theme',follow_system_desc:'If device dark mode is on, Sumi is auto-selected',
+on:'On',off:'Off',
+srs_steps:'Learning steps (min)',srs_steps_hint:'Comma-separated, e.g. 1, 10',
+srs_grad:'Graduation interval (days)',srs_grad_hint:'Graduate with Good',
+srs_easy_iv:'Easy interval (days)',srs_easy_iv_hint:'Graduate with Easy',
+srs_ease:'Default ease',srs_ease_hint:'1.3–5.0',
+srs_easy_bonus:'Easy bonus',srs_easy_bonus_hint:'Interval multiplier',
+srs_mastery:'Mastery threshold (days)',srs_mastery_hint:'Cards get ⭐ at this interval',
+srs_daily:'Daily new card limit',srs_daily_hint:'0 = unlimited',
+srs_fuzz:'Random fuzz',srs_fuzz_hint:'±5% to intervals',
+srs_shield:'Auto use shield',srs_shield_hint:'Protects streak on missed day',
+save_settings:'Save settings',
+info_steps:'When a new card is first studied, it is shown in this order (minutes). Example "1, 10": if you say Again, it shows after 1 minute; if you say Good, it moves to the next step (10 min). When all steps are passed with Good, the card "graduates" to normal review mode.',
+info_grad:'When a card passes the last learning step with Good, this determines how many days until the next review. Anki default is 1 day.',
+info_easy_iv:'If you press Easy on a new card, it skips learning steps and is scheduled this many days out.',
+info_ease:'The multiplier that determines how much the interval grows on each correct review. Higher ease means the card spaces out faster. Anki default is 2.5 (250%).',
+info_easy_bonus:'When you press Easy on a card in review mode, this multiplier is applied on top of the normal Good interval. 1.3 means 30% longer than Good.',
+info_mastery:"When a card's interval reaches this many days, it is automatically moved to Well Known. Lower it to make cards qualify as mastered sooner.",
+info_daily:'Limits how many NEW cards enter the study queue per day. Set to 0 for no limit.',
+info_fuzz:'When on, adds small randomness (±5%) to calculated intervals so cards added the same day don\'t all pile up on the same future date.',
+info_shield:'If you miss a day entirely and have shields, when on, a shield is auto-used to protect your streak. Turn off to keep shields but let missed days break the streak.',
+streak_days:'{count} day streak',shields_have:'{count} shields available',
+streak_msg_blaze:'Legendary streak! 🔥',streak_msg_hot:'Flame is growing, keep going!',
+streak_msg_warm:"Nice tempo you've got",streak_msg_cold:'Study a bit every day, grow the flame',
+day_unit:'days',shield_text:'shields — auto-protects your streak if you miss a day.',
+prev_month:'Previous month',next_month:'Next month',
+legend_studied:'Studied',legend_shielded:'Shield used',
+months:'January,February,March,April,May,June,July,August,September,October,November,December',
+weekdays_short:'Mon,Tue,Wed,Thu,Fri,Sat,Sun',weekdays_cal:'M,T,W,T,F,S,S',
+sync_not_configured:'Cloud sync is not set up yet.',
+sync_dev_note:'Developer note: fill in SUPABASE_URL and SUPABASE_ANON_KEY in index.html (see KURULUM.md).',
+sync_connected:'Connected code:',sync_share_hint:'Enter the same code on another device to see these cards there too.',
+sync_now:'Sync now',sync_disconnect:'Disconnect',
+sync_create_hint:'Create a code to auto-sync between devices, then enter the same code on the other device.',
+sync_create:'Create new code',sync_or_enter:'Or enter an existing code',
+sync_code_placeholder:'e.g. 482913',sync_connect:'Connect with this code',
+furigana_searching:'Searching reading…',furigana_not_found:'Auto reading not found, you can type manually',
+furigana_editor_hint:'Tap the kanji/word you want to add furigana to.',
+furigana_word_not_found:'Auto reading not found for "{word}", split into individual kanji — pick one.',
+furigana_manual_label:'reading for (type manually)',
+modal_rename:'Rename deck',modal_new_name:'New name',modal_deck_name:'Deck name',
+modal_deck_placeholder:'e.g. JLPT N3 Kanji',modal_create_deck:'Create new deck',
+modal_parent_deck:'Parent deck (optional)',modal_independent:'— Independent (top level) —',
+modal_add_subdeck:'{name} — Add sub-deck',modal_subdeck_name:'Sub-deck name',modal_subdeck_placeholder:'e.g. Foods',
+create:'Create',modal_edit_card:'Edit card',edit_label:'Edit',
+toast_card_added:'✓ Card added: {kanji}',toast_cards_imported:'✓ {added} cards imported{skipped}',
+toast_skipped:', {count} lines skipped',toast_deck_created:'✓ Deck created: {name}',
+toast_deck_renamed:'✓ Deck name updated',toast_card_updated:'✓ Card updated',
+toast_deck_deleted:'🗑 Deck deleted',toast_card_deleted:'🗑 Card deleted',
+toast_settings_saved:'✓ Settings saved',toast_exported:'✓ Data exported',
+toast_imported:'✓ Data imported: {count} decks',toast_reset:'✓ All data reset',
+toast_synced:'✓ Synced',toast_sync_code:'✓ Code created: {code}',
+toast_sync_connected:'✓ Connected and synced',toast_disconnected:'Disconnected',
+toast_mastered:'⭐ {kanji} → Well Known!',
+toast_shield_used:'🛡 {count} shield(s) used, streak protected',
+toast_shield_earned:'🛡 Completed a full week, +1 shield!',
+toast_storage_warning:'⚠ Data is not persistent in this session',
+warn_required:'⚠ Kanji, furigana and meaning are required',warn_deck_not_found:'⚠ Deck not found',
+warn_name_empty:'⚠ Name cannot be empty',warn_invalid_steps:'⚠ Invalid step values',
+warn_invalid_code:'⚠ Enter a valid code (4-8 digits)',
+warn_sync_not_configured:'⚠ Cloud sync not configured (see KURULUM.md)',
+warn_sync_error:'⚠ Sync error: {msg}',warn_import_error:'⚠ Import error: {msg}',warn_error:'⚠ Error: {msg}',
+confirm_delete_deck:'Delete "{name}" and all its cards ({count})? Are you sure?',
+confirm_delete_deck_nested:'"{name}" and {sub} sub-decks (total {count} cards) will be deleted. Are you sure?',
+confirm_delete_card:'Are you sure you want to delete this card?',
+confirm_disconnect:'Disconnect from this sync code? Data stays local but auto-sync stops.',
+confirm_reset:'ALL data (decks, cards, statistics) will be deleted. Are you sure?',
+update_new:'New update available',update_version:'Version {version}',update_download:'Download',
+update_downloading:'Downloading…',update_ready:'Update ready',
+update_downloaded:'Version {version} downloaded',update_install:'Restart and Install',
+preview_front:'Front',preview_back:'Back',
+icon_change_hint:'To see the new icon on phone, remove app from home screen and re-add from Safari/Chrome.',
+icon_lock:'Lock',icon_unlock:'Unlock',
+keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
+study_screen_title:'読む',review_screen_title:'Browse',streak_screen_title:'Study Calendar',
+},
+tr: {
+nav_decks:'Desteler',nav_add:'Kart ekle',nav_settings:'Ayarlar',back:'Geri',update_available:'Güncelleme mevcut',new_deck:'Yeni deste',
+my_decks:'Destelerim',total_cards:'Toplam kart',mastered_label:'Ustalaşılan',today_label:'Bugün',
+no_decks:'Henüz bir deste yok.\nSağ üstteki + ile yeni deste ekle.',
+deck_meta:'{total} kart · {mastered} ustalaşıldı',sub_decks_count:'{count} alt deste',
+study_btn:'Çalış ({count})',no_cards_to_study:'Şimdilik çalışılacak kart yok',detail:'Detay',
+badge_new:'{count} yeni',badge_learning:'{count} öğreniliyor',badge_review:'{count} tekrar',
+sub_decks_section:'Alt desteler ({count})',add_sub_deck:'Alt deste ekle',
+stat_new:'Yeni',stat_learning:'Öğreniliyor',stat_due:'Bugün tekrar',stat_total:'Toplam',stat_total_all:'Toplam (tümü)',stat_mastered:'Ustalaşıldı',stat_queue:'Kuyrukta',
+start_study:'Çalışmaya başla ({count})',start_study_all:'Çalışmaya başla ({count}) — tümü',
+add_card:'Kart Ekle',delete_btn:'Sil',review_btn:'Gözden Geçir',
+mastered_banner:'İyi Bildiklerim',cards_mastered:'{count} kart ustalaşıldı',list_btn:'Listele',
+cards_section:'Kartlar ({count})',no_cards_in_deck:'Bu destede henüz kart yok.',
+state_new:'Yeni',state_learning:'Öğreniliyor',state_review:'Tekrar',
+show_answer:'Cevabı göster',grade_again:'Tekrar',grade_hard:'Zor',grade_good:'İyi',grade_easy:'Kolay',
+session_complete:'Oturum tamamlandı',cards_studied:'{count} kart çalışıldı. Bugün için kalan: 0.',back_to_deck:'Desteye dön',
+review_title:'Gözden Geçir — Kapsam Seç',
+review_info:'Bu modda kartlara sadece göz atarsın; cevapların ilerlemeni veya tekrar planını etkilemez.',
+normal_cards:'Normal kartlar ({count})',mastered_cards:'İyi Bildiklerim ({count})',all_cards:'Tüm kartlar ({count})',
+incl_subdecks:' (alt desteler dahil)',cancel:'İptal',no_cards_scope:'Bu kapsamda kart yok',
+browse_badge:'Göz at',prev_card:'Önceki',next_card:'Sonraki',no_cards_to_show:'Gösterilecek kart yok.',
+add_card_title:'Kart ekle',target_deck:'Hedef deste',
+kanji_label:'Kanji / Kelime',kanji_placeholder:'例: 漢字',
+furigana_label:'Furigana (okunuş)',furigana_placeholder:'例: かんじ',
+meaning_label:'Türkçe anlam',meaning_placeholder:'例: kanji, Çince karakter',
+example_jp_label:'Örnek cümle (Japonca)',example_jp_placeholder:'例: 毎日漢字を勉強します。',
+mark_words_btn:'Kelimeleri işaretle (furigana ekle)',
+example_tr_label:'Örnek çeviri (Türkçe, opsiyonel)',example_tr_placeholder:'例: Her gün kanji çalışıyorum.',
+save:'Kaydet',bulk_import_title:'Toplu içe aktar',card_list:'Kart listesi',
+bulk_format:'Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)',
+import_btn:'İçe aktar',create_deck_first:'Önce bir deste oluştur',
+settings_lang:'Dil',settings_theme:'Görünüm',settings_icon:'Uygulama İkonu',
+settings_sync:'Cihazlar Arası Senkron',settings_srs:'SRS ayarları',settings_backup:'Yedekleme',
+backup_desc:'Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.',
+export_btn:'Dışa aktar',import_data_btn:'İçe aktar',
+storage_warning_title:'Veriler bu oturumda kalıcı değil',
+storage_warning_text:'localStorage erişilemiyor. Uygulamayı .html olarak indirip yerel tarayıcıda açarsan veriler kalıcı saklanır.',
+danger_zone:'Tehlikeli bölge',reset_all:'Tüm veriyi sıfırla',
+follow_system:'Sistem temasını takip et',follow_system_desc:'Cihazın karanlık modu açıksa Sumi otomatik seçilir',
+on:'Açık',off:'Kapalı',
+srs_steps:'Öğrenme adımları (dk)',srs_steps_hint:'Virgülle ayır, ör: 1, 10',
+srs_grad:'Mezun olma aralığı (gün)',srs_grad_hint:'İyi ile mezun',
+srs_easy_iv:'Kolay aralık (gün)',srs_easy_iv_hint:'Kolay ile mezun',
+srs_ease:'Varsayılan ease',srs_ease_hint:'1.3–5.0',
+srs_easy_bonus:'Kolay bonusu',srs_easy_bonus_hint:'Aralık çarpanı',
+srs_mastery:'Ustalaşma eşiği (gün)',srs_mastery_hint:'Bu aralığa ulaşınca ⭐',
+srs_daily:'Günlük yeni kart limiti',srs_daily_hint:'0 = sınırsız',
+srs_fuzz:'Rastgele fuzz',srs_fuzz_hint:'Aralıklara ±%5',
+srs_shield:'Otomatik kalkan kullanımı',srs_shield_hint:'Gün kaçırınca seriyi korur',
+save_settings:'Ayarları kaydet',
+info_steps:'Yeni bir kart ilk kez çalışıldığında bu sırayla gösterilir (dakika). Örnek "1, 10": Tekrar dersen 1 dakika sonra, İyi dersen sıradaki adıma (10 dakika) geçer. Tüm adımlar İyi ile geçildiğinde kart "mezun olur" ve normal tekrar moduna girer.',
+info_grad:'Bir kart son öğrenme adımını İyi ile geçtiğinde, bir sonraki tekrara kaç gün bekleneceğini belirler. Anki varsayılanı 1 gündür.',
+info_easy_iv:'Yeni bir kart için doğrudan Kolay dersen, öğrenme adımlarını atlayıp kaç gün sonraya planlanacağını belirler.',
+info_ease:'Her doğru tekrarda aralığın kaç katına çıkacağını belirleyen çarpan. Yüksek ease, kartın daha hızlı seyrekleşmesi anlamına gelir. Anki varsayılanı 2.5 (yani %250) dir.',
+info_easy_bonus:'Tekrar modundaki bir kart için Kolay dediğinde, normal İyi aralığına ek olarak uygulanan çarpan. 1.3 demek, İyi den %30 daha uzun bir aralık demektir.',
+info_mastery:'Bir kartın aralığı bu gün sayısına ulaştığında otomatik olarak "İyi Bildiklerim" alt destesine taşınır. Düşürürsen kartlar daha çabuk "ustalaşılmış" sayılır.',
+info_daily:'Bir günde en fazla kaç YENİ kartın çalışma kuyruğuna gireceğini sınırlar. 0 yaparsan sınır olmaz, tüm yeni kartlar aynı gün gösterilebilir.',
+info_fuzz:'Açıkken, hesaplanan aralıklara küçük bir rastgelelik (±%5) eklenir; böylece aynı gün eklenen kartlar hep aynı günde üst üste binmez. Kapatırsan aralıklar tam hesaplanan sayıya sabitlenir.',
+info_shield:'Bir günü tamamen kaçırırsan ve kalkanın varsa, açıkken o gün otomatik olarak kalkan harcanıp serin korunur. Kapatırsan kalkanın olsa da kaçırdığın gün serini bozar; kalkanlar yine de kazanılmaya devam eder.',
+streak_days:'{count} günlük seri',shields_have:'{count} kalkanın var',
+streak_msg_blaze:'Efsanevi seri! 🔥',streak_msg_hot:'Alev büyüyor, devam!',
+streak_msg_warm:'Güzel bir tempo tuttun',streak_msg_cold:'Her gün biraz çalış, alev büyüsün',
+day_unit:'gün',shield_text:'kalkanın var — bir gün kaçırırsan serini otomatik korur.',
+prev_month:'Önceki ay',next_month:'Sonraki ay',
+legend_studied:'Çalışıldı',legend_shielded:'Kalkanla korundu',
+months:'Ocak,Şubat,Mart,Nisan,Mayıs,Haziran,Temmuz,Ağustos,Eylül,Ekim,Kasım,Aralık',
+weekdays_short:'Pzt,Sal,Çar,Prş,Cum,Cmt,Paz',weekdays_cal:'P,S,Ç,P,C,C,P',
+sync_not_configured:'Bulut senkron henüz kurulmadı.',
+sync_dev_note:'Geliştirici notu: index.html içinde SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurman gerekiyor (bkz. KURULUM.md).',
+sync_connected:'Bağlı giriş kodu:',sync_share_hint:'Diğer cihazda (telefon/PC) aynı kodu girerek bu kartları orada da görebilirsin.',
+sync_now:'Şimdi senkronize et',sync_disconnect:'Bağlantıyı kes',
+sync_create_hint:'Telefon ve bilgisayarın otomatik senkronize olması için bir giriş kodu oluştur, diğer cihazda da aynı kodu gir.',
+sync_create:'Yeni kod oluştur',sync_or_enter:'Veya var olan bir kodu gir',
+sync_code_placeholder:'ör: 482913',sync_connect:'Bu kodla bağlan',
+furigana_searching:'Okunuş aranıyor…',furigana_not_found:'Otomatik okunuş bulunamadı, elle yazabilirsin',
+furigana_editor_hint:'Furigana eklemek istediğin kanjiye/kelimeye dokun.',
+furigana_word_not_found:'"{word}" için otomatik okunuş bulunamadı, kelimeyi tek tek kanjiye böldüm — birini seç.',
+furigana_manual_label:'için okunuş (elle yaz)',
+modal_rename:'Desteyi yeniden adlandır',modal_new_name:'Yeni isim',modal_deck_name:'Deste adı',
+modal_deck_placeholder:'ör: JLPT N3 Kanji',modal_create_deck:'Yeni deste oluştur',
+modal_parent_deck:'Üst deste (opsiyonel)',modal_independent:'— Bağımsız (en üst düzey) —',
+modal_add_subdeck:'{name} — Alt deste ekle',modal_subdeck_name:'Alt deste adı',modal_subdeck_placeholder:'ör: Yiyecekler',
+create:'Oluştur',modal_edit_card:'Kartı düzenle',edit_label:'Düzenle',
+toast_card_added:'✓ Kart eklendi: {kanji}',toast_cards_imported:'✓ {added} kart eklendi{skipped}',
+toast_skipped:', {count} satır atlandı',toast_deck_created:'✓ Deste oluşturuldu: {name}',
+toast_deck_renamed:'✓ Deste adı güncellendi',toast_card_updated:'✓ Kart güncellendi',
+toast_deck_deleted:'🗑 Deste silindi',toast_card_deleted:'🗑 Kart silindi',
+toast_settings_saved:'✓ Ayarlar kaydedildi',toast_exported:'✓ Veriler dışa aktarıldı',
+toast_imported:'✓ Veriler içe aktarıldı: {count} deste',toast_reset:'✓ Tüm veri sıfırlandı',
+toast_synced:'✓ Senkronize edildi',toast_sync_code:'✓ Kod oluşturuldu: {code}',
+toast_sync_connected:'✓ Bağlandı ve senkronize edildi',toast_disconnected:'Bağlantı kesildi',
+toast_mastered:'⭐ {kanji} → İyi Bildiklerim!',
+toast_shield_used:'🛡 {count} kalkan kullanıldı, streak korundu',
+toast_shield_earned:'🛡 Bir haftayı kesintisiz tamamladın, +1 kalkan!',
+toast_storage_warning:'⚠ Veriler bu oturumda kalıcı değil',
+warn_required:'⚠ Kanji, furigana ve anlam zorunlu',warn_deck_not_found:'⚠ Deste bulunamadı',
+warn_name_empty:'⚠ İsim boş olamaz',warn_invalid_steps:'⚠ Geçersiz adım değerleri',
+warn_invalid_code:'⚠ Geçerli bir kod gir (4-8 hane)',
+warn_sync_not_configured:'⚠ Bulut senkron henüz yapılandırılmadı (KURULUM.md\'ye bak)',
+warn_sync_error:'⚠ Senkron hatası: {msg}',warn_import_error:'⚠ İçe aktarma hatası: {msg}',warn_error:'⚠ Hata: {msg}',
+confirm_delete_deck:'"{name}" destesini ve tüm kartlarını ({count}) silmek istediğine emin misin?',
+confirm_delete_deck_nested:'"{name}" ve {sub} alt destesi (toplam {count} kart) silinecek. Emin misin?',
+confirm_delete_card:'Bu kartı silmek istediğine emin misin?',
+confirm_disconnect:'Bu cihazı senkron koddan ayırmak istediğine emin misin? Veriler bu cihazda yerel olarak kalır, ama otomatik senkron durur.',
+confirm_reset:'TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?',
+update_new:'Yeni güncelleme mevcut',update_version:'Sürüm {version}',update_download:'İndir',
+update_downloading:'İndiriliyor…',update_ready:'Güncelleme hazır',
+update_downloaded:'Sürüm {version} indirildi',update_install:'Yeniden Başlat ve Kur',
+preview_front:'Ön yüz',preview_back:'Arka yüz',
+icon_change_hint:'Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome\'dan tekrar eklemen gerekir.',
+icon_lock:'Kilitle',icon_unlock:'Kilidi aç',
+keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
+study_screen_title:'読む',review_screen_title:'Gözden Geçir',streak_screen_title:'Çalışma Takvimi',
+},
+ko: {
+nav_decks:'덱',nav_add:'카드 추가',nav_settings:'설정',back:'뒤로',update_available:'업데이트 가능',new_deck:'새 덱',
+my_decks:'내 덱',total_cards:'전체 카드',mastered_label:'마스터',today_label:'오늘',
+no_decks:'아직 덱이 없습니다.\n위의 +를 눌러 만드세요.',
+deck_meta:'{total}장 · {mastered} 마스터',sub_decks_count:'{count}개 하위 덱',
+study_btn:'학습 ({count})',no_cards_to_study:'지금 학습할 카드가 없습니다',detail:'상세',
+badge_new:'{count} 신규',badge_learning:'{count} 학습 중',badge_review:'{count} 복습',
+sub_decks_section:'하위 덱 ({count})',add_sub_deck:'하위 덱 추가',
+stat_new:'신규',stat_learning:'학습 중',stat_due:'오늘 복습',stat_total:'전체',stat_total_all:'전체 (모두)',stat_mastered:'마스터',stat_queue:'대기열',
+start_study:'학습 시작 ({count})',start_study_all:'학습 시작 ({count}) — 전체',
+add_card:'카드 추가',delete_btn:'삭제',review_btn:'훑어보기',
+mastered_banner:'잘 아는 카드',cards_mastered:'{count}장 마스터',list_btn:'목록',
+cards_section:'카드 ({count})',no_cards_in_deck:'이 덱에 아직 카드가 없습니다.',
+state_new:'신규',state_learning:'학습 중',state_review:'복습',
+show_answer:'정답 보기',grade_again:'다시',grade_hard:'어려움',grade_good:'좋음',grade_easy:'쉬움',
+session_complete:'세션 완료',cards_studied:'{count}장 학습 완료. 오늘 남은: 0.',back_to_deck:'덱으로 돌아가기',
+review_title:'훑어보기 — 범위 선택',
+review_info:'이 모드에서는 카드를 훑어보기만 합니다. 답변이 진도나 복습 일정에 영향을 주지 않습니다.',
+normal_cards:'일반 카드 ({count})',mastered_cards:'잘 아는 카드 ({count})',all_cards:'전체 카드 ({count})',
+incl_subdecks:' (하위 덱 포함)',cancel:'취소',no_cards_scope:'이 범위에 카드가 없습니다',
+browse_badge:'훑어보기',prev_card:'이전',next_card:'다음',no_cards_to_show:'표시할 카드가 없습니다.',
+add_card_title:'카드 추가',target_deck:'대상 덱',
+kanji_label:'한자 / 단어',kanji_placeholder:'예: 漢字',
+furigana_label:'후리가나 (읽기)',furigana_placeholder:'예: かんじ',
+meaning_label:'의미',meaning_placeholder:'예: 한자, 중국 문자',
+example_jp_label:'예문 (일본어)',example_jp_placeholder:'예: 毎日漢字を勉強します。',
+mark_words_btn:'단어 표시 (후리가나 추가)',
+example_tr_label:'예문 번역 (선택사항)',example_tr_placeholder:'예: 매일 한자를 공부합니다.',
+save:'저장',bulk_import_title:'일괄 가져오기',card_list:'카드 목록',
+bulk_format:'형식: 한자 | 후리가나 | 의미 | 예문 JP (선택) | 예문 번역 (선택)',
+import_btn:'가져오기',create_deck_first:'먼저 덱을 만드세요',
+settings_lang:'언어',settings_theme:'테마',settings_icon:'앱 아이콘',
+settings_sync:'기기 간 동기화',settings_srs:'SRS 설정',settings_backup:'백업',
+backup_desc:'모든 데이터(덱, 카드, SRS 상태)를 JSON으로 다운로드하거나 업로드합니다.',
+export_btn:'내보내기',import_data_btn:'가져오기',
+storage_warning_title:'이 세션에서 데이터가 유지되지 않습니다',
+storage_warning_text:'localStorage에 접근할 수 없습니다. 앱을 .html로 다운로드하여 로컬 브라우저에서 열면 데이터가 유지됩니다.',
+danger_zone:'위험 구역',reset_all:'모든 데이터 초기화',
+follow_system:'시스템 테마 따르기',follow_system_desc:'기기 다크 모드가 켜져 있으면 Sumi가 자동 선택됩니다',
+on:'켜기',off:'끄기',
+srs_steps:'학습 단계 (분)',srs_steps_hint:'쉼표로 구분, 예: 1, 10',
+srs_grad:'졸업 간격 (일)',srs_grad_hint:'좋음으로 졸업',
+srs_easy_iv:'쉬움 간격 (일)',srs_easy_iv_hint:'쉬움으로 졸업',
+srs_ease:'기본 ease',srs_ease_hint:'1.3–5.0',
+srs_easy_bonus:'쉬움 보너스',srs_easy_bonus_hint:'간격 배수',
+srs_mastery:'마스터 기준 (일)',srs_mastery_hint:'이 간격에서 ⭐',
+srs_daily:'일일 신규 카드 제한',srs_daily_hint:'0 = 무제한',
+srs_fuzz:'랜덤 퍼지',srs_fuzz_hint:'간격에 ±5%',
+srs_shield:'자동 방패 사용',srs_shield_hint:'놓친 날 연속 기록 보호',
+save_settings:'설정 저장',
+info_steps:'새 카드를 처음 학습할 때 이 순서로 표시됩니다(분). 예: "1, 10": 다시를 누르면 1분 후, 좋음을 누르면 다음 단계(10분)로 이동합니다.',
+info_grad:'카드가 좋음으로 마지막 학습 단계를 통과하면 다음 복습까지의 일수를 결정합니다. Anki 기본값은 1일입니다.',
+info_easy_iv:'새 카드에서 쉬움을 누르면 학습 단계를 건너뛰고 이 일수만큼 예약됩니다.',
+info_ease:'각 정답 복습에서 간격이 얼마나 늘어나는지 결정하는 배수입니다. Anki 기본값은 2.5(250%)입니다.',
+info_easy_bonus:'복습 모드에서 쉬움을 누르면 좋음 간격에 이 배수가 적용됩니다. 1.3은 좋음보다 30% 더 긴 간격입니다.',
+info_mastery:'카드의 간격이 이 일수에 도달하면 자동으로 "잘 아는 카드"로 이동합니다.',
+info_daily:'하루에 학습 대기열에 들어가는 신규 카드 수를 제한합니다. 0은 무제한입니다.',
+info_fuzz:'켜면 계산된 간격에 작은 무작위성(±5%)을 추가하여 같은 날 추가된 카드가 모두 같은 날에 몰리지 않게 합니다.',
+info_shield:'하루를 완전히 놓치고 방패가 있으면 켜져 있을 때 자동으로 방패를 사용하여 연속 기록을 보호합니다.',
+streak_days:'{count}일 연속',shields_have:'방패 {count}개',
+streak_msg_blaze:'전설적인 연속! 🔥',streak_msg_hot:'불꽃이 커지고 있어요!',
+streak_msg_warm:'좋은 템포를 유지하고 있어요',streak_msg_cold:'매일 조금씩 공부하면 불꽃이 커져요',
+day_unit:'일',shield_text:'개의 방패 — 하루를 놓치면 자동으로 연속 기록을 보호합니다.',
+prev_month:'이전 달',next_month:'다음 달',
+legend_studied:'학습함',legend_shielded:'방패 사용',
+months:'1월,2월,3월,4월,5월,6월,7월,8월,9월,10월,11월,12월',
+weekdays_short:'월,화,수,목,금,토,일',weekdays_cal:'월,화,수,목,금,토,일',
+sync_not_configured:'클라우드 동기화가 아직 설정되지 않았습니다.',
+sync_dev_note:'개발자 참고: index.html에서 SUPABASE_URL과 SUPABASE_ANON_KEY를 입력하세요.',
+sync_connected:'연결된 코드:',sync_share_hint:'다른 기기에서 같은 코드를 입력하면 카드를 볼 수 있습니다.',
+sync_now:'지금 동기화',sync_disconnect:'연결 해제',
+sync_create_hint:'기기 간 자동 동기화를 위한 코드를 만들고 다른 기기에서도 같은 코드를 입력하세요.',
+sync_create:'새 코드 만들기',sync_or_enter:'또는 기존 코드 입력',
+sync_code_placeholder:'예: 482913',sync_connect:'이 코드로 연결',
+furigana_searching:'읽기 검색 중…',furigana_not_found:'자동 읽기를 찾을 수 없습니다. 직접 입력하세요',
+furigana_editor_hint:'후리가나를 추가할 한자/단어를 탭하세요.',
+furigana_word_not_found:'"{word}"의 자동 읽기를 찾을 수 없어 개별 한자로 분리했습니다 — 하나를 선택하세요.',
+furigana_manual_label:'읽기 (직접 입력)',
+modal_rename:'덱 이름 변경',modal_new_name:'새 이름',modal_deck_name:'덱 이름',
+modal_deck_placeholder:'예: JLPT N3 한자',modal_create_deck:'새 덱 만들기',
+modal_parent_deck:'상위 덱 (선택사항)',modal_independent:'— 독립 (최상위) —',
+modal_add_subdeck:'{name} — 하위 덱 추가',modal_subdeck_name:'하위 덱 이름',modal_subdeck_placeholder:'예: 음식',
+create:'만들기',modal_edit_card:'카드 편집',edit_label:'편집',
+toast_card_added:'✓ 카드 추가됨: {kanji}',toast_cards_imported:'✓ {added}장 가져옴{skipped}',
+toast_skipped:', {count}줄 건너뜀',toast_deck_created:'✓ 덱 생성됨: {name}',
+toast_deck_renamed:'✓ 덱 이름 업데이트됨',toast_card_updated:'✓ 카드 업데이트됨',
+toast_deck_deleted:'🗑 덱 삭제됨',toast_card_deleted:'🗑 카드 삭제됨',
+toast_settings_saved:'✓ 설정 저장됨',toast_exported:'✓ 데이터 내보내기 완료',
+toast_imported:'✓ 데이터 가져옴: {count}개 덱',toast_reset:'✓ 모든 데이터 초기화됨',
+toast_synced:'✓ 동기화됨',toast_sync_code:'✓ 코드 생성됨: {code}',
+toast_sync_connected:'✓ 연결 및 동기화됨',toast_disconnected:'연결 해제됨',
+toast_mastered:'⭐ {kanji} → 잘 아는 카드!',
+toast_shield_used:'🛡 방패 {count}개 사용, 연속 기록 보호됨',
+toast_shield_earned:'🛡 1주일 완주, +1 방패!',
+toast_storage_warning:'⚠ 이 세션에서 데이터가 유지되지 않습니다',
+warn_required:'⚠ 한자, 후리가나, 의미는 필수입니다',warn_deck_not_found:'⚠ 덱을 찾을 수 없습니다',
+warn_name_empty:'⚠ 이름을 입력하세요',warn_invalid_steps:'⚠ 잘못된 단계 값',
+warn_invalid_code:'⚠ 유효한 코드를 입력하세요 (4-8자리)',
+warn_sync_not_configured:'⚠ 클라우드 동기화 미설정',
+warn_sync_error:'⚠ 동기화 오류: {msg}',warn_import_error:'⚠ 가져오기 오류: {msg}',warn_error:'⚠ 오류: {msg}',
+confirm_delete_deck:'"{name}"과 모든 카드({count})를 삭제하시겠습니까?',
+confirm_delete_deck_nested:'"{name}"과 {sub}개 하위 덱 (총 {count}장)이 삭제됩니다. 확인하시겠습니까?',
+confirm_delete_card:'이 카드를 삭제하시겠습니까?',
+confirm_disconnect:'이 동기화 코드에서 연결을 해제하시겠습니까? 데이터는 로컬에 유지되지만 자동 동기화가 중지됩니다.',
+confirm_reset:'모든 데이터(덱, 카드, 통계)가 삭제됩니다. 확인하시겠습니까?',
+update_new:'새 업데이트 가능',update_version:'버전 {version}',update_download:'다운로드',
+update_downloading:'다운로드 중…',update_ready:'업데이트 준비 완료',
+update_downloaded:'버전 {version} 다운로드됨',update_install:'재시작 및 설치',
+preview_front:'앞면',preview_back:'뒷면',
+icon_change_hint:'휴대폰에서 새 아이콘을 보려면 홈 화면에서 앱을 삭제하고 Safari/Chrome에서 다시 추가하세요.',
+icon_lock:'잠금',icon_unlock:'잠금 해제',
+keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
+study_screen_title:'読む',review_screen_title:'훑어보기',streak_screen_title:'학습 캘린더',
+},
+mn: {
+nav_decks:'Багцууд',nav_add:'Карт нэмэх',nav_settings:'Тохиргоо',back:'Буцах',update_available:'Шинэчлэл бий',new_deck:'Шинэ багц',
+my_decks:'Миний багцууд',total_cards:'Нийт карт',mastered_label:'Эзэмшсэн',today_label:'Өнөөдөр',
+no_decks:'Багц алга.\nДээрх + товч дарж үүсгэнэ үү.',
+deck_meta:'{total} карт · {mastered} эзэмшсэн',sub_decks_count:'{count} дэд багц',
+study_btn:'Сурах ({count})',no_cards_to_study:'Одоогоор суралцах карт алга',detail:'Дэлгэрэнгүй',
+badge_new:'{count} шинэ',badge_learning:'{count} суралцаж буй',badge_review:'{count} давталт',
+sub_decks_section:'Дэд багцууд ({count})',add_sub_deck:'Дэд багц нэмэх',
+stat_new:'Шинэ',stat_learning:'Суралцаж буй',stat_due:'Өнөөдөр давтах',stat_total:'Нийт',stat_total_all:'Нийт (бүгд)',stat_mastered:'Эзэмшсэн',stat_queue:'Дараалалд',
+start_study:'Суралцаж эхлэх ({count})',start_study_all:'Суралцаж эхлэх ({count}) — бүгд',
+add_card:'Карт нэмэх',delete_btn:'Устгах',review_btn:'Тойм',
+mastered_banner:'Сайн мэдэх',cards_mastered:'{count} карт эзэмшсэн',list_btn:'Жагсаалт',
+cards_section:'Картууд ({count})',no_cards_in_deck:'Энэ багцад карт алга.',
+state_new:'Шинэ',state_learning:'Суралцаж буй',state_review:'Давталт',
+show_answer:'Хариултыг харуулах',grade_again:'Дахин',grade_hard:'Хэцүү',grade_good:'Сайн',grade_easy:'Амархан',
+session_complete:'Хичээл дууслаа',cards_studied:'{count} карт судалсан. Өнөөдөр үлдсэн: 0.',back_to_deck:'Багц руу буцах',
+review_title:'Тойм — Хүрээ сонгох',
+review_info:'Энэ горимд зөвхөн картуудыг тойм харна; таны хариулт явцад нөлөөлөхгүй.',
+normal_cards:'Энгийн карт ({count})',mastered_cards:'Сайн мэдэх ({count})',all_cards:'Бүх карт ({count})',
+incl_subdecks:' (дэд багц орсон)',cancel:'Цуцлах',no_cards_scope:'Энэ хүрээнд карт алга',
+browse_badge:'Тойм',prev_card:'Өмнөх',next_card:'Дараах',no_cards_to_show:'Харуулах карт алга.',
+add_card_title:'Карт нэмэх',target_deck:'Зорилтот багц',
+kanji_label:'Ханз / Үг',kanji_placeholder:'ж.нь: 漢字',
+furigana_label:'Фуригана (уншлага)',furigana_placeholder:'ж.нь: かんじ',
+meaning_label:'Утга',meaning_placeholder:'ж.нь: ханз, хятад тэмдэгт',
+example_jp_label:'Жишээ өгүүлбэр (Япон)',example_jp_placeholder:'ж.нь: 毎日漢字を勉強します。',
+mark_words_btn:'Үг тэмдэглэх (фуригана нэмэх)',
+example_tr_label:'Жишээ орчуулга (сонголттой)',example_tr_placeholder:'ж.нь: Өдөр бүр ханз сурдаг.',
+save:'Хадгалах',bulk_import_title:'Бөөнөөр оруулах',card_list:'Картын жагсаалт',
+bulk_format:'Формат: Ханз | Фуригана | Утга | Жишээ JP (сонголт) | Жишээ орчуулга (сонголт)',
+import_btn:'Оруулах',create_deck_first:'Эхлээд багц үүсгэнэ үү',
+settings_lang:'Хэл',settings_theme:'Харагдах байдал',settings_icon:'Аппын дүрс',
+settings_sync:'Төхөөрөмж хоорондын синк',settings_srs:'SRS тохиргоо',settings_backup:'Нөөцлөл',
+backup_desc:'Бүх өгөгдлийг (багц, карт, SRS төлөв) JSON хэлбэрээр татах эсвэл ачаалах.',
+export_btn:'Экспорт',import_data_btn:'Импорт',
+storage_warning_title:'Өгөгдөл энэ сессэд хадгалагдахгүй',
+storage_warning_text:'localStorage руу хандах боломжгүй. Аппыг .html байдлаар татаж локал браузерт нээвэл өгөгдөл хадгалагдана.',
+danger_zone:'Аюултай бүс',reset_all:'Бүх өгөгдлийг арилгах',
+follow_system:'Системийн загвар дагах',follow_system_desc:'Төхөөрөмжийн харанхуй горим асвал Sumi автоматаар сонгогдоно',
+on:'Асаах',off:'Унтраах',
+srs_steps:'Суралцах алхам (мин)',srs_steps_hint:'Таслалаар тусгаарла, ж.нь: 1, 10',
+srs_grad:'Төгсөлтийн интервал (өдөр)',srs_grad_hint:'Сайн-аар төгсөх',
+srs_easy_iv:'Амархан интервал (өдөр)',srs_easy_iv_hint:'Амархан-аар төгсөх',
+srs_ease:'Үндсэн ease',srs_ease_hint:'1.3–5.0',
+srs_easy_bonus:'Амархан бонус',srs_easy_bonus_hint:'Интервал үржвэр',
+srs_mastery:'Эзэмшлийн босго (өдөр)',srs_mastery_hint:'Энэ интервалд ⭐',
+srs_daily:'Өдрийн шинэ карт хязгаар',srs_daily_hint:'0 = хязгааргүй',
+srs_fuzz:'Санамсаргүй fuzz',srs_fuzz_hint:'Интервалд ±5%',
+srs_shield:'Автомат бамбай хэрэглэх',srs_shield_hint:'Өдөр алгасахад цувааг хамгаална',
+save_settings:'Тохиргоо хадгалах',
+info_steps:'Шинэ картыг анх суралцахад энэ дарааллаар харуулна (минут). Жишээ "1, 10": Дахин гэвэл 1 минутын дараа, Сайн гэвэл дараагийн алхам руу шилжинэ.',
+info_grad:'Карт сүүлийн алхамыг Сайн-аар давахад дараагийн давталт хүртэл хэдэн өдөр хүлээхийг тодорхойлно. Anki анхдагч: 1 өдөр.',
+info_easy_iv:'Шинэ картад Амархан дарвал суралцах алхмуудыг алгасаж энэ хэдэн өдрийн дараа товлогдоно.',
+info_ease:'Зөв давталт бүрт интервал хэр өснийг тодорхойлох үржвэр. Anki анхдагч: 2.5 (250%).',
+info_easy_bonus:'Давталт горимд Амархан дарахад Сайн интервал дээр нэмэгдэх үржвэр. 1.3 гэвэл Сайн-аас 30% урт.',
+info_mastery:'Картын интервал энэ өдрийн тоонд хүрэхэд автоматаар "Сайн мэдэх" руу шилжинэ.',
+info_daily:'Өдөрт суралцах дараалалд нэвтрэх ШИНЭ картын тоог хязгаарлана. 0 = хязгааргүй.',
+info_fuzz:'Асвал тооцоолсон интервалд жижиг санамсаргүй байдал (±5%) нэмнэ.',
+info_shield:'Өдөр бүтнээрээ алгасч бамбай байвал асаалттай үед бамбай автоматаар хэрэглэгдэж цуваа хамгаалагдана.',
+streak_days:'{count} өдрийн цуваа',shields_have:'{count} бамбай бий',
+streak_msg_blaze:'Домогт цуваа! 🔥',streak_msg_hot:'Гал томорч байна, үргэлжлүүл!',
+streak_msg_warm:'Сайн хурдаар явж байна',streak_msg_cold:'Өдөр бүр бага зэрэг сур, галыг өсгө',
+day_unit:'өдөр',shield_text:'бамбай — өдөр алгасвал цувааг автоматаар хамгаална.',
+prev_month:'Өмнөх сар',next_month:'Дараа сар',
+legend_studied:'Суралцсан',legend_shielded:'Бамбай хэрэглэсэн',
+months:'1-р сар,2-р сар,3-р сар,4-р сар,5-р сар,6-р сар,7-р сар,8-р сар,9-р сар,10-р сар,11-р сар,12-р сар',
+weekdays_short:'Да,Мя,Лх,Пү,Ба,Бя,Ня',weekdays_cal:'Да,Мя,Лх,Пү,Ба,Бя,Ня',
+sync_not_configured:'Клоуд синк тохируулагдаагүй.',
+sync_dev_note:'Хөгжүүлэгчийн тэмдэглэл: index.html-д SUPABASE_URL болон SUPABASE_ANON_KEY оруулна уу.',
+sync_connected:'Холбогдсон код:',sync_share_hint:'Өөр төхөөрөмжид ижил кодыг оруулж картуудаа харах боломжтой.',
+sync_now:'Одоо синк хийх',sync_disconnect:'Салгах',
+sync_create_hint:'Төхөөрөмж хооронд автомат синк хийх код үүсгэж нөгөө төхөөрөмжид ижил кодыг оруулна уу.',
+sync_create:'Шинэ код үүсгэх',sync_or_enter:'Эсвэл байгаа код оруулах',
+sync_code_placeholder:'ж.нь: 482913',sync_connect:'Энэ кодоор холбогдох',
+furigana_searching:'Уншлага хайж байна…',furigana_not_found:'Автомат уншлага олдсонгүй, гараар бичнэ үү',
+furigana_editor_hint:'Фуригана нэмэх ханз/үг дээр дарна уу.',
+furigana_word_not_found:'"{word}"-ийн автомат уншлага олдсонгүй, тусдаа ханзуудад хуваалаа — нэгийг сонго.',
+furigana_manual_label:'уншлага (гараар бичих)',
+modal_rename:'Багцыг нэрлэх',modal_new_name:'Шинэ нэр',modal_deck_name:'Багцын нэр',
+modal_deck_placeholder:'ж.нь: JLPT N3 Ханз',modal_create_deck:'Шинэ багц үүсгэх',
+modal_parent_deck:'Эх багц (сонголттой)',modal_independent:'— Бие даасан (дээд түвшин) —',
+modal_add_subdeck:'{name} — Дэд багц нэмэх',modal_subdeck_name:'Дэд багцын нэр',modal_subdeck_placeholder:'ж.нь: Хүнс',
+create:'Үүсгэх',modal_edit_card:'Карт засах',edit_label:'Засах',
+toast_card_added:'✓ Карт нэмэгдлээ: {kanji}',toast_cards_imported:'✓ {added} карт оруулсан{skipped}',
+toast_skipped:', {count} мөр алгассан',toast_deck_created:'✓ Багц үүсгэлээ: {name}',
+toast_deck_renamed:'✓ Багцын нэр шинэчлэгдлээ',toast_card_updated:'✓ Карт шинэчлэгдлээ',
+toast_deck_deleted:'🗑 Багц устгагдлаа',toast_card_deleted:'🗑 Карт устгагдлаа',
+toast_settings_saved:'✓ Тохиргоо хадгалагдлаа',toast_exported:'✓ Өгөгдөл экспортлогдлоо',
+toast_imported:'✓ Өгөгдөл оруулсан: {count} багц',toast_reset:'✓ Бүх өгөгдөл арилгагдлаа',
+toast_synced:'✓ Синк хийгдлээ',toast_sync_code:'✓ Код үүсгэлээ: {code}',
+toast_sync_connected:'✓ Холбогдож синк хийгдлээ',toast_disconnected:'Салгагдлаа',
+toast_mastered:'⭐ {kanji} → Сайн мэдэх!',
+toast_shield_used:'🛡 {count} бамбай хэрэглэгдлээ, цуваа хамгаалагдлаа',
+toast_shield_earned:'🛡 Бүтэн 7 хоног дууслаа, +1 бамбай!',
+toast_storage_warning:'⚠ Өгөгдөл энэ сессэд хадгалагдахгүй',
+warn_required:'⚠ Ханз, фуригана, утга заавал шаардлагатай',warn_deck_not_found:'⚠ Багц олдсонгүй',
+warn_name_empty:'⚠ Нэр хоосон байж болохгүй',warn_invalid_steps:'⚠ Алхамын утга буруу',
+warn_invalid_code:'⚠ Зөв код оруулна уу (4-8 оронтой)',
+warn_sync_not_configured:'⚠ Клоуд синк тохируулагдаагүй',
+warn_sync_error:'⚠ Синк алдаа: {msg}',warn_import_error:'⚠ Импорт алдаа: {msg}',warn_error:'⚠ Алдаа: {msg}',
+confirm_delete_deck:'"{name}" багц болон бүх картуудыг ({count}) устгах уу?',
+confirm_delete_deck_nested:'"{name}" болон {sub} дэд багц (нийт {count} карт) устгагдана. Итгэлтэй байна уу?',
+confirm_delete_card:'Энэ картыг устгах уу?',
+confirm_disconnect:'Энэ синк кодоос салгах уу? Өгөгдөл локалд үлдэнэ, гэхдээ автомат синк зогсоно.',
+confirm_reset:'БҮХ өгөгдөл (багц, карт, статистик) устгагдана. Итгэлтэй байна уу?',
+update_new:'Шинэ шинэчлэл бий',update_version:'Хувилбар {version}',update_download:'Татах',
+update_downloading:'Татаж байна…',update_ready:'Шинэчлэл бэлэн',
+update_downloaded:'Хувилбар {version} татагдлаа',update_install:'Дахин эхлүүлж суулгах',
+preview_front:'Урд тал',preview_back:'Ар тал',
+icon_change_hint:'Утсанд шинэ дүрсийг харахын тулд аппыг нүүр хуудаснаас устгаад Safari/Chrome-оос дахин нэмнэ үү.',
+icon_lock:'Түгжих',icon_unlock:'Түгжээ тайлах',
+keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
+study_screen_title:'読む',review_screen_title:'Тойм',streak_screen_title:'Суралцах хуанли',
+},
+};
+
+const EXAMPLE_DECKS = {
+en:{name:'JLPT N3 Kanji (Sample)',cards:[
+{kanji:'漢字',furigana:'かんじ',meaning:'kanji, Chinese character',exJp:'毎日漢字を勉強します。',exTr:'I study kanji every day.'},
+{kanji:'水',furigana:'みず',meaning:'water',exJp:'水を飲みます。',exTr:'I drink water.'},
+{kanji:'食べる',furigana:'たべる',meaning:'to eat',exJp:'パンを食べる。',exTr:'I eat bread.'},
+{kanji:'学校',furigana:'がっこう',meaning:'school',exJp:'学校に行きます。',exTr:'I go to school.'},
+{kanji:'友達',furigana:'ともだち',meaning:'friend',exJp:'友達と遊びます。',exTr:'I play with my friend.'},
+{kanji:'電車',furigana:'でんしゃ',meaning:'train',exJp:'電車で来ました。',exTr:'I came by train.'},
+{kanji:'仕事',furigana:'しごと',meaning:'work, job',exJp:'仕事が終わりました。',exTr:'Work is done.'},
+{kanji:'勉強',furigana:'べんきょう',meaning:'study',exJp:'毎日勉強しています。',exTr:'I study every day.'},
+]},
+tr:{name:'JLPT N3 Kanji (Örnek)',cards:[
+{kanji:'漢字',furigana:'かんじ',meaning:'kanji, Çince karakter',exJp:'毎日漢字を勉強します。',exTr:'Her gün kanji çalışıyorum.'},
+{kanji:'水',furigana:'みず',meaning:'su',exJp:'水を飲みます。',exTr:'Su içiyorum.'},
+{kanji:'食べる',furigana:'たべる',meaning:'yemek (fiil)',exJp:'パンを食べる。',exTr:'Ekmek yerim.'},
+{kanji:'学校',furigana:'がっこう',meaning:'okul',exJp:'学校に行きます。',exTr:'Okula gidiyorum.'},
+{kanji:'友達',furigana:'ともだち',meaning:'arkadaş',exJp:'友達と遊びます。',exTr:'Arkadaşımla oynuyorum.'},
+{kanji:'電車',furigana:'でんしゃ',meaning:'tren',exJp:'電車で来ました。',exTr:'Trenle geldim.'},
+{kanji:'仕事',furigana:'しごと',meaning:'iş',exJp:'仕事が終わりました。',exTr:'İş bitti.'},
+{kanji:'勉強',furigana:'べんきょう',meaning:'çalışmak',exJp:'毎日勉強しています。',exTr:'Her gün ders çalışıyorum.'},
+]},
+ko:{name:'JLPT N3 한자 (샘플)',cards:[
+{kanji:'漢字',furigana:'かんじ',meaning:'한자, 중국 문자',exJp:'毎日漢字を勉強します。',exTr:'매일 한자를 공부합니다.'},
+{kanji:'水',furigana:'みず',meaning:'물',exJp:'水を飲みます。',exTr:'물을 마십니다.'},
+{kanji:'食べる',furigana:'たべる',meaning:'먹다',exJp:'パンを食べる。',exTr:'빵을 먹습니다.'},
+{kanji:'学校',furigana:'がっこう',meaning:'학교',exJp:'学校に行きます。',exTr:'학교에 갑니다.'},
+{kanji:'友達',furigana:'ともだち',meaning:'친구',exJp:'友達と遊びます。',exTr:'친구와 놀아요.'},
+{kanji:'電車',furigana:'でんしゃ',meaning:'전철',exJp:'電車で来ました。',exTr:'전철로 왔습니다.'},
+{kanji:'仕事',furigana:'しごと',meaning:'일, 직업',exJp:'仕事が終わりました。',exTr:'일이 끝났습니다.'},
+{kanji:'勉強',furigana:'べんきょう',meaning:'공부',exJp:'毎日勉強しています。',exTr:'매일 공부하고 있습니다.'},
+]},
+mn:{name:'JLPT N3 Ханз (Жишээ)',cards:[
+{kanji:'漢字',furigana:'かんじ',meaning:'ханз, хятад тэмдэгт',exJp:'毎日漢字を勉強します。',exTr:'Өдөр бүр ханз сурдаг.'},
+{kanji:'水',furigana:'みず',meaning:'ус',exJp:'水を飲みます。',exTr:'Ус уудаг.'},
+{kanji:'食べる',furigana:'たべる',meaning:'идэх',exJp:'パンを食べる。',exTr:'Талх иднэ.'},
+{kanji:'学校',furigana:'がっこう',meaning:'сургууль',exJp:'学校に行きます。',exTr:'Сургууль руу явна.'},
+{kanji:'友達',furigana:'ともだち',meaning:'найз',exJp:'友達と遊びます。',exTr:'Найзтайгаа тоглоно.'},
+{kanji:'電車',furigana:'でんしゃ',meaning:'галт тэрэг',exJp:'電車で来ました。',exTr:'Галт тэрэгээр ирсэн.'},
+{kanji:'仕事',furigana:'しごと',meaning:'ажил',exJp:'仕事が終わりました。',exTr:'Ажил дууссан.'},
+{kanji:'勉強',furigana:'べんきょう',meaning:'суралцах',exJp:'毎日勉強しています。',exTr:'Өдөр бүр хичээл хийдэг.'},
+]},
+};
+
+let currentLang = localStorage.getItem('stacks-lang') || 'en';
+
+function t(key, params) {
+  const str = (LANG[currentLang] && LANG[currentLang][key]) || LANG.en[key] || key;
+  if (!params) return str;
+  return str.replace(/\{(\w+)\}/g, (_, k) => params[k] != null ? params[k] : '');
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('stacks-lang', lang);
+  updateStaticTexts();
+  showView(currentView);
+  renderGlobalStats();
+}
+
+function updateStaticTexts() {
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
+  document.querySelectorAll('[data-pt]').forEach(el => el.placeholder = t(el.dataset.pt));
 }
 
 // learnSteps Anki'nin gerçek varsayılanıdır: [1 dakika, 10 dakika]
@@ -1530,7 +2057,7 @@ function scheduleCloudPush() {
 
 async function connectSyncCode(code) {
   if (!syncConfigured()) {
-    showToast('⚠ Bulut senkron henüz yapılandırılmadı (KURULUM.md\'ye bak)', 4000);
+    showToast(t('warn_sync_not_configured'), 4000);
     return false;
   }
   syncStatus = 'syncing';
@@ -1552,7 +2079,7 @@ async function connectSyncCode(code) {
   } catch (e) {
     syncStatus = 'error';
     renderSyncBadge();
-    showToast('⚠ Bağlantı hatası: ' + e.message, 3500);
+    showToast(t('warn_sync_error', {msg: e.message}), 3500);
     return false;
   }
 }
@@ -1569,11 +2096,11 @@ function renderSyncBadge() {
   if (!el) return;
   if (!syncEnabled) { el.innerHTML = ''; return; }
   const map = {
-    idle:    ['dot',   'var(--ink-soft)', 'Bağlı değil',          false],
-    syncing: ['sync',  'var(--sky)',      'Senkronize ediliyor…', true ],
-    synced:  ['check', 'var(--jade)',     'Senkron',              false],
-    error:   ['alert', 'var(--hanko)',    'Bağlantı hatası',      false],
-    offline: ['dot',   'var(--ink-soft)', 'Çevrimdışı',           false],
+    idle:    ['dot',   'var(--ink-soft)', '',          false],
+    syncing: ['sync',  'var(--sky)',      '',          true ],
+    synced:  ['check', 'var(--jade)',     '',          false],
+    error:   ['alert', 'var(--hanko)',    '',          false],
+    offline: ['dot',   'var(--ink-soft)', '',          false],
   };
   const [name, color, label, spin] = map[syncStatus] || map.idle;
   el.innerHTML = `<span title="${label}" class="${spin ? 'spin' : ''}" style="color:${color};display:inline-flex">${icon(name, name === 'dot' ? 'ic-fill' : '')}</span>`;
@@ -1638,7 +2165,7 @@ function setFollowSystemTheme(on) {
 const APP_ICON_STORAGE_KEY = 'stacks-app-icon';
 const APP_ICON_LOCK_KEY = 'stacks-app-icon-locked';
 // THEMES listesindeki id'lerle birebir eşleşir (her temanın kendi ikonu)
-const APP_ICONS = THEMES.map(t => ({ id: t.id, label: t.label, manifestSrc: t.id === 'washi' ? 'manifest.json' : `manifest-${t.id}.json`, thumb: t.id === 'washi' ? 'icons/icon-120.png' : `icons/${t.id}/icon-120.png` }));
+const APP_ICONS = THEMES.map(th => ({ id: th.id, label: th.label, manifestSrc: th.id === 'washi' ? 'manifest.json' : `manifest-${th.id}.json`, thumb: th.id === 'washi' ? 'icons/icon-120.png' : `icons/${th.id}/icon-120.png` }));
 
 function getCurrentAppIcon() {
   return localStorage.getItem(APP_ICON_STORAGE_KEY) || getCurrentTheme();
@@ -1662,7 +2189,7 @@ function setAppIcon(iconId, fromThemeChange) {
 }
 
 function showAppIconChangeNotice() {
-  showToast('İkonu değiştirmek için uygulamayı ana ekrandan silip tekrar ekle', 4200);
+  showToast(t('icon_change_hint'), 4200);
 }
 
 function renderAppIconSection() {
@@ -1679,7 +2206,7 @@ function renderAppIconSection() {
           <button type="button" class="app-icon-thumb tap" onclick="setAppIcon('${i.id}')" aria-label="${esc(i.label)} ikonu">
             <img src="${i.thumb}" alt="${esc(i.label)}">
           </button>
-          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? 'Kilidi aç' : 'Kilitle'}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
+          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? t('icon_unlock') : t('icon_lock')}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
         </div>
         <span class="app-icon-label">${esc(i.label)}</span>
       </div>
@@ -1688,7 +2215,7 @@ function renderAppIconSection() {
 
   box.innerHTML = `
     <div class="app-icon-grid">${itemsHTML}</div>
-    <div class="app-icon-note">${locked ? '🔒 İkon kilitli — tema değiştirse de bu ikon sabit kalır.' : 'Tema değiştirdiğinde ikon de otomatik değişir. Kilitlemek için aktif ikonun üzerindeki kilide dokun.'}<br>Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome\'dan tekrar eklemen gerekir.</div>
+    <div class="app-icon-note">${t('icon_change_hint')}</div>
   `;
 }
 
@@ -1698,14 +2225,14 @@ function renderThemeSection() {
   const current = getCurrentTheme();
   const followSystem = getFollowSystemTheme();
 
-  const swatchesHTML = THEMES.map(t => {
-    const isActive = current === t.id;
+  const swatchesHTML = THEMES.map(th => {
+    const isActive = current === th.id;
     return `
-      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${t.id}')">
-        <span class="theme-swatch" style="background:${t.paper}">
-          ${isActive ? `<span class="theme-swatch-check" style="color:${t.accent}">${icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${t.accent}"></span>`}
+      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${th.id}')">
+        <span class="theme-swatch" style="background:${th.paper}">
+          ${isActive ? `<span class="theme-swatch-check" style="color:${th.accent}">${icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${th.accent}"></span>`}
         </span>
-        <span class="theme-label">${esc(t.label)}</span>
+        <span class="theme-label">${esc(th.label)}</span>
       </button>
     `;
   }).join('');
@@ -1713,10 +2240,10 @@ function renderThemeSection() {
   box.innerHTML = `
     <div class="theme-grid">${swatchesHTML}</div>
     <div class="settings-item" style="border-top:var(--bd) solid var(--line);padding-top:.8rem">
-      <div class="si-label">Sistem temasını takip et<small>Cihazın karanlık modu açıksa Sumi otomatik seçilir</small></div>
+      <div class="si-label">${t('follow_system')}<small>${t('follow_system_desc')}</small></div>
       <select class="si-input" id="cfg-follow-system" style="text-align:left" onchange="setFollowSystemTheme(this.value === '1')">
-        <option value="1" ${followSystem ? 'selected' : ''}>Açık</option>
-        <option value="0" ${!followSystem ? 'selected' : ''}>Kapalı</option>
+        <option value="1" ${followSystem ? 'selected' : ''}>${t('on')}</option>
+        <option value="0" ${!followSystem ? 'selected' : ''}>${t('off')}</option>
       </select>
     </div>
   `;
@@ -1728,33 +2255,33 @@ function renderSyncSection() {
 
   if (!syncConfigured()) {
     el.innerHTML = `
-      <p class="text-muted">Bulut senkron henüz kurulmadı.</p>
-      <p class="form-hint mt-1">Geliştirici notu: index.html içinde SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurman gerekiyor (bkz. KURULUM.md).</p>
+      <p class="text-muted">${t('sync_not_configured')}</p>
+      <p class="form-hint mt-1">${t('sync_dev_note')}</p>
     `;
     return;
   }
 
   if (syncEnabled && syncCode) {
     el.innerHTML = `
-      <p style="font-weight:700">Bağlı giriş kodu:</p>
+      <p style="font-weight:700">${t('sync_connected')}</p>
       <p style="font-size:1.8rem;font-weight:800;letter-spacing:.1em;margin:.3rem 0;color:var(--hanko)">${esc(syncCode)}</p>
-      <p class="text-muted">Diğer cihazda (telefon/PC) aynı kodu girerek bu kartları orada da görebilirsin.</p>
+      <p class="text-muted">${t('sync_share_hint')}</p>
       <div class="btn-row">
-        <button class="btn btn-ghost tap" onclick="manualSync()">${icon('sync')}Şimdi senkronize et</button>
-        <button class="btn btn-danger tap" onclick="confirmDisconnectSync()">Bağlantıyı kes</button>
+        <button class="btn btn-ghost tap" onclick="manualSync()">${icon('sync')}${t('sync_now')}</button>
+        <button class="btn btn-danger tap" onclick="confirmDisconnectSync()">${t('sync_disconnect')}</button>
       </div>
     `;
   } else {
     el.innerHTML = `
-      <p class="text-muted" style="margin-bottom:.8rem">Telefon ve bilgisayarın otomatik senkronize olması için bir giriş kodu oluştur, diğer cihazda da aynı kodu gir.</p>
+      <p class="text-muted" style="margin-bottom:.8rem">${t('sync_create_hint')}</p>
       <div class="btn-row">
-        <button class="btn btn-primary tap" onclick="createAndConnectCode()">${icon('spark')}Yeni kod oluştur</button>
+        <button class="btn btn-primary tap" onclick="createAndConnectCode()">${icon('spark')}${t('sync_create')}</button>
       </div>
       <div class="form-group mt-2">
-        <label>Veya var olan bir kodu gir</label>
-        <input id="sync-code-input" placeholder="ör: 482913" inputmode="numeric" maxlength="6">
+        <label>${t('sync_or_enter')}</label>
+        <input id="sync-code-input" placeholder="${t('sync_code_placeholder')}" inputmode="numeric" maxlength="6">
       </div>
-      <button class="btn btn-block btn-ghost tap" onclick="enterSyncCode()">Bu kodla bağlan</button>
+      <button class="btn btn-block btn-ghost tap" onclick="enterSyncCode()">${t('sync_connect')}</button>
     `;
   }
 }
@@ -1764,18 +2291,18 @@ async function createAndConnectCode() {
   const ok = await connectSyncCode(code);
   if (ok) {
     renderSyncSection();
-    showToast('✓ Kod oluşturuldu: ' + code, 3500);
+    showToast(t('toast_sync_code', {code}), 3500);
   }
 }
 
 async function enterSyncCode() {
   const input = document.getElementById('sync-code-input');
   const code = input.value.trim();
-  if (!/^[0-9]{4,8}$/.test(code)) { showToast('⚠ Geçerli bir kod gir (4-8 hane)'); return; }
+  if (!/^[0-9]{4,8}$/.test(code)) { showToast(t('warn_invalid_code')); return; }
   const ok = await connectSyncCode(code);
   if (ok) {
     renderSyncSection();
-    showToast('✓ Bağlandı ve senkronize edildi');
+    showToast(t('toast_sync_connected'));
   }
 }
 
@@ -1792,21 +2319,21 @@ async function manualSync() {
     saveState(state);
     await cloudPush(syncCode, state);
     syncStatus = 'synced';
-    showToast('✓ Senkronize edildi');
+    showToast(t('toast_synced'));
     renderDeckList();
     renderGlobalStats();
   } catch (e) {
     syncStatus = 'error';
-    showToast('⚠ Senkron hatası: ' + e.message);
+    showToast(t('warn_sync_error', {msg: e.message}));
   }
   renderSyncBadge();
 }
 
 function confirmDisconnectSync() {
-  if (!confirm('Bu cihazı senkron koddan ayırmak istediğine emin misin? Veriler bu cihazda yerel olarak kalır, ama otomatik senkron durur.')) return;
+  if (!confirm(t('confirm_disconnect'))) return;
   disconnectSync();
   renderSyncSection();
-  showToast('Bağlantı kesildi');
+  showToast(t('toast_disconnected'));
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────
@@ -1863,7 +2390,7 @@ async function loadApp() {
   }
   if (!testStorage()) {
     document.getElementById('storage-warning').style.display = 'block';
-    showToast('⚠ Veriler bu oturumda kalıcı değil', 4000);
+    showToast(t('toast_storage_warning'), 4000);
   }
 
   // Daha önce bağlanılmış bir senkron kodu varsa otomatik bağlan
@@ -2039,9 +2566,9 @@ function _computeSRS(card, grade, preview) {
 
 function fmtDur(ms) {
   const min = Math.round(ms / 60000);
-  if (min < 60) return min + ' dk';
-  if (min < 1440) return Math.round(min / 60) + ' sa';
-  return Math.round(min / 1440) + ' gün';
+  if (min < 60) return min + 'm';
+  if (min < 1440) return Math.round(min / 60) + 'h';
+  return Math.round(min / 1440) + 'd';
 }
 
 // ─── QUEUE BUILDER ────────────────────────────────────────────────────
@@ -2076,11 +2603,11 @@ function buildQueue(deck, masteredOnly = false) {
 
 // ─── STATS HELPERS ────────────────────────────────────────────────────
 function recordReview(isNew) {
-  const t = today();
-  const isFirstReviewToday = !state.stats.reviewsByDate[t];
-  state.stats.reviewsByDate[t] = (state.stats.reviewsByDate[t] || 0) + 1;
+  const td = today();
+  const isFirstReviewToday = !state.stats.reviewsByDate[td];
+  state.stats.reviewsByDate[td] = (state.stats.reviewsByDate[td] || 0) + 1;
   if (isNew) {
-    const k = t + '_new';
+    const k = td + '_new';
     state.stats.reviewsByDate[k] = (state.stats.reviewsByDate[k] || 0) + 1;
   }
   if (isFirstReviewToday) {
@@ -2097,11 +2624,11 @@ function recordReview(isNew) {
 function applyShieldsForMissedDays() {
   if (!cfg().autoUseShield) return;
   const dates = Object.keys(state.stats.reviewsByDate).filter(k => !k.includes('_new')).sort();
-  const t = today();
-  const priorDates = dates.filter(d => d !== t);
+  const td = today();
+  const priorDates = dates.filter(d => d !== td);
   if (!priorDates.length) return;
   const lastActive = priorDates[priorDates.length - 1];
-  const gap = dateStrDiffDays(t, lastActive) - 1; // aradaki tamamen boş gün sayısı
+  const gap = dateStrDiffDays(td, lastActive) - 1; // aradaki tamamen boş gün sayısı
   if (gap <= 0) return;
 
   let shieldsUsed = 0;
@@ -2113,7 +2640,7 @@ function applyShieldsForMissedDays() {
     shieldsUsed++;
   }
   if (shieldsUsed > 0) {
-    showToast(`🛡 ${shieldsUsed} kalkan kullanıldı, streak korundu`, 2600);
+    showToast(t('toast_shield_used', {count: shieldsUsed}), 2600);
   }
 }
 
@@ -2124,13 +2651,13 @@ function hasActivityOn(dateStr) {
 }
 
 function updateStreak() {
-  const t = today();
-  if (!hasActivityOn(t)) {
-    const yest = addDaysToDateStr(t, -1);
+  const td = today();
+  if (!hasActivityOn(td)) {
+    const yest = addDaysToDateStr(td, -1);
     if (!hasActivityOn(yest)) { state.stats.streak = 0; return; }
   }
   let streak = 0;
-  let cursor = t;
+  let cursor = td;
   while (hasActivityOn(cursor)) {
     streak++;
     cursor = addDaysToDateStr(cursor, -1);
@@ -2142,8 +2669,8 @@ function updateStreak() {
 // bitince (yani bugün o haftanın son günüyse ya da sonraki haftaya
 // geçildiyse) +1 kalkan verir. Sınırsız birikebilir.
 function awardWeeklyShieldIfEarned() {
-  const t = today();
-  const curWeekStart = weekStartOf(t);
+  const td = today();
+  const curWeekStart = weekStartOf(td);
   const lastAwardedWeek = state.stats.lastShieldWeekStart;
 
   if (lastAwardedWeek === curWeekStart) return; // bu hafta için zaten kontrol edildi
@@ -2162,7 +2689,7 @@ function awardWeeklyShieldIfEarned() {
     const fullyActiveWeek = allSevenDays.every(d => hasActivityOn(d));
     if (fullyActiveWeek) {
       state.stats.shields++;
-      showToast('🛡 Bir haftayı kesintisiz tamamladın, +1 kalkan!', 2600);
+      showToast(t('toast_shield_earned'), 2600);
     }
     weekCursor = addDaysToDateStr(weekCursor, 7);
   }
@@ -2171,14 +2698,14 @@ function awardWeeklyShieldIfEarned() {
 
 function globalStats() {
   let total = 0, mastered = 0;
-  const t = today();
+  const td = today();
   for (const deck of state.decks) {
     for (const card of deck.cards) {
       total++;
       if (card.srs.mastered) mastered++;
     }
   }
-  return { total, mastered, todayCount: state.stats.reviewsByDate[t] || 0, streak: state.stats.streak || 0 };
+  return { total, mastered, todayCount: state.stats.reviewsByDate[td] || 0, streak: state.stats.streak || 0 };
 }
 
 // Streak gün sayısına göre alevin görsel evrimi. Eşikler: 0-6 soluk,
@@ -2199,15 +2726,15 @@ function renderStreakCard() {
 
   // Son 7 gün (bugün dahil, en eskiden en yeniye — bugün en sağda).
   // Henüz yaşanmamış gelecek günler hiç gösterilmez.
-  const t = today();
-  const days = Array.from({ length: 7 }, (_, i) => addDaysToDateStr(t, i - 6));
-  const dayLabels = ['Pzt','Sal','Çar','Prş','Cum','Cmt','Paz']; // 0=Pzt
+  const td = today();
+  const days = Array.from({ length: 7 }, (_, i) => addDaysToDateStr(td, i - 6));
+  const dayLabels = t('weekdays_short').split(','); // 0=Mon
 
   const dotsHTML = days.map(d => {
-    const dow = ((dateStrToEpochDay(d) % 7) + 10) % 7; // 0=Pzt
+    const dow = ((dateStrToEpochDay(d) % 7) + 10) % 7; // 0=Mon
     const active = !!state.stats.reviewsByDate[d];
     const shielded = !active && !!state.stats.reviewsByDate[d + '_shielded'];
-    const isToday = d === t;
+    const isToday = d === td;
     const dotCls = ['streak-day-dot'];
     if (active) dotCls.push('is-active');
     else if (shielded) dotCls.push('is-shielded');
@@ -2220,8 +2747,8 @@ function renderStreakCard() {
   card.innerHTML = `
     <div class="streak-flame ${lvl}">${icon('flame')}</div>
     <div class="streak-info">
-      <div class="streak-count">${streak}<span class="unit">günlük seri</span></div>
-      <div class="streak-sub">${icon('shield')} ${shields} kalkanın var</div>
+      <div class="streak-count">${streak}<span class="unit">${t('day_unit')}</span></div>
+      <div class="streak-sub">${icon('shield')} ${t('shields_have', {count: shields})}</div>
     </div>
     <div class="streak-week-grid">${dotsHTML}</div>
   `;
@@ -2238,23 +2765,23 @@ function renderStreakScreen() {
   const streak = state.stats.streak || 0;
   const shields = state.stats.shields || 0;
   const lvl = flameLevel(streak);
-  const milestoneText = streak >= 100 ? 'Efsanevi seri! 🔥'
-    : streak >= 30 ? 'Alev büyüyor, devam!'
-    : streak >= 7 ? 'Güzel bir tempo tuttun'
-    : 'Her gün biraz çalış, alev büyüsün';
+  const milestoneText = streak >= 100 ? t('streak_msg_blaze')
+    : streak >= 30 ? t('streak_msg_hot')
+    : streak >= 7 ? t('streak_msg_warm')
+    : t('streak_msg_cold');
 
   screen.innerHTML = `
     <div class="card streak-detail-head">
       <div class="streak-detail-flame ${lvl}">${icon('flame')}</div>
       <div>
-        <div class="streak-detail-count">${streak} gün</div>
+        <div class="streak-detail-count">${t('streak_days', {count: streak})}</div>
         <div class="streak-detail-label">${esc(milestoneText)}</div>
       </div>
     </div>
 
     <div class="card shield-row">
       <div class="shield-icon">${icon('shield')}</div>
-      <div class="shield-text"><span class="shield-count">${shields}</span> kalkanın var — bir gün kaçırırsan serini otomatik korur.</div>
+      <div class="shield-text"><span class="shield-count">${shields}</span> ${t('shield_text')}</div>
     </div>
 
     <div class="card" id="cal-container"></div>
@@ -2274,11 +2801,11 @@ function renderCalendarGrid() {
   if (!container) return;
 
   const [y, m] = calendarViewMonth.split('-').map(Number);
-  const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const monthNames = t('months').split(',');
   const firstOfMonth = `${y}-${String(m).padStart(2,'0')}-01`;
   const firstDow = ((dateStrToEpochDay(firstOfMonth) % 7) + 10) % 7; // 0=Pzt
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const t = today();
+  const td = today();
 
   let cellsHTML = '';
   for (let i = 0; i < firstDow; i++) cellsHTML += `<div class="cal-day is-empty"></div>`;
@@ -2286,7 +2813,7 @@ function renderCalendarGrid() {
     const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const active = !!state.stats.reviewsByDate[dateStr];
     const shielded = !active && !!state.stats.reviewsByDate[dateStr + '_shielded'];
-    const isToday = dateStr === t;
+    const isToday = dateStr === td;
     const cls = ['cal-day'];
     if (active) cls.push('is-active');
     else if (shielded) cls.push('is-shielded');
@@ -2296,17 +2823,17 @@ function renderCalendarGrid() {
 
   container.innerHTML = `
     <div class="cal-nav">
-      <button class="icon-btn tap" onclick="changeCalendarMonth(-1)" aria-label="Önceki ay">${icon('chevL')}</button>
+      <button class="icon-btn tap" onclick="changeCalendarMonth(-1)" aria-label="${t('prev_month')}">${icon('chevL')}</button>
       <span class="cal-nav-title">${monthNames[m-1]} ${y}</span>
-      <button class="icon-btn tap" onclick="changeCalendarMonth(1)" aria-label="Sonraki ay">${icon('chevR')}</button>
+      <button class="icon-btn tap" onclick="changeCalendarMonth(1)" aria-label="${t('next_month')}">${icon('chevR')}</button>
     </div>
     <div class="cal-grid">
-      ${['P','S','Ç','P','C','C','P'].map(d => `<div class="cal-weekday">${d}</div>`).join('')}
+      ${t('weekdays_cal').split(',').map(d => `<div class="cal-weekday">${d}</div>`).join('')}
       ${cellsHTML}
     </div>
     <div class="cal-legend">
-      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--hanko)"></span>Çalışıldı</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--sky)"></span>Kalkanla korundu</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--hanko)"></span>${t('legend_studied')}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--sky)"></span>${t('legend_shielded')}</span>
     </div>
   `;
 }
@@ -2515,10 +3042,10 @@ async function fetchReadingSuggestions(text) {
 // debounce: kullanıcı her tuşa bastığında API'ye gitmemek için, yazmayı
 // bir süre (600ms) durdurunca tetiklenir.
 function debounce(fn, wait) {
-  let t = null;
+  let _dt = null;
   return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
+    clearTimeout(_dt);
+    _dt = setTimeout(() => fn(...args), wait);
   };
 }
 
@@ -2543,14 +3070,14 @@ function setupFuriganaAssist(kanjiInputId, furiganaInputId, suggestBoxId) {
   const runLookup = debounce(async () => {
     const text = kanjiInput.value.trim();
     if (!text) { box.innerHTML = ''; return; }
-    box.innerHTML = `<span class="furigana-chip is-loading">Okunuş aranıyor…</span>`;
+    box.innerHTML = `<span class="furigana-chip is-loading">${t('furigana_searching')}</span>`;
     const readings = await fetchReadingSuggestions(text);
     // Kullanıcı bu sırada alanı değiştirmiş olabilir; güncel değeri tekrar kontrol et
     if (kanjiInput.value.trim() !== text) return;
     if (!readings || !readings.length) {
       box.innerHTML = furiganaInput.value.trim()
         ? ''
-        : `<span class="furigana-chip is-empty">Otomatik okunuş bulunamadı, elle yazabilirsin</span>`;
+        : `<span class="furigana-chip is-empty">${t('furigana_not_found')}</span>`;
       return;
     }
     box.innerHTML = readings.map(r => `<button type="button" class="furigana-chip tap">${esc(r)}</button>`).join('');
@@ -2653,14 +3180,14 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
       return html;
     }
 
-    const tokensHTML = tokens.map((t, i) => {
-      if (!t.isKanji) return esc(t.text);
-      return renderKanjiBlock(t.text);
+    const tokensHTML = tokens.map((tok, i) => {
+      if (!tok.isKanji) return esc(tok.text);
+      return renderKanjiBlock(tok.text);
     }).join('');
 
     editor.innerHTML = `
       <div class="fm-editor">
-        <div class="fm-editor-hint">Furigana eklemek istediğin kanjiye/kelimeye dokun.</div>
+        <div class="fm-editor-hint">${t('furigana_editor_hint')}</div>
         <div class="fm-sentence">${tokensHTML}</div>
         <div id="${editorId}-popover"></div>
       </div>
@@ -2674,7 +3201,7 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   async function onTokenClick(text) {
     const pop = document.getElementById(`${editorId}-popover`);
     if (!pop) return;
-    pop.innerHTML = `<div class="fm-token-popover">Okunuş aranıyor…</div>`;
+    pop.innerHTML = `<div class="fm-token-popover">${t('furigana_searching')}</div>`;
     const readings = await fetchReadingSuggestions(text);
     if (!readings || !readings.length) {
       const chars = [...text];
@@ -2684,16 +3211,16 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
         splitBlocks.add(text);
         renderTokenEditor();
         const pop2 = document.getElementById(`${editorId}-popover`);
-        if (pop2) pop2.innerHTML = `<div class="fm-token-popover fm-editor-hint">"${esc(text)}" için otomatik okunuş bulunamadı, kelimeyi tek tek kanjiye böldüm — birini seç.</div>`;
+        if (pop2) pop2.innerHTML = `<div class="fm-token-popover fm-editor-hint">${t('furigana_word_not_found', {word: esc(text)})}</div>`;
         return;
       }
       pop.innerHTML = `
         <div class="fm-token-popover">
           <div class="form-group" style="margin-bottom:.5rem">
-            <label>"${esc(text)}" için okunuş (elle yaz)</label>
+            <label>"${esc(text)}" ${t('furigana_manual_label')}</label>
             <input type="text" id="${editorId}-manual">
           </div>
-          <button type="button" class="btn btn-primary tap btn-sm" id="${editorId}-manual-save">Kaydet</button>
+          <button type="button" class="btn btn-primary tap btn-sm" id="${editorId}-manual-save">${t('save')}</button>
         </div>
       `;
       document.getElementById(`${editorId}-manual-save`).addEventListener('click', () => {
@@ -2746,19 +3273,20 @@ function showView(name) {
 
   if (name === 'decks') { renderDeckList(); renderGlobalStats(); }
   else if (name === 'deck') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; renderDeckDetail(); }
-  else if (name === 'study') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = '読む'; renderStudy(); }
-  else if (name === 'review') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = 'Gözden Geçir'; renderReview(); }
-  else if (name === 'streak') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = 'Çalışma Takvimi'; renderStreakScreen(); }
+  else if (name === 'study') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('study_screen_title'); renderStudy(); }
+  else if (name === 'review') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('review_screen_title'); renderReview(); }
+  else if (name === 'streak') { backBtn.style.display = 'flex'; addBtn.style.display = 'none'; title.textContent = t('streak_screen_title'); renderStreakScreen(); }
   else if (name === 'add') { addBtn.style.display = 'none'; renderAddForm(); }
   else if (name === 'settings') { addBtn.style.display = 'none'; renderSettings(); }
+  updateStaticTexts();
 }
 
 function renderGlobalStats() {
   const s = globalStats();
   document.getElementById('global-stats').innerHTML = `
-    <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam kart</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşılan</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">Bugün</div></div>
+    <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${t('total_cards')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${t('mastered_label')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">${t('today_label')}</div></div>
   `;
   renderStreakCard();
 }
@@ -2779,25 +3307,25 @@ function renderDeckList() {
       ? buildQueueFromCards(getAllCardsForDeck(deck.id)).length
       : buildQueue(deck).length;
     const indent = depth * 1.2;
-    const subInfo = hasChildren ? ` · ${children.length} alt deste` : '';
+    const subInfo = hasChildren ? ` · ${t('sub_decks_count', {count: children.length})}` : '';
     return `
     <div class="card" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
       <div class="card-row">
         <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
           <span>
             <span class="card-title" style="display:block">${hasChildren ? icon('folder') + ' ' : ''}${esc(deck.name)}</span>
-            <span class="deck-meta">${s.total} kart · ${s.mastered} ustalaşıldı${subInfo}</span>
+            <span class="deck-meta">${t('deck_meta', {total: s.total, mastered: s.mastered})}${subInfo}</span>
           </span>
         </button>
       </div>
       <div class="btn-row" style="margin-top:.6rem">
-        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalış (${qLen})</button>` : '<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>'}
-        <button class="btn btn-ghost tap" style="flex:0" onclick="openDeck('${deck.id}')">Detay</button>
+        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}${t('study_btn', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${t('no_cards_to_study')}</span>`}
+        <button class="btn btn-ghost tap" style="flex:0" onclick="openDeck('${deck.id}')">${t('detail')}</button>
       </div>
       <div class="btn-row" style="margin-top:.5rem">
-        ${s.newC ? `<span class="badge badge-sky">${s.newC} yeni</span>` : ''}
-        ${s.learning ? `<span class="badge badge-gold">${s.learning} öğreniliyor</span>` : ''}
-        ${s.due ? `<span class="badge badge-hanko">${s.due} tekrar</span>` : ''}
+        ${s.newC ? `<span class="badge badge-sky">${t('badge_new', {count: s.newC})}</span>` : ''}
+        ${s.learning ? `<span class="badge badge-gold">${t('badge_learning', {count: s.learning})}</span>` : ''}
+        ${s.due ? `<span class="badge badge-hanko">${t('badge_review', {count: s.due})}</span>` : ''}
         ${s.mastered ? `<span class="badge badge-jade">${icon('star')}${s.mastered}</span>` : ''}
       </div>
     </div>`;
@@ -2816,7 +3344,7 @@ function renderDeckDetail() {
   document.getElementById('topbar-title').innerHTML = `
     <span style="display:flex;align-items:center;gap:.4rem;min-width:0">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(deck.name)}</span>
-      <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="Adlandır">${icon('edit')}</button>
+      <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="${t('modal_rename')}">${icon('edit')}</button>
     </span>`;
 
   const children = getChildDecks(deck.id);
@@ -2834,7 +3362,7 @@ function renderDeckDetail() {
   const normalCards = deck.cards.filter(c => !c.srs.mastered);
 
   const subDecksHTML = children.length ? `
-    <div class="section-hd">Alt desteler (${children.length})</div>
+    <div class="section-hd">${t('sub_decks_section', {count: children.length})}</div>
     ${children.map(child => {
       const cs = aggregateDeckStats(child.id);
       const cq = buildQueueFromCards(getAllCardsForDeck(child.id)).length;
@@ -2844,38 +3372,38 @@ function renderDeckDetail() {
           <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${child.id}')">
             <span>
               <span class="card-title" style="display:block">${esc(child.name)}</span>
-              <span class="deck-meta">${cs.total} kart · ${cs.mastered} ustalaşıldı</span>
+              <span class="deck-meta">${t('deck_meta', {total: cs.total, mastered: cs.mastered})}</span>
             </span>
           </button>
         </div>
         <div class="btn-row" style="margin-top:.4rem">
-          ${cq > 0 ? `<button class="btn btn-primary tap btn-sm" onclick="startStudy('${child.id}',false)">${icon('play','ic-fill')}Çalış (${cq})</button>` : '<span class="text-muted" style="font-size:.82rem">Çalışılacak kart yok</span>'}
-          <button class="btn btn-ghost tap btn-sm" style="flex:0" onclick="openDeck('${child.id}')">Detay</button>
+          ${cq > 0 ? `<button class="btn btn-primary tap btn-sm" onclick="startStudy('${child.id}',false)">${icon('play','ic-fill')}${t('study_btn', {count: cq})}</button>` : `<span class="text-muted" style="font-size:.82rem">${t('no_cards_to_study')}</span>`}
+          <button class="btn btn-ghost tap btn-sm" style="flex:0" onclick="openDeck('${child.id}')">${t('detail')}</button>
         </div>
       </div>`;
     }).join('')}
-    <button class="btn btn-ghost tap" style="margin-bottom:1rem" onclick="showAddSubDeckModal('${deck.id}')">${icon('plus')}Alt deste ekle</button>
+    <button class="btn btn-ghost tap" style="margin-bottom:1rem" onclick="showAddSubDeckModal('${deck.id}')">${icon('plus')}${t('add_sub_deck')}</button>
   ` : '';
 
   document.getElementById('deck-detail-content').innerHTML = `
     ${breadcrumb}
     <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">Yeni</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">Öğreniliyor</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">Bugün tekrar</div></div>
-      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Toplam${hasChildren ? ' (tümü)' : ''}</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">Ustalaşıldı</div></div>
-      <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">Kuyrukta</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">${t('stat_new')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">${t('stat_learning')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.due}</div><div class="stat-lbl">${t('stat_due')}</div></div>
+      <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${hasChildren ? t('stat_total_all') : t('stat_total')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${t('stat_mastered')}</div></div>
+      <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">${t('stat_queue')}</div></div>
     </div>
 
     <div class="btn-row" style="margin-bottom:1rem">
-      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}Çalışmaya başla (${qLen})${hasChildren ? ' — tümü' : ''}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">Şimdilik çalışılacak kart yok</span>`}
-      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${icon('plus')}Kart Ekle</button>
-      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${icon('trash')}Sil</button>
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}${hasChildren ? t('start_study_all', {count: qLen}) : t('start_study', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${t('no_cards_to_study')}</span>`}
+      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${icon('plus')}${t('add_card')}</button>
+      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${icon('trash')}${t('delete_btn')}</button>
     </div>
 
     <div class="btn-row" style="margin-bottom:1rem">
-      <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${icon('eye')}Gözden Geçir</button>
+      <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${icon('eye')}${t('review_btn')}</button>
     </div>
 
     ${subDecksHTML}
@@ -2885,26 +3413,26 @@ function renderDeckDetail() {
       <div class="mb-top">
         <span class="mb-icon">${icon('star')}</span>
         <span style="flex:1">
-          <span class="mb-title" style="display:block">İyi Bildiklerim</span>
-          <span class="mb-sub">${masteredCards.length} kart ustalaşıldı</span>
+          <span class="mb-title" style="display:block">${t('mastered_banner')}</span>
+          <span class="mb-sub">${t('cards_mastered', {count: masteredCards.length})}</span>
         </span>
       </div>
       <div class="btn-row">
-        ${mLen > 0 ? `<button class="btn btn-ghost tap" onclick="startStudy('${deck.id}',true)">${icon('play','ic-fill')}Çalış (${mLen})</button>` : ''}
-        <button class="btn btn-ghost tap" onclick="toggleMasteredList()">${icon('eye')}Listele</button>
+        ${mLen > 0 ? `<button class="btn btn-ghost tap" onclick="startStudy('${deck.id}',true)">${icon('play','ic-fill')}${t('study_btn', {count: mLen})}</button>` : ''}
+        <button class="btn btn-ghost tap" onclick="toggleMasteredList()">${icon('eye')}${t('list_btn')}</button>
       </div>
     </div>
     <div id="mastered-list" style="display:none">
       ${masteredCards.map(c => cardListItemHTML(c, deck.id)).join('')}
     </div>` : ''}
 
-    <div class="section-hd">Kartlar (${normalCards.length})</div>
-    ${normalCards.length ? normalCards.map(c => cardListItemHTML(c, deck.id)).join('') : `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>Bu destede henüz kart yok.</p></div>`}
+    <div class="section-hd">${t('cards_section', {count: normalCards.length})}</div>
+    ${normalCards.length ? normalCards.map(c => cardListItemHTML(c, deck.id)).join('') : `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>${t('no_cards_in_deck')}</p></div>`}
   `;
 }
 
 function cardListItemHTML(c, deckId) {
-  const stateLabel = {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[c.srs.state] || '';
+  const sl = {new:t('state_new'), learning:t('state_learning'), review:t('state_review')}[c.srs.state] || '';
   const badgeCls = {new:'badge-sky', learning:'badge-gold', review:'badge-hanko'}[c.srs.state] || 'badge-soft';
   return `
   <div class="card-list-item">
@@ -2913,10 +3441,10 @@ function cardListItemHTML(c, deckId) {
       <div class="cli-furi">${esc(c.furigana)}</div>
       <div class="cli-meaning">${esc(c.meaningTr)}</div>
     </div>
-    ${c.srs.mastered ? `<span class="badge badge-jade" style="padding:.28rem .5rem">${icon('star')}</span>` : `<span class="badge ${badgeCls}">${stateLabel}</span>`}
+    ${c.srs.mastered ? `<span class="badge badge-jade" style="padding:.28rem .5rem">${icon('star')}</span>` : `<span class="badge ${badgeCls}">${sl}</span>`}
     <div class="cli-actions">
-      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="Düzenle">${icon('edit')}</button>
-      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="Sil">${icon('trash')}</button>
+      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="${t('edit_label')}">${icon('edit')}</button>
+      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="${t('delete_btn')}">${icon('trash')}</button>
     </div>
   </div>`;
 }
@@ -2961,15 +3489,15 @@ function showReviewPickModal(deckId) {
   const allCards = getAllCardsForDeck(deckId);
   const masteredCount = allCards.filter(c => c.srs.mastered).length;
   const hasChildren = getChildDecks(deckId).length > 0;
-  const suffix = hasChildren ? ' (alt desteler dahil)' : '';
-  openModal('Gözden Geçir — Kapsam Seç', `
-    <p class="text-muted" style="margin-bottom:1rem">Bu modda kartlara sadece göz atarsın; cevapların ilerlemeni veya tekrar planını etkilemez.</p>
+  const suffix = hasChildren ? t('incl_subdecks') : '';
+  openModal(t('review_title'), `
+    <p class="text-muted" style="margin-bottom:1rem">${t('review_info')}</p>
     <div class="btn-row" style="flex-direction:column">
-      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">Normal kartlar (${allCards.length - masteredCount})${suffix}</button>
-      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">İyi Bildiklerim (${masteredCount})${suffix}</button>` : ''}
-      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">Tüm kartlar (${allCards.length})${suffix}</button>
+      <button class="btn btn-primary btn-block tap" onclick="startReview('${deckId}','normal')">${t('normal_cards', {count: allCards.length - masteredCount})}${suffix}</button>
+      ${masteredCount ? `<button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','mastered')">${t('mastered_cards', {count: masteredCount})}${suffix}</button>` : ''}
+      <button class="btn btn-ghost btn-block tap" onclick="startReview('${deckId}','all')">${t('all_cards', {count: allCards.length})}${suffix}</button>
     </div>
-    <button class="btn btn-ghost btn-block tap mt-2" onclick="closeModal()">İptal</button>
+    <button class="btn btn-ghost btn-block tap mt-2" onclick="closeModal()">${t('cancel')}</button>
   `);
 }
 
@@ -2983,7 +3511,7 @@ function startReview(deckId, scope) {
 
   if (getChildDecks(deckId).length > 0) shuffle(reviewQueue);
 
-  if (!reviewQueue.length) { showToast('⚠ Bu kapsamda kart yok'); return; }
+  if (!reviewQueue.length) { showToast(t('no_cards_scope')); return; }
 
   currentDeckId = deckId;
   reviewIndex = 0;
@@ -2995,7 +3523,7 @@ function startReview(deckId, scope) {
 function renderReview() {
   const screen = document.getElementById('review-screen');
   if (!reviewQueue.length) {
-    screen.innerHTML = `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>Gösterilecek kart yok.</p></div>`;
+    screen.innerHTML = `<div class="empty"><div class="empty-icon">${icon('inbox','ic-lg')}</div><p>${t('no_cards_to_show')}</p></div>`;
     return;
   }
 
@@ -3008,17 +3536,17 @@ function renderReview() {
       <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
     </div>
     <div class="flashcard">
-      <span class="fc-state-badge badge badge-soft">${icon('eye')}Göz at</span>
+      <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
       <div class="fc-kanji">${esc(card.kanji)}</div>
     </div>
   `;
 
   if (!reviewShowingBack) {
     screen.innerHTML = frontHTML + `
-      <button id="btn-show" class="tap" onclick="showReviewBack()">${icon('eye')}Cevabı göster</button>
+      <button id="btn-show" class="tap" onclick="showReviewBack()">${icon('eye')}${t('show_answer')}</button>
       <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}Önceki</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>Sonraki${icon('chevR')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
       </div>
     `;
   } else {
@@ -3029,7 +3557,7 @@ function renderReview() {
         <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
       </div>
       <div class="flashcard">
-        <span class="fc-state-badge badge badge-soft">${icon('eye')}Göz at</span>
+        <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
         <div class="fc-back">
           <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
           <div class="fc-meaning">${esc(card.meaningTr)}</div>
@@ -3040,8 +3568,8 @@ function renderReview() {
         </div>
       </div>
       <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}Önceki</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>Sonraki${icon('chevR')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
+        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
       </div>
     `;
   }
@@ -3064,9 +3592,9 @@ function renderStudy() {
     screen.innerHTML = `
       <div class="study-done">
         <div class="done-icon">${icon('done','ic-lg')}</div>
-        <h2>Oturum tamamlandı</h2>
-        <p>${studyDoneToday} kart çalışıldı. Bugün için kalan: 0.</p>
-        <button class="btn btn-primary tap" onclick="showView('deck')">Desteye dön</button>
+        <h2>${t('session_complete')}</h2>
+        <p>${t('cards_studied', {count: studyDoneToday})}</p>
+        <button class="btn btn-primary tap" onclick="showView('deck')">${t('back_to_deck')}</button>
       </div>`;
     return;
   }
@@ -3086,7 +3614,7 @@ function renderStudy() {
         <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
         <div class="fc-kanji">${esc(card.kanji)}</div>
       </div>
-      <button id="btn-show" class="tap" onclick="showBack()">${icon('eye')}Cevabı göster</button>
+      <button id="btn-show" class="tap" onclick="showBack()">${icon('eye')}${t('show_answer')}</button>
     `;
   } else {
     const previews = [0,1,2,3].map(g => previewSRS(card, g).label);
@@ -3108,10 +3636,10 @@ function renderStudy() {
         </div>
       </div>
       <div class="answer-grid">
-        <button class="ans-btn ans-again tap" onclick="gradeCard(0)">Tekrar<span class="next-time">${previews[0]}</span></button>
-        <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">Zor<span class="next-time">${previews[1]}</span></button>
-        <button class="ans-btn ans-good tap" onclick="gradeCard(2)">İyi<span class="next-time">${previews[2]}</span></button>
-        <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">Kolay<span class="next-time">${previews[3]}</span></button>
+        <button class="ans-btn ans-again tap" onclick="gradeCard(0)">${t('grade_again')}<span class="next-time">${previews[0]}</span></button>
+        <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">${t('grade_hard')}<span class="next-time">${previews[1]}</span></button>
+        <button class="ans-btn ans-good tap" onclick="gradeCard(2)">${t('grade_good')}<span class="next-time">${previews[2]}</span></button>
+        <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${t('grade_easy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
   }
@@ -3123,7 +3651,7 @@ function stateBadgeCls(srs) {
 }
 function stateLabel(srs) {
   if (srs.mastered) return icon('star');
-  return {new:'Yeni', learning:'Öğreniliyor', review:'Tekrar'}[srs.state] || '';
+  return {new:t('state_new'), learning:t('state_learning'), review:t('state_review')}[srs.state] || '';
 }
 
 function showBack() { studyShowingBack = true; renderStudy(); }
@@ -3135,7 +3663,7 @@ function gradeCard(grade) {
   applySRS(card, grade);
   recordReview(wasNew);
   if (card.srs.mastered && !wasMastered) {
-    showToast('⭐ ' + card.kanji + ' → İyi Bildiklerim!', 2200);
+    showToast(t('toast_mastered', {kanji: card.kanji}), 2200);
   }
   studyDoneToday++;
   studyCardIndex++;
@@ -3186,7 +3714,7 @@ function updatePreview(prefix, containerId) {
         <div class="fc-preview-back"><div class="fc-back" style="width:100%;text-align:center">${backHTML}</div></div>
       </div>
     </div>
-    <div class="fc-preview-label">${hasBack ? 'Arka yüz' : 'Ön yüz'}</div>`;
+    <div class="fc-preview-label">${hasBack ? t('preview_back') : t('preview_front')}</div>`;
 }
 
 function attachPreviewListeners(prefix, containerId) {
@@ -3202,6 +3730,7 @@ function renderAddForm() {
   setupExampleFuriganaAssist('add-example-jp', 'add-example-mark-row', 'add-example-mark-btn', 'add-example-furigana-editor');
   attachPreviewListeners('add-', 'add-preview-wrap');
   updatePreview('add-', 'add-preview-wrap');
+  updateStaticTexts();
 }
 
 function populateDeckSelects() {
@@ -3210,7 +3739,7 @@ function populateDeckSelects() {
     const indent = '　'.repeat(depth);
     return `<option value="${deck.id}">${indent}${esc(deck.name)}</option>`;
   }).join('');
-  const placeholder = state.decks.length ? '' : '<option disabled selected>Önce bir deste oluştur</option>';
+  const placeholder = state.decks.length ? '' : `<option disabled selected>${t('create_deck_first')}</option>`;
   document.getElementById('add-deck-select').innerHTML = placeholder + opts;
   document.getElementById('bulk-deck-select').innerHTML = placeholder + opts;
 }
@@ -3226,13 +3755,13 @@ function saveCard() {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch (e) {}
 
-  if (!kanji || !furigana || !meaning) { showToast('⚠ Kanji, furigana ve anlam zorunlu'); return; }
+  if (!kanji || !furigana || !meaning) { showToast(t('warn_required')); return; }
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast(t('warn_deck_not_found')); return; }
 
   deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   save();
-  showToast('✓ Kart eklendi: ' + kanji);
+  showToast(t('toast_card_added', {kanji}));
   document.getElementById('add-kanji').value = '';
   document.getElementById('add-furigana').value = '';
   document.getElementById('add-meaning').value = '';
@@ -3249,7 +3778,7 @@ function bulkImport() {
   const deckId = document.getElementById('bulk-deck-select').value;
   const raw = document.getElementById('bulk-input').value;
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast(t('warn_deck_not_found')); return; }
 
   const lines = raw.split('\n');
   let added = 0, skipped = 0;
@@ -3265,22 +3794,24 @@ function bulkImport() {
   }
   save();
   document.getElementById('bulk-input').value = '';
-  showToast(`✓ ${added} kart eklendi${skipped ? ', ' + skipped + ' satır atlandı' : ''}`, 3000);
+  showToast(t('toast_cards_imported', {added, skipped: skipped ? t('toast_skipped', {count: skipped}) : ''}), 3000);
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────
 // Her ayarın detaylı açıklaması (ⓘ ikonuna tıklayınca gösterilir)
-const SETTING_INFO = {
-  'steps': 'Yeni bir kart ilk kez çalışıldığında bu sırayla gösterilir (dakika). Örnek "1, 10": Tekrar dersen 1 dakika sonra, İyi dersen sıradaki adıma (10 dakika) geçer. Tüm adımlar İyi ile geçildiğinde kart "mezun olur" ve normal tekrar moduna girer.',
-  'grad': 'Bir kart son öğrenme adımını İyi ile geçtiğinde, bir sonraki tekrara kadar kaç gün bekleneceğini belirler. Anki varsayılanı 1 gündür.',
-  'easy-iv': 'Yeni bir kart için doğrudan Kolay dersen, öğrenme adımlarını atlayıp kaç gün sonraya planlanacağını belirler.',
-  'ease': 'Her doğru tekrarda aralığın kaç katına çıkacağını belirleyen çarpan. Yüksek ease, kartın daha hızlı seyrekleşmesi anlamına gelir. Anki varsayılanı 2.5 (yani %250) dir.',
-  'easy-bonus': 'Tekrar modundaki bir kart için Kolay dediğinde, normal İyi aralığına ek olarak uygulanan çarpan. 1.3 demek, İyi den %30 daha uzun bir aralık demektir.',
-  'mastery': 'Bir kartın aralığı bu gün sayısına ulaştığında otomatik olarak "İyi Bildiklerim" alt destesine taşınır. Düşürürsen kartlar daha çabuk "ustalaşılmış" sayılır.',
-  'daily': 'Bir günde en fazla kaç YENİ kartın çalışma kuyruğuna gireceğini sınırlar. 0 yaparsan sınır olmaz, tüm yeni kartlar aynı gün gösterilebilir.',
-  'fuzz': 'Açıkken, hesaplanan aralıklara küçük bir rastgelelik (±%5) eklenir; böylece aynı gün eklenen kartlar hep aynı günde üst üste binmez. Kapatırsan aralıklar tam hesaplanan sayıya sabitlenir.',
-  'shield': 'Bir günü tamamen kaçırırsan ve kalkanın varsa, açıkken o gün otomatik olarak kalkan harcanıp serin korunur. Kapatırsan kalkanın olsa da kaçırdığın gün serini bozar; kalkanlar yine de kazanılmaya devam eder.',
-};
+function getSettingInfo() {
+  return {
+    'steps': t('info_steps'),
+    'grad': t('info_grad'),
+    'easy-iv': t('info_easy_iv'),
+    'ease': t('info_ease'),
+    'easy-bonus': t('info_easy_bonus'),
+    'mastery': t('info_mastery'),
+    'daily': t('info_daily'),
+    'fuzz': t('info_fuzz'),
+    'shield': t('info_shield'),
+  };
+}
 
 function toggleSettingInfo(key) {
   const panel = document.getElementById('info-' + key);
@@ -3298,7 +3829,7 @@ function settingItemHTML(key, label, smallText, inputHTML) {
         <button class="si-info-btn tap" type="button" onclick="toggleSettingInfo('${key}')" aria-label="Bilgi">${icon('info')}</button>
         ${inputHTML}
       </div>
-      <div class="si-info-panel" id="info-${key}">${SETTING_INFO[key]}</div>
+      <div class="si-info-panel" id="info-${key}">${getSettingInfo()[key]}</div>
     </div>
   `;
 }
@@ -3309,38 +3840,48 @@ function renderSettings() {
   renderSyncSection();
   const s = state.settings;
   document.getElementById('settings-fields').innerHTML =
-    settingItemHTML('steps', 'Öğrenme adımları (dk)', 'Virgülle ayır, ör: 1, 10',
+    settingItemHTML('steps', t('srs_steps'), t('srs_steps_hint'),
       `<input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">`) +
-    settingItemHTML('grad', 'Mezun olma aralığı (gün)', 'İyi ile mezun',
+    settingItemHTML('grad', t('srs_grad'), t('srs_grad_hint'),
       `<input class="si-input" id="cfg-grad" type="number" min="1" value="${s.graduateInterval}">`) +
-    settingItemHTML('easy-iv', 'Kolay aralık (gün)', 'Kolay ile mezun',
+    settingItemHTML('easy-iv', t('srs_easy_iv'), t('srs_easy_iv_hint'),
       `<input class="si-input" id="cfg-easy-iv" type="number" min="1" value="${s.easyInterval}">`) +
-    settingItemHTML('ease', 'Varsayılan ease', '1.3–5.0',
+    settingItemHTML('ease', t('srs_ease'), t('srs_ease_hint'),
       `<input class="si-input" id="cfg-ease" type="number" min="1.3" max="5" step="0.05" value="${s.defaultEase}">`) +
-    settingItemHTML('easy-bonus', 'Kolay bonusu', 'Aralık çarpanı',
+    settingItemHTML('easy-bonus', t('srs_easy_bonus'), t('srs_easy_bonus_hint'),
       `<input class="si-input" id="cfg-easy-bonus" type="number" min="1" step="0.05" value="${s.easyBonus}">`) +
-    settingItemHTML('mastery', 'Ustalaşma eşiği (gün)', 'Bu aralığa ulaşınca ⭐',
+    settingItemHTML('mastery', t('srs_mastery'), t('srs_mastery_hint'),
       `<input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">`) +
-    settingItemHTML('daily', 'Günlük yeni kart limiti', '0 = sınırsız',
+    settingItemHTML('daily', t('srs_daily'), t('srs_daily_hint'),
       `<input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">`) +
-    settingItemHTML('fuzz', 'Rastgele fuzz', 'Aralıklara ±%5',
+    settingItemHTML('fuzz', t('srs_fuzz'), t('srs_fuzz_hint'),
       `<select class="si-input" id="cfg-fuzz" style="text-align:left">
-        <option value="1" ${s.fuzz?'selected':''}>Açık</option>
-        <option value="0" ${!s.fuzz?'selected':''}>Kapalı</option>
+        <option value="1" ${s.fuzz?'selected':''}>${t('on')}</option>
+        <option value="0" ${!s.fuzz?'selected':''}>${t('off')}</option>
       </select>`) +
-    settingItemHTML('shield', 'Otomatik kalkan kullanımı', 'Gün kaçırınca seriyi korur',
+    settingItemHTML('shield', t('srs_shield'), t('srs_shield_hint'),
       `<select class="si-input" id="cfg-shield" style="text-align:left">
-        <option value="1" ${s.autoUseShield?'selected':''}>Açık</option>
-        <option value="0" ${!s.autoUseShield?'selected':''}>Kapalı</option>
+        <option value="1" ${s.autoUseShield?'selected':''}>${t('on')}</option>
+        <option value="0" ${!s.autoUseShield?'selected':''}>${t('off')}</option>
       </select>`) +
-    `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">Ayarları kaydet</button>
-    <div class="version-tag">Stacks · v${APP_VERSION}<br><span class="version-motto">Keep stacking.</span></div>`;
+    `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">${t('save_settings')}</button>
+    <div class="version-tag">${t('version_tag', {version: APP_VERSION})}<br><span class="version-motto">${t('keep_stacking')}</span></div>`;
+
+  const langSection = document.getElementById('lang-section');
+  if (langSection) {
+    const langs = [{code:'en',label:'English'},{code:'tr',label:'Türkçe'},{code:'ko',label:'한국어'},{code:'mn',label:'Монгол'}];
+    langSection.innerHTML = langs.map(l => `
+      <button class="theme-btn tap${l.code === currentLang ? ' active' : ''}" onclick="setLang('${l.code}')">
+        ${l.label}
+      </button>
+    `).join('');
+  }
 }
 
 function saveSettings() {
   try {
     const steps = document.getElementById('cfg-steps').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-    if (!steps.length) { showToast('⚠ Geçersiz adım değerleri'); return; }
+    if (!steps.length) { showToast(t('warn_invalid_steps')); return; }
     state.settings.learnSteps = steps;
     state.settings.graduateInterval = parseInt(document.getElementById('cfg-grad').value) || 1;
     state.settings.easyInterval = parseInt(document.getElementById('cfg-easy-iv').value) || 4;
@@ -3351,8 +3892,8 @@ function saveSettings() {
     state.settings.fuzz = document.getElementById('cfg-fuzz').value === '1';
     state.settings.autoUseShield = document.getElementById('cfg-shield').value === '1';
     save();
-    showToast('✓ Ayarlar kaydedildi');
-  } catch (e) { showToast('⚠ Hata: ' + e.message); }
+    showToast(t('toast_settings_saved'));
+  } catch (e) { showToast(t('warn_error', {msg: e.message})); }
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────────
@@ -3367,7 +3908,7 @@ function exportData() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('✓ Veriler dışa aktarıldı');
+  showToast(t('toast_exported'));
 }
 
 function importData(file) {
@@ -3380,11 +3921,11 @@ function importData(file) {
       state.settings = migrateSettings({ ...CONFIG, ...state.settings });
       state.decks = migrateDecks(state.decks || []);
       save();
-      showToast('✓ Veriler içe aktarıldı: ' + state.decks.length + ' deste');
+      showToast(t('toast_imported', {count: state.decks.length}));
       renderDeckList();
       renderGlobalStats();
     } catch (err) {
-      showToast('⚠ İçe aktarma hatası: ' + err.message);
+      showToast(t('warn_import_error', {msg: err.message}));
     }
   };
   reader.readAsText(file);
@@ -3400,14 +3941,14 @@ function closeModal() { document.getElementById('modal-bg').classList.remove('sh
 
 function showRenameModal(deckId) {
   const deck = findDeck(deckId);
-  openModal('Desteyi yeniden adlandır', `
+  openModal(t('modal_rename'), `
     <div class="form-group">
-      <label>Yeni isim</label>
-      <input id="rename-input" value="${esc(deck.name)}" placeholder="Deste adı">
+      <label>${t('modal_new_name')}</label>
+      <input id="rename-input" value="${esc(deck.name)}" placeholder="${t('modal_deck_name')}">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="renameDeck('${deckId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="renameDeck('${deckId}')">${t('save')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
 }
@@ -3415,36 +3956,36 @@ function showRenameModal(deckId) {
 function showAddCardModal(deckId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  openModal(`${esc(deck.name)} — Kart Ekle`, `
+  openModal(`${esc(deck.name)} — ${t('add_card')}`, `
     <div id="modal-add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="form-group">
-      <label>Kanji / Kelime <span class="required">*</span></label>
-      <input type="text" id="modal-add-kanji" placeholder="例: 漢字">
+      <label>${t('kanji_label')} <span class="required">*</span></label>
+      <input type="text" id="modal-add-kanji" placeholder="${t('kanji_placeholder')}">
     </div>
     <div class="form-group">
-      <label>Furigana (okunuş) <span class="required">*</span></label>
-      <input type="text" id="modal-add-furigana" placeholder="例: かんじ">
+      <label>${t('furigana_label')} <span class="required">*</span></label>
+      <input type="text" id="modal-add-furigana" placeholder="${t('furigana_placeholder')}">
       <div class="furigana-suggest" id="modal-add-furigana-suggest"></div>
     </div>
     <div class="form-group">
-      <label>Türkçe anlam <span class="required">*</span></label>
-      <input type="text" id="modal-add-meaning" placeholder="例: kanji, Çince karakter">
+      <label>${t('meaning_label')} <span class="required">*</span></label>
+      <input type="text" id="modal-add-meaning" placeholder="${t('meaning_placeholder')}">
     </div>
     <div class="form-group">
-      <label>Örnek cümle (Japonca)</label>
-      <input type="text" id="modal-add-example-jp" placeholder="例: 毎日漢字を勉強します。">
+      <label>${t('example_jp_label')}</label>
+      <input type="text" id="modal-add-example-jp" placeholder="${t('example_jp_placeholder')}">
       <div class="furigana-mark-row" id="modal-add-example-mark-row" style="display:none">
-        <button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${icon('spark')} Kelimeleri işaretle (furigana ekle)</button>
+        <button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${icon('spark')} ${t('mark_words_btn')}</button>
       </div>
       <div id="modal-add-example-furigana-editor"></div>
     </div>
     <div class="form-group">
-      <label>Örnek çeviri (Türkçe, opsiyonel)</label>
-      <input type="text" id="modal-add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+      <label>${t('example_tr_label')}</label>
+      <input type="text" id="modal-add-example-tr" placeholder="${t('example_tr_placeholder')}">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">${t('save')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   setupFuriganaAssist('modal-add-kanji', 'modal-add-furigana', 'modal-add-furigana-suggest');
@@ -3457,7 +3998,7 @@ function showAddCardModal(deckId) {
 
 function saveCardFromModal(deckId) {
   const deck = findDeck(deckId);
-  if (!deck) { showToast('⚠ Deste bulunamadı'); return; }
+  if (!deck) { showToast(t('warn_deck_not_found')); return; }
   const kanji = document.getElementById('modal-add-kanji').value.trim();
   const furigana = document.getElementById('modal-add-furigana').value.trim();
   const meaning = document.getElementById('modal-add-meaning').value.trim();
@@ -3467,11 +4008,11 @@ function saveCardFromModal(deckId) {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch (e) {}
 
-  if (!kanji || !furigana || !meaning) { showToast('⚠ Kanji, furigana ve anlam zorunlu'); return; }
+  if (!kanji || !furigana || !meaning) { showToast(t('warn_required')); return; }
 
   deck.cards.push(makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   save();
-  showToast('✓ Kart eklendi: ' + kanji);
+  showToast(t('toast_card_added', {kanji}));
   renderDeckDetail();
 
   // Modalı kapatmadan formu temizle, kullanıcı art arda kart eklemek isteyebilir
@@ -3491,39 +4032,39 @@ function saveCardFromModal(deckId) {
 function renameDeck(deckId) {
   const deck = findDeck(deckId);
   const newName = document.getElementById('rename-input').value.trim();
-  if (!newName) { showToast('⚠ İsim boş olamaz'); return; }
+  if (!newName) { showToast(t('warn_name_empty')); return; }
   deck.name = newName;
   save();
   closeModal();
   if (currentView === 'deck') { renderDeckDetail(); }
   else renderDeckList();
-  showToast('✓ Deste adı güncellendi');
+  showToast(t('toast_deck_renamed'));
 }
 
 function showEditModal(deckId, cardId) {
   const deck = findDeck(deckId);
   const card = deck?.cards.find(c => c.id === cardId);
   if (!card) return;
-  openModal('Kartı düzenle', `
-    <div class="form-group"><label>Kanji / Kelime</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
+  openModal(t('modal_edit_card'), `
+    <div class="form-group"><label>${t('kanji_label')}</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
     <div class="form-group">
-      <label>Furigana</label>
+      <label>${t('furigana_label')}</label>
       <input id="edit-furigana" value="${esc(card.furigana)}">
       <div class="furigana-suggest" id="edit-furigana-suggest"></div>
     </div>
-    <div class="form-group"><label>Türkçe anlam</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
+    <div class="form-group"><label>${t('meaning_label')}</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
     <div class="form-group">
-      <label>Örnek cümle (JP)</label>
+      <label>${t('example_jp_label')}</label>
       <input id="edit-example-jp" value="${esc(card.exampleJp)}">
       <div class="furigana-mark-row" id="edit-example-mark-row" style="display:${card.exampleJp ? 'flex' : 'none'}">
-        <button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${icon('spark')} Kelimeleri işaretle (furigana ekle)</button>
+        <button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${icon('spark')} ${t('mark_words_btn')}</button>
       </div>
       <div id="edit-example-furigana-editor"></div>
     </div>
-    <div class="form-group"><label>Örnek çeviri (TR)</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
+    <div class="form-group"><label>${t('example_tr_label')}</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">Kaydet</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">${t('save')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   document.getElementById('edit-example-jp').dataset.furiganaMap = JSON.stringify(card.exampleFuriganaMap || {});
@@ -3545,7 +4086,7 @@ function saveEditCard(deckId, cardId) {
   save();
   closeModal();
   renderDeckDetail();
-  showToast('✓ Kart güncellendi');
+  showToast(t('toast_card_updated'));
 }
 
 function deleteDeck(deckId) {
@@ -3554,25 +4095,25 @@ function deleteDeck(deckId) {
   const descendants = getDescendantDecks(deckId);
   const totalCards = getAllCardsForDeck(deckId).length;
   const msg = descendants.length
-    ? `"${deck.name}" ve ${descendants.length} alt destesi (toplam ${totalCards} kart) silinecek. Emin misin?`
-    : `"${deck.name}" destesini ve tüm kartlarını (${deck.cards.length}) silmek istediğine emin misin?`;
+    ? t('confirm_delete_deck_nested', {name: deck.name, sub: descendants.length, count: totalCards})
+    : t('confirm_delete_deck', {name: deck.name, count: deck.cards.length});
   if (!confirm(msg)) return;
   const idsToDelete = new Set([deckId, ...descendants.map(d => d.id)]);
   state.decks = state.decks.filter(d => !idsToDelete.has(d.id));
   save();
   if (deck.parentId) { currentDeckId = deck.parentId; showView('deck'); }
   else showView('decks');
-  showToast('🗑 Deste silindi');
+  showToast(t('toast_deck_deleted'));
 }
 
 function deleteCard(deckId, cardId) {
   const deck = findDeck(deckId);
   if (!deck) return;
-  if (!confirm('Bu kartı silmek istediğine emin misin?')) return;
+  if (!confirm(t('confirm_delete_card'))) return;
   deck.cards = deck.cards.filter(c => c.id !== cardId);
   save();
   renderDeckDetail();
-  showToast('🗑 Kart silindi');
+  showToast(t('toast_card_deleted'));
 }
 
 function showAddDeckModal() {
@@ -3580,21 +4121,21 @@ function showAddDeckModal() {
     const indent = '　'.repeat(depth);
     return `<option value="${deck.id}">${indent}${esc(deck.name)}</option>`;
   }).join('');
-  openModal('Yeni deste oluştur', `
+  openModal(t('modal_create_deck'), `
     <div class="form-group">
-      <label>Deste adı</label>
-      <input id="new-deck-name" placeholder="ör: JLPT N3 Kanji">
+      <label>${t('modal_deck_name')}</label>
+      <input id="new-deck-name" placeholder="${t('modal_deck_placeholder')}">
     </div>
     <div class="form-group">
-      <label>Üst deste (opsiyonel)</label>
+      <label>${t('modal_parent_deck')}</label>
       <select id="new-deck-parent">
-        <option value="">— Bağımsız (en üst düzey) —</option>
+        <option value="">${t('modal_independent')}</option>
         ${treeOpts}
       </select>
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="addDeck()">Oluştur</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="addDeck()">${t('create')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   document.getElementById('new-deck-name').addEventListener('keydown', e => { if (e.key === 'Enter') addDeck(); });
@@ -3603,14 +4144,14 @@ function showAddDeckModal() {
 function showAddSubDeckModal(parentId) {
   const parent = findDeck(parentId);
   if (!parent) return;
-  openModal(`${esc(parent.name)} — Alt deste ekle`, `
+  openModal(t('modal_add_subdeck', {name: esc(parent.name)}), `
     <div class="form-group">
-      <label>Alt deste adı</label>
-      <input id="new-deck-name" placeholder="ör: Yiyecekler">
+      <label>${t('modal_subdeck_name')}</label>
+      <input id="new-deck-name" placeholder="${t('modal_subdeck_placeholder')}">
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary tap" onclick="addDeck('${parentId}')">Oluştur</button>
-      <button class="btn btn-ghost tap" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary tap" onclick="addDeck('${parentId}')">${t('create')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
   document.getElementById('new-deck-name').addEventListener('keydown', e => { if (e.key === 'Enter') addDeck(parentId); });
@@ -3618,14 +4159,14 @@ function showAddSubDeckModal(parentId) {
 
 function addDeck(parentId) {
   const name = document.getElementById('new-deck-name').value.trim();
-  if (!name) { showToast('⚠ İsim boş olamaz'); return; }
+  if (!name) { showToast(t('warn_name_empty')); return; }
   const pId = parentId || (document.getElementById('new-deck-parent')?.value || null);
   createDeck(name, pId);
   closeModal();
   renderDeckList();
   renderGlobalStats();
   if (pId && currentView === 'deck') renderDeckDetail();
-  showToast('✓ Deste oluşturuldu: ' + name);
+  showToast(t('toast_deck_created', {name}));
 }
 
 function openDeck(deckId) { currentDeckId = deckId; showView('deck'); }
@@ -3689,11 +4230,11 @@ document.getElementById('import-file').addEventListener('change', e => {
   e.target.value = '';
 });
 document.getElementById('btn-reset-all').addEventListener('click', () => {
-  if (!confirm('TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?')) return;
+  if (!confirm(t('confirm_reset'))) return;
   state = { version:1, settings:{...CONFIG}, stats:{reviewsByDate:{},streak:0}, decks:[] };
   save();
   showView('decks');
-  showToast('✓ Tüm veri sıfırlandı');
+  showToast(t('toast_reset'));
 });
 document.getElementById('modal-bg').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-bg')) closeModal();
@@ -3708,18 +4249,9 @@ async function boot() {
   showView('decks');
 
   if (!state.decks.length) {
-    const demo = createDeck('JLPT N3 Kanji (Örnek)');
-    const sampleCards = [
-      ['漢字','かんじ','kanji, Çince karakter','毎日漢字を勉強します。','Her gün kanji çalışıyorum.'],
-      ['水','みず','su','水を飲みます。','Su içiyorum.'],
-      ['食べる','たべる','yemek (fiil)','パンを食べる。','Ekmek yerim.'],
-      ['学校','がっこう','okul','学校に行きます。','Okula gidiyorum.'],
-      ['友達','ともだち','arkadaş','友達と遊びます。','Arkadaşımla oynuyorum.'],
-      ['電車','でんしゃ','tren','電車で来ました。','Trenle geldim.'],
-      ['仕事','しごと','iş','仕事が終わりました。','İş bitti.'],
-      ['勉強','べんきょう','çalışmak','毎日勉強します。','Her gün ders çalışıyorum.'],
-    ];
-    for (const [k,f,m,ej,et] of sampleCards) demo.cards.push(makeCard(k,f,m,ej,et));
+    const ex = EXAMPLE_DECKS[currentLang] || EXAMPLE_DECKS.en;
+    const exDeck = createDeck(ex.name);
+    for (const c of ex.cards) exDeck.cards.push(makeCard(c.kanji, c.furigana, c.meaning, c.exJp, c.exTr));
     save();
     renderDeckList();
     renderGlobalStats();
@@ -3755,12 +4287,12 @@ setTimeout(() => {
     if (currentState === 'available') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">Yeni güncelleme mevcut</span>
+          <span class="update-pop-title">${t('update_new')}</span>
           <button class="update-pop-close tap" id="up-close">${icon('close')}</button>
         </div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)}</div>
+        <div class="update-pop-version">${t('update_version', {version: esc(currentInfo.version)})}</div>
         ${currentInfo.releaseNotes ? `<div class="update-pop-notes">${esc(currentInfo.releaseNotes)}</div>` : ''}
-        <button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} İndir</button>
+        <button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} ${t('update_download')}</button>
       `;
       document.getElementById('up-download').addEventListener('click', () => {
         currentState = 'downloading';
@@ -3770,19 +4302,19 @@ setTimeout(() => {
     } else if (currentState === 'downloading') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">İndiriliyor…</span>
+          <span class="update-pop-title">${t('update_downloading')}</span>
         </div>
         <div class="update-pop-progress"><div class="update-pop-progress-fill" id="up-progress-fill" style="width:0%"></div></div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)}</div>
+        <div class="update-pop-version">${t('update_version', {version: esc(currentInfo.version)})}</div>
       `;
     } else if (currentState === 'downloaded') {
       popover.innerHTML = `
         <div class="update-pop-head">
-          <span class="update-pop-title">Güncelleme hazır</span>
+          <span class="update-pop-title">${t('update_ready')}</span>
           <button class="update-pop-close tap" id="up-close">${icon('close')}</button>
         </div>
-        <div class="update-pop-version">Sürüm ${esc(currentInfo.version)} indirildi</div>
-        <button class="btn btn-primary btn-block tap" id="up-install">Yeniden Başlat ve Kur</button>
+        <div class="update-pop-version">${t('update_downloaded', {version: esc(currentInfo.version)})}</div>
+        <button class="btn btn-primary btn-block tap" id="up-install">${t('update_install')}</button>
       `;
       document.getElementById('up-install').addEventListener('click', () => api.installUpdate());
     }
