@@ -1005,6 +1005,37 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 
 /* =====================================================================
+   WEB GENİŞ EKRAN — sidebar yok, sadece içerik genişler.
+   Hem web hem Electron'da geçerli (temel genişletme).
+   ===================================================================== */
+@media (min-width: 768px) {
+  #app {
+    max-width: 720px;
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #app { max-width: 800px; }
+  .flashcard {
+    min-height: 320px;
+    padding: 2.5rem 1.8rem;
+  }
+  .fc-kanji { font-size: clamp(5rem, 14vw, 8rem); }
+  #btn-show,
+  .answer-grid {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #btn-show { display: block; }
+  #modal-bg { align-items: center; }
+  #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+}
+
+/* =====================================================================
    GENİŞ EKRAN DÜZENİ — SADECE ELECTRON
    .is-electron class'ı Electron ortamında body'ye eklenir.
    Web/PWA tarafında bu class yoktur, dolayısıyla layout hep mobil kalır.
