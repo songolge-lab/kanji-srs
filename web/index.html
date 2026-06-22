@@ -1904,9 +1904,25 @@ function t(key, params) {
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('stacks-lang', lang);
+  updateExampleDeck();
   updateStaticTexts();
   showView(currentView);
   renderGlobalStats();
+}
+
+function updateExampleDeck() {
+  const exDeck = state.decks.find(d => d.isExample);
+  if (!exDeck) return;
+  const ex = EXAMPLE_DECKS[currentLang] || EXAMPLE_DECKS.en;
+  exDeck.name = ex.name;
+  for (const card of exDeck.cards) {
+    const match = ex.cards.find(c => c.kanji === card.kanji);
+    if (match) {
+      card.meaningTr = match.meaning;
+      card.exampleTr = match.exTr || '';
+    }
+  }
+  save();
 }
 
 function updateStaticTexts() {
@@ -2373,8 +2389,10 @@ function migrateStats(stats) {
 }
 
 function migrateDecks(decks) {
+  const exNames = new Set(Object.values(EXAMPLE_DECKS).map(e => e.name));
   for (const d of decks) {
     if (!('parentId' in d)) d.parentId = null;
+    if (!('isExample' in d) && exNames.has(d.name)) d.isExample = true;
   }
   return decks;
 }
@@ -4251,6 +4269,7 @@ async function boot() {
   if (!state.decks.length) {
     const ex = EXAMPLE_DECKS[currentLang] || EXAMPLE_DECKS.en;
     const exDeck = createDeck(ex.name);
+    exDeck.isExample = true;
     for (const c of ex.cards) exDeck.cards.push(makeCard(c.kanji, c.furigana, c.meaning, c.exJp, c.exTr));
     save();
     renderDeckList();
