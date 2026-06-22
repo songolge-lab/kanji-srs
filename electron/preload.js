@@ -37,4 +37,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateDownloaded: (callback) => {
     ipcRenderer.on('update:downloaded', (_event, info) => callback(info));
   },
+
+  // Renderer -> main: kullanıcının seçtiği dili bildir, native menü
+  // (Dosya/Görünüm vb.) o dile göre yeniden kurulsun.
+  setAppLang: (lang) => ipcRenderer.invoke('app:set-lang', lang),
 });

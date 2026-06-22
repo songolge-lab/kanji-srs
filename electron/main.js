@@ -54,29 +54,46 @@ function createWindow() {
     }
   });
 
-  // Basit bir menü (sadece Çıkış / Yeniden Yükle / DevTools / Güncelleme Kontrol)
+  buildMenuForLang(currentMenuLang);
+}
+
+// ─── NATIVE MENÜ ÇOK DİLLİLİK ───────────────────────────────────────────
+// main.js (native Electron süreci) localStorage'a doğrudan erişemez —
+// web sayfası kendi dilini IPC üzerinden (preload.js -> 'app:set-lang')
+// burada bildirir, biz de menüyü o dile göre yeniden kurarız.
+const MENU_LABELS = {
+  tr: { file: 'Dosya', reload: 'Yeniden Yükle', checkUpdates: 'Güncellemeleri Kontrol Et', quit: 'Çıkış',
+        view: 'Görünüm', zoomIn: 'Yakınlaştır', zoomOut: 'Uzaklaştır', resetZoom: 'Sıfırla', devTools: 'Geliştirici Araçları' },
+  en: { file: 'File', reload: 'Reload', checkUpdates: 'Check for Updates', quit: 'Quit',
+        view: 'View', zoomIn: 'Zoom In', zoomOut: 'Zoom Out', resetZoom: 'Reset Zoom', devTools: 'Developer Tools' },
+  zh: { file: '文件', reload: '重新加载', checkUpdates: '检查更新', quit: '退出',
+        view: '视图', zoomIn: '放大', zoomOut: '缩小', resetZoom: '重置缩放', devTools: '开发者工具' },
+  mn: { file: 'Файл', reload: 'Дахин ачаалах', checkUpdates: 'Шинэчлэлт шалгах', quit: 'Гарах',
+        view: 'Харагдац', zoomIn: 'Томруулах', zoomOut: 'Жижигрүүлэх', resetZoom: 'Дахин тохируулах', devTools: 'Хөгжүүлэгчийн хэрэгсэл' },
+};
+let currentMenuLang = 'en';
+
+function buildMenuForLang(lang) {
+  const L = MENU_LABELS[lang] || MENU_LABELS.en;
   const template = [
     {
-      label: 'Dosya',
+      label: L.file,
       submenu: [
-        { role: 'reload', label: 'Yeniden Yükle' },
+        { role: 'reload', label: L.reload },
         { type: 'separator' },
-        {
-          label: 'Güncellemeleri Kontrol Et',
-          click: () => checkForUpdates(true),
-        },
+        { label: L.checkUpdates, click: () => checkForUpdates(true) },
         { type: 'separator' },
-        { role: 'quit', label: 'Çıkış' },
+        { role: 'quit', label: L.quit },
       ],
     },
     {
-      label: 'Görünüm',
+      label: L.view,
       submenu: [
-        { role: 'zoomIn', label: 'Yakınlaştır' },
-        { role: 'zoomOut', label: 'Uzaklaştır' },
-        { role: 'resetZoom', label: 'Sıfırla' },
+        { role: 'zoomIn', label: L.zoomIn },
+        { role: 'zoomOut', label: L.zoomOut },
+        { role: 'resetZoom', label: L.resetZoom },
         { type: 'separator' },
-        { role: 'toggleDevTools', label: 'Geliştirici Araçları' },
+        { role: 'toggleDevTools', label: L.devTools },
       ],
     },
   ];
@@ -105,11 +122,15 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', () => {
-  send('update:not-available', {});
+  // Sadece kullanıcı menüden ELLE kontrol ettiğinde sayfaya bildir;
+  // açılıştaki sessiz/otomatik kontrolde (silent=true) hiçbir şey
+  // gösterilmez, kullanıcıyı gereksiz "güncelleme yok" mesajıyla
+  // rahatsız etmemek için.
+  if (!silentCheck) send('update:not-available', {});
 });
 
 autoUpdater.on('error', (err) => {
-  send('update:error', { message: err?.message || String(err) });
+  if (!silentCheck) send('update:error', { message: err?.message || String(err) });
 });
 
 autoUpdater.on('download-progress', (progress) => {
@@ -121,9 +142,11 @@ autoUpdater.on('update-downloaded', (info) => {
   send('update:downloaded', { version: info.version });
 });
 
-function checkForUpdates() {
+let silentCheck = true; // açılıştaki ilk kontrol sessiz olsun
+function checkForUpdates(manual) {
+  silentCheck = !manual;
   autoUpdater.checkForUpdates().catch((err) => {
-    send('update:error', { message: err?.message || String(err) });
+    if (!silentCheck) send('update:error', { message: err?.message || String(err) });
   });
 }
 
@@ -135,6 +158,13 @@ ipcMain.handle('update:get-pending', () => {
   if (updateDownloaded) return { state: 'downloaded', info: pendingUpdateInfo };
   if (pendingUpdateInfo) return { state: 'available', info: pendingUpdateInfo };
   return { state: 'none' };
+});
+
+// Web sayfası dilini değiştirdiğinde (ya da ilk açılışta) burayı çağırır;
+// native menü (Dosya/Görünüm vb.) o dile göre yeniden kurulur.
+ipcMain.handle('app:set-lang', (_event, lang) => {
+  currentMenuLang = MENU_LABELS[lang] ? lang : 'en';
+  buildMenuForLang(currentMenuLang);
 });
 
 app.whenReady().then(() => {

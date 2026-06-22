@@ -1199,7 +1199,7 @@ select.si-input { width: auto; min-width: 92px; max-width: 112px; font-size: .82
       </div>
       <div class="form-group">
         <label><span data-i18n="meaningLabel">Türkçe anlam</span> <span class="required">*</span></label>
-        <input type="text" id="add-meaning" placeholder="例: kanji, Çince karakter">
+        <input type="text" id="add-meaning" data-i18n-placeholder="meaningPlaceholder" placeholder="例: kanji, Çince karakter">
       </div>
       <div class="form-group">
         <label data-i18n="exampleJpLabel">Örnek cümle (Japonca)</label>
@@ -1214,7 +1214,7 @@ select.si-input { width: auto; min-width: 92px; max-width: 112px; font-size: .82
       </div>
       <div class="form-group">
         <label data-i18n="exampleTrLabel">Örnek çeviri (Türkçe, opsiyonel)</label>
-        <input type="text" id="add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+        <input type="text" id="add-example-tr" data-i18n-placeholder="exampleTrPlaceholder" placeholder="例: Her gün kanji çalışıyorum.">
       </div>
       <button class="btn btn-block btn-primary tap" id="btn-save-card" data-i18n="saveBtn">Kaydet</button>
     </div>
@@ -1305,7 +1305,7 @@ select.si-input { width: auto; min-width: 92px; max-width: 112px; font-size: .82
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -1434,6 +1434,7 @@ const TRANSLATIONS = {
     resetAllConfirm: 'TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?', resetAllDoneMsg: 'Tüm veri sıfırlandı',
     renameModalTitle: 'Desteyi yeniden adlandır', newNameLabel: 'Yeni isim', deckNamePlaceholder: 'Deste adı',
     newDeckModalTitle: 'Yeni deste oluştur', newDeckPlaceholder: 'ör: JLPT N3 Kanji',
+    meaningPlaceholder: 'ör: kanji, Çince karakter', exampleTrPlaceholder: 'ör: Her gün kanji çalışıyorum.', folderNamePlaceholder: 'ör: N3 Kelimeler',
     nameEmptyMsg: 'İsim boş olamaz', deckCreatedMsg: 'Deste oluşturuldu: {name}',
     deckNameUpdatedMsg: 'Deste adı güncellendi', editCardModalTitle: 'Kartı düzenle',
     furiganaSimpleLabel: 'Furigana', exampleJpSimpleLabel: 'Örnek cümle (JP)', exampleTrSimpleLabel: 'Örnek çeviri (TR)',
@@ -1544,6 +1545,7 @@ const TRANSLATIONS = {
     resetAllConfirm: 'ALL data (decks, cards, statistics) will be deleted. Are you sure?', resetAllDoneMsg: 'All data has been reset',
     renameModalTitle: 'Rename deck', newNameLabel: 'New name', deckNamePlaceholder: 'Deck name',
     newDeckModalTitle: 'Create new deck', newDeckPlaceholder: 'e.g. JLPT N3 Kanji',
+    meaningPlaceholder: 'e.g. kanji, Chinese character', exampleTrPlaceholder: 'e.g. I study kanji every day.', folderNamePlaceholder: 'e.g. N3 Vocabulary',
     nameEmptyMsg: 'Name cannot be empty', deckCreatedMsg: 'Deck created: {name}',
     deckNameUpdatedMsg: 'Deck name updated', editCardModalTitle: 'Edit card',
     furiganaSimpleLabel: 'Furigana', exampleJpSimpleLabel: 'Example sentence (JP)', exampleTrSimpleLabel: 'Example translation (EN)',
@@ -1654,6 +1656,7 @@ const TRANSLATIONS = {
     resetAllConfirm: '所有数据（卡组、卡片、统计）都将被删除。确定吗？', resetAllDoneMsg: '所有数据已重置',
     renameModalTitle: '重命名卡组', newNameLabel: '新名称', deckNamePlaceholder: '卡组名称',
     newDeckModalTitle: '创建新卡组', newDeckPlaceholder: '例如：JLPT N3 汉字',
+    meaningPlaceholder: '例如：汉字，中文字符', exampleTrPlaceholder: '例如：我每天学习汉字。', folderNamePlaceholder: '例如：N3 词汇',
     nameEmptyMsg: '名称不能为空', deckCreatedMsg: '已创建卡组：{name}',
     deckNameUpdatedMsg: '卡组名称已更新', editCardModalTitle: '编辑卡片',
     furiganaSimpleLabel: '假名', exampleJpSimpleLabel: '例句（日语）', exampleTrSimpleLabel: '例句翻译（中文）',
@@ -1764,6 +1767,7 @@ const TRANSLATIONS = {
     resetAllConfirm: 'БҮХ өгөгдөл (дэвтэр, карт, статистик) устах болно. Итгэлтэй байна уу?', resetAllDoneMsg: 'Бүх өгөгдөл шинэчлэгдлээ',
     renameModalTitle: 'Дэвтрийн нэр өөрчлөх', newNameLabel: 'Шинэ нэр', deckNamePlaceholder: 'Дэвтрийн нэр',
     newDeckModalTitle: 'Шинэ дэвтэр үүсгэх', newDeckPlaceholder: 'жиш: JLPT N3 Канжи',
+    meaningPlaceholder: 'жиш: канжи, хятад үсэг', exampleTrPlaceholder: 'жиш: Би өдөр бүр канжи судалдаг.', folderNamePlaceholder: 'жиш: N3 Үгсийн сан',
     nameEmptyMsg: 'Нэр хоосон байж болохгүй', deckCreatedMsg: 'Дэвтэр үүслээ: {name}',
     deckNameUpdatedMsg: 'Дэвтрийн нэр шинэчлэгдлээ', editCardModalTitle: 'Картыг засах',
     furiganaSimpleLabel: 'Фуригана', exampleJpSimpleLabel: 'Жишээ өгүүлбэр (JP)', exampleTrSimpleLabel: 'Жишээ орчуулга (MN)',
@@ -1874,6 +1878,7 @@ const TRANSLATIONS = {
     resetAllConfirm: '모든 데이터(덱, 카드, 통계)가 삭제됩니다. 계속하시겠습니까?', resetAllDoneMsg: '모든 데이터가 초기화되었습니다',
     renameModalTitle: '덱 이름 변경', newNameLabel: '새 이름', deckNamePlaceholder: '덱 이름',
     newDeckModalTitle: '새 덱 만들기', newDeckPlaceholder: '예: JLPT N3 한자',
+    meaningPlaceholder: '예: 한자, 중국 문자', exampleTrPlaceholder: '예: 저는 매일 한자를 공부합니다.', folderNamePlaceholder: '예: N3 어휘',
     nameEmptyMsg: '이름은 비워둘 수 없습니다', deckCreatedMsg: '덱이 생성되었습니다: {name}',
     deckNameUpdatedMsg: '덱 이름이 변경되었습니다', editCardModalTitle: '카드 편집',
     furiganaSimpleLabel: '후리가나', exampleJpSimpleLabel: '예문 (일본어)', exampleTrSimpleLabel: '예문 번역 (한국어)',
@@ -2457,6 +2462,27 @@ function migrateSettings(settings) {
 // verisinde stats.shields/lastShieldWeekStart alanları yoktur;
 // böyle bir durumda kullanıcıyı mağdur etmemek için (sıfırdan
 // başlatmak yerine) başlangıç kalkanı veriyoruz.
+// v1.3.0 öncesi oluşturulmuş örnek desteler "isSampleDeck" işaretine
+// sahip değildir (bu özellik o sürümde eklendi) — bu yüzden dil
+// değiştirince otomatik güncellenmiyorlardı (refreshSampleDeckForLanguage
+// onları tanıyamıyordu). Burada GERİYE DÖNÜK olarak: ismi herhangi bir
+// dildeki "örnek deste" ismiyle TAM eşleşen ve henüz işaretsiz olan bir
+// deste bulunursa, işaret sonradan eklenir. Klasörler dahil derinlemesine
+// taranır. Kullanıcının kendi oluşturduğu, aynı isme sahip bir deste
+// olması (çok düşük ihtimal) varsa bile zararı yoktur — sadece dil
+// değişiminde yeniden üretilir, kartları/SRS verisi etkilenmez çünkü o
+// an zaten silinip taze üretiliyor (nadir bir kenar durum, kabul edilebilir).
+function migrateSampleDeckFlag(list) {
+  if (!list) return;
+  const knownNames = new Set(Object.values(SAMPLE_DECK_NAME));
+  for (const item of list) {
+    if (isFolder(item)) { migrateSampleDeckFlag(item.children); continue; }
+    if (!item.isSampleDeck && knownNames.has(item.name)) {
+      item.isSampleDeck = true;
+    }
+  }
+}
+
 function migrateStats(stats) {
   const s = stats || {};
   if (typeof s.shields !== 'number') s.shields = 1;
@@ -2481,6 +2507,7 @@ async function loadApp() {
   if (saved) {
     state = saved;
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
+    migrateSampleDeckFlag(state.decks);
   }
   // Kayıtlı state olsun ya da olmasın (ilk açılış dahil) HER ZAMAN
   // migrateStats çalışır — varsayılan state objesi eksiksiz olsa bile,
@@ -3704,7 +3731,7 @@ function showCreateFolderForMergeModal(itemId, targetDeckId) {
   openModal(t('newFolderNameTitle'), `
     <div class="form-group">
       <label>${t('folderNameLabel')}</label>
-      <input type="text" id="merge-folder-name" placeholder="例: N3 Kelimeler" value="${t('newFolderDefault')}">
+      <input type="text" id="merge-folder-name" placeholder="${t('folderNamePlaceholder')}" value="${t('newFolderDefault')}">
     </div>
     <div class="btn-row">
       <button class="btn btn-primary tap" onclick="confirmCreateFolderForMerge('${itemId}', '${targetDeckId}')">${t('create')}</button>
@@ -4542,7 +4569,7 @@ function showAddCardModal(deckId) {
     </div>
     <div class="form-group">
       <label>${t('meaningLabel')} <span class="required">*</span></label>
-      <input type="text" id="modal-add-meaning" placeholder="例: kanji, Çince karakter">
+      <input type="text" id="modal-add-meaning" placeholder="${t('meaningPlaceholder')}">
     </div>
     <div class="form-group">
       <label>${t('exampleJpLabel')}</label>
@@ -4554,7 +4581,7 @@ function showAddCardModal(deckId) {
     </div>
     <div class="form-group">
       <label>${t('exampleTrLabel')}</label>
-      <input type="text" id="modal-add-example-tr" placeholder="例: Her gün kanji çalışıyorum.">
+      <input type="text" id="modal-add-example-tr" placeholder="${t('exampleTrPlaceholder')}">
     </div>
     <div class="btn-row">
       <button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">${t('saveBtn')}</button>
