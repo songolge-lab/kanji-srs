@@ -531,7 +531,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   border-radius: var(--r-md);
   font-size: .92rem;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
 }
 .btn .ic { width: 1.15em; height: 1.15em; }
 .btn:active { transform: scale(.97); }
@@ -3338,7 +3339,7 @@ function renderDeckList() {
       </div>
       <div class="btn-row" style="margin-top:.6rem">
         ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${icon('play','ic-fill')}${t('study_btn', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${t('no_cards_to_study')}</span>`}
-        <button class="btn btn-ghost tap" style="flex:0" onclick="openDeck('${deck.id}')">${t('detail')}</button>
+        <button class="btn btn-ghost tap" onclick="openDeck('${deck.id}')">${t('detail')}</button>
       </div>
       <div class="btn-row" style="margin-top:.5rem">
         ${s.newC ? `<span class="badge badge-sky">${t('badge_new', {count: s.newC})}</span>` : ''}
@@ -3396,7 +3397,7 @@ function renderDeckDetail() {
         </div>
         <div class="btn-row" style="margin-top:.4rem">
           ${cq > 0 ? `<button class="btn btn-primary tap btn-sm" onclick="startStudy('${child.id}',false)">${icon('play','ic-fill')}${t('study_btn', {count: cq})}</button>` : `<span class="text-muted" style="font-size:.82rem">${t('no_cards_to_study')}</span>`}
-          <button class="btn btn-ghost tap btn-sm" style="flex:0" onclick="openDeck('${child.id}')">${t('detail')}</button>
+          <button class="btn btn-ghost tap btn-sm" onclick="openDeck('${child.id}')">${t('detail')}</button>
         </div>
       </div>`;
     }).join('')}
