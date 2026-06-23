@@ -15,7 +15,7 @@ import * as TestResults from './components/TestResults.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = '1.2.1';
+const APP_VERSION = 'v1.2.2';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
