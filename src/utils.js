@@ -66,3 +66,62 @@ export function highlightKanji(sentence, kanji, furiganaMap) {
 }
 
 export function buildRuby(kanji, furigana) { return `<ruby>${kanji}<rt>${furigana}</rt></ruby>`; }
+
+export function exportTestToJson(test) {
+  const json = JSON.stringify(test, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (test.title || 'test').replace(/[^a-zA-Z0-9_\-]/g, '_') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function importTestFromJson(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.title || !Array.isArray(data.questions)) {
+          reject(new Error('Invalid test format'));
+          return;
+        }
+        data.id = Date.now().toString();
+        resolve(data);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsText(file);
+  });
+}
+
+export function processImageToBase64(file, maxWidth = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) {
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+}

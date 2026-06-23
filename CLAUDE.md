@@ -111,6 +111,29 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 - `fmtDur(ms)` — milisaniyeyi `1m`, `10m`, `1h`, `3d` formatına çevirir
 - `main.js`'deki `_buildQueue()` ve `buildQueue()` wrapper'lar state'den parametreleri çözümleyip engine'e iletir
 
+## Standalone Test Module (Data Layer)
+
+- **State:** `customTests` dizisi `appState.js`'deki initial state'e eklendi; `addCustomTest`, `updateCustomTest`, `deleteCustomTest` action fonksiyonları export edilir
+- **Schema:** Bir custom test: `{ id, title, questions: [] }`. Bir question: `{ id, type, prompt, image: null | string(base64), options: [], correctValue }`
+- **Image util:** `processImageToBase64(file, maxWidth)` — `src/utils.js`'de, File → Canvas resize → base64 JPEG (0.7 kalite)
+- **Supabase:** `custom_tests` tablosu `supabase-schema.sql`'de tanımlı (sync_code ile ilişkili)
+- **Migration:** `migrateCustomTests(state)` eski state'lere `customTests` dizisi ekler
+
+## Standalone Test Module (UI — Milestone 2)
+
+- **TestManager.js:** `src/components/TestManager.js` — Test listesi, Play/Edit/Delete/Export butonları, "Create New Test" akışı, JSON Import
+- **TestEditor.js:** `src/components/TestEditor.js` — Dinamik soru formu: MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK türleri; görsel yükleme (`processImageToBase64`), seçenekler, doğru cevap seçimi
+- **Routing:** `showView('tests')` ve `showView('test-editor')` — alt nav'da "Exams" sekmesi
+- **i18n:** 4 dilde (en/tr/ko/mn) tüm test modülü stringleri eklendi
+
+## Standalone Test Module (Execution & Results — Milestone 3)
+
+- **TestView.js:** `src/components/TestView.js` — Soru bazlı test çalıştırma: session state (currentIndex, score, userAnswers), soru tipine göre input (radio/button/text), görsel desteği, cevap doğrulama (yeşil/kırmızı feedback), 1sn gecikme ile otomatik ilerleme
+- **TestResults.js:** `src/components/TestResults.js` — Test sonuçları: toplam skor, yüzde, soru bazında doğru/yanlış detayı, "Testlere Dön" butonu
+- **Export/Import:** `exportTestToJson(test)` ve `importTestFromJson(file)` — `src/utils.js`'de, Blob/FileReader ile Web API tabanlı (Node.js bağımlılığı yok)
+- **Routing:** `showView('test-play')` ve `showView('test-results')` — TestManager'dan Play butonu ile başlatılır
+- **i18n:** 4 dilde (en/tr/ko/mn) tüm Milestone 3 stringleri eklendi
+
 ## Çalışma Ekranı Gesture Flip
 
 - Kartı mouse/parmak ile sürükleyerek çevirme (`initFlipGesture()`)

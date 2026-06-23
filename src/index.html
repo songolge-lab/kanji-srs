@@ -473,6 +473,71 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
 
 /* =====================================================================
+   TEST MANAGER & EDITOR
+   ===================================================================== */
+.test-item .btn-row { margin-top: .6rem; }
+.te-question-block { margin-bottom: .75rem; }
+.te-option-row {
+  display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem;
+}
+.te-option-row input[type="radio"] {
+  width: 20px; height: 20px; min-height: auto; flex-shrink: 0;
+  accent-color: var(--hanko);
+}
+.te-option-row input[type="text"] { flex: 1; }
+.te-option-row .icon-btn { width: 36px; height: 36px; box-shadow: none; flex-shrink: 0; }
+.te-img-preview { margin-top: .5rem; }
+.te-img-preview img {
+  max-width: 150px; border-radius: var(--r-sm);
+  border: var(--bd) solid var(--line); display: block; margin-bottom: .4rem;
+}
+.te-options-area { margin-top: .5rem; }
+
+/* =====================================================================
+   TEST VIEW (Play) & TEST RESULTS
+   ===================================================================== */
+.tv-header { margin-bottom: .75rem; }
+.tv-title { font-weight: 700; font-size: 1.02rem; margin-bottom: .4rem; }
+.tv-progress-text { font-size: .82rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.tv-question-card { padding: 1.5rem; }
+.tv-image { max-width: 100%; object-fit: contain; border-radius: var(--r-sm); margin-bottom: 1rem; display: block; }
+.tv-prompt { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.2rem; line-height: 1.5; }
+.tv-options { display: flex; flex-direction: column; gap: .5rem; }
+.tv-option {
+  background: var(--card); border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md); padding: .8rem 1rem; text-align: left;
+  font-size: .95rem; font-weight: 600; justify-content: flex-start;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.tv-option:active:not(:disabled) { background: var(--paper-2); }
+.tv-option.correct { background: var(--jade-bg); border-color: var(--jade); color: var(--jade); }
+.tv-option.wrong { background: var(--hanko-bg); border-color: var(--hanko); color: var(--hanko); }
+.tv-tf { flex-direction: row; }
+.tv-tf .tv-option { flex: 1; text-align: center; justify-content: center; }
+.tv-fill-wrap { display: flex; flex-direction: column; gap: .5rem; }
+.tv-fill-input.correct { border-color: var(--jade); background: var(--jade-bg); }
+.tv-fill-input.wrong { border-color: var(--hanko); background: var(--hanko-bg); }
+.tv-correct-hint { font-size: .85rem; color: var(--jade); font-weight: 600; margin-top: .3rem; }
+
+.tr-score-card { text-align: center; padding: 2rem 1rem; }
+.tr-score-icon { color: var(--jade); line-height: 0; margin-bottom: .8rem; }
+.tr-score-icon .ic-lg { width: 52px; height: 52px; }
+.tr-score-title { font-size: .92rem; color: var(--ink-soft); margin-bottom: .3rem; }
+.tr-score-text { font-size: 1.3rem; font-weight: 700; }
+.tr-score-pct { font-size: 2rem; font-weight: 700; color: var(--hanko); margin-top: .3rem; }
+.tr-answer-item { padding: .8rem 1rem; }
+.tr-answer-head { display: flex; align-items: center; gap: .5rem; }
+.tr-answer-num { font-weight: 700; color: var(--ink-soft); flex-shrink: 0; }
+.tr-answer-prompt { flex: 1; font-weight: 600; min-width: 0; word-break: break-word; }
+.tr-answer-icon { line-height: 0; flex-shrink: 0; }
+.tr-correct .tr-answer-icon { color: var(--jade); }
+.tr-wrong .tr-answer-icon { color: var(--hanko); }
+.tr-correct { border-left: 3px solid var(--jade); }
+.tr-wrong { border-left: 3px solid var(--hanko); }
+.tr-answer-detail { margin-top: .4rem; font-size: .85rem; color: var(--ink-soft); }
+.tr-label { font-weight: 600; }
+
+/* =====================================================================
    VIEW ROUTER
    ===================================================================== */
 .view { display: none; }
@@ -1237,6 +1302,28 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <div id="streak-screen"></div>
   </div>
 
+  <!-- VIEW: TESTS (Custom Test Manager) -->
+  <div id="view-tests" class="view">
+    <div class="section-hd" data-t="custom_tests_title">Custom Tests</div>
+    <div id="test-manager-content"></div>
+  </div>
+
+  <!-- VIEW: TEST EDITOR -->
+  <div id="view-test-editor" class="view">
+    <div class="section-hd" data-t="test_editor_title">Test Editor</div>
+    <div id="test-editor-content"></div>
+  </div>
+
+  <!-- VIEW: TEST PLAY -->
+  <div id="view-test-play" class="view">
+    <div id="test-play-content"></div>
+  </div>
+
+  <!-- VIEW: TEST RESULTS -->
+  <div id="view-test-results" class="view">
+    <div id="test-results-content"></div>
+  </div>
+
   <!-- VIEW: ADD CARD -->
   <div id="view-add" class="view">
     <div class="section-hd" data-t="add_card_title">Add card</div>
@@ -1336,6 +1423,10 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <button class="nav-item tap" data-view="add" id="nav-add">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" style="width: 17px; height: 14px"/><path d="M12 9.3v5.4M9.3 12h5.4"/></svg>
     <span data-t="nav_add">Add card</span>
+  </button>
+  <button class="nav-item tap" data-view="tests" id="nav-tests">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+    <span data-t="nav_tests">Exams</span>
   </button>
   <button class="nav-item tap" data-view="settings" id="nav-settings">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>

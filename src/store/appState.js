@@ -63,7 +63,22 @@ export function createInitialState() {
     settings: { ...CONFIG },
     stats: { reviewsByDate: {}, streak: 0, shields: 1, lastShieldWeekStart: null },
     decks: [],
+    customTests: [],
   };
+}
+
+// ─── CUSTOM TEST ACTIONS ─────────────────────────────────────────────
+export function addCustomTest(state, testObj) {
+  state.customTests.push(testObj);
+}
+
+export function updateCustomTest(state, id, data) {
+  const idx = state.customTests.findIndex(ct => ct.id === id);
+  if (idx !== -1) Object.assign(state.customTests[idx], data);
+}
+
+export function deleteCustomTest(state, id) {
+  state.customTests = state.customTests.filter(ct => ct.id !== id);
 }
 
 // ─── MIGRATIONS ──────────────────────────────────────────────────────
@@ -74,6 +89,11 @@ export function migrateSettings(settings) {
   }
   if (typeof settings.autoUseShield !== 'boolean') settings.autoUseShield = true;
   return settings;
+}
+
+export function migrateCustomTests(state) {
+  if (!Array.isArray(state.customTests)) state.customTests = [];
+  return state.customTests;
 }
 
 export function migrateStats(stats) {
