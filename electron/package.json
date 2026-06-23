@@ -26,8 +26,8 @@
     "files": [
       "main.js",
       "preload.js",
-      "web/**/*",
-      "build/**/*"
+      "build/**/*",
+      { "from": "../dist", "to": "dist", "filter": ["**/*"] }
     ],
     "publish": [
       {

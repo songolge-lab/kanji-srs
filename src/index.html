@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Stacks</title>
+
+<!-- PWA: ana ekrana eklendiğinde app gibi açılması için -->
+<meta name="theme-color" content="#1c1a17">
+
+<!-- Tema, sayfa boyanmadan ÖNCE uygulanır (FOUC önleme):
+     kullanıcı Sumi (dark) temadaysa sayfa bir an için açık renkte
+     yanıp sönmesin diye. -->
+<script>
+(function() {
+  try {
+    var saved = localStorage.getItem('stacks-theme');
+    var followSystem = localStorage.getItem('stacks-theme-follow-system');
+    var theme = saved || 'washi';
+    if (followSystem !== '0' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !saved) {
+      theme = 'sumi';
+    }
+    if (theme && theme !== 'washi') document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+
+<!-- iOS: tam ekran, adres çubuğu olmadan açılma -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stacks">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<style>
+/* =====================================================================
+   TOKENS — sumi (mürekkep) + washi (kağıt) paleti
+   ===================================================================== */
+:root {
+  --ink:        #1c1a17;
+  --ink-soft:   #4a463f;
+  --paper:      #f3eee2;
+  --paper-2:    #ece5d4;
+  --card:       #fffdf8;
+  --line:       #ddd3bd;
+  --line-soft:  #e8e0cc;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #9c7a2e;
+  --gold-bg:    #f0e6c8;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+
+  /* RADIUS — tek bir ölçek: kart=lg, kontrol=md, çip/giriş=sm, hap=pill */
+  --r-lg:       14px;
+  --r-md:       10px;
+  --r-sm:       8px;
+  --r-pill:     999px;
+
+  /* BORDER — yapısal saç çizgisi vs. etkileşimli kontrol kenarı */
+  --bd:         1px;            /* kart/yüzey ana hattı */
+  --bd-ctrl:    1.5px;          /* giriş alanı + etkileşimli kontrol */
+
+  /* SHADOW — kağıt hissi için son derece hafif kaldırma */
+  --sh-sm:      0 1px 2px rgba(28,26,23,.05);
+  --sh-md:      0 4px 14px rgba(28,26,23,.07);
+  --sh-pop:     0 -3px 18px rgba(28,26,23,.07);
+
+  /* ICON — tek aile: ince çizgi, yuvarlak uç/köşe */
+  --icon-stroke: 1.75;
+
+  --tap:        48px;            /* minimum touch target */
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-t:     env(safe-area-inset-top, 0px);
+}
+
+/* =====================================================================
+   TEMALAR — [data-theme] ile :root değişkenleri override edilir.
+   Varsayılan (yukarıdaki :root) "Washi" temasıdır. Her tema kendi
+   paper/ink/card/line + hanko/gold/jade/sky setini tanımlar; uygulamanın
+   geri kalanı hep var(--...) kullandığı için TEK SATIR KOD DEĞİŞMEDEN
+   tüm arayüz yeni temaya geçer.
+   ===================================================================== */
+
+/* SUMI — karanlık mürekkep teması (dark mode) */
+[data-theme="sumi"] {
+  --ink:        #ece6da;
+  --ink-soft:   #b8b0a0;
+  --paper:      #1a1814;
+  --paper-2:    #242019;
+  --card:       #28241d;
+  --line:       #3a3528;
+  --line-soft:  #322e24;
+  --hanko:      #d97362;
+  --hanko-bg:   #432822;
+  --gold:       #cdab5f;
+  --gold-bg:    #3d3420;
+  --jade:       #6fae8c;
+  --jade-bg:    #20342b;
+  --sky:        #7fb0d6;
+  --sky-bg:     #1f3140;
+}
+
+/* MATCHA — yeşil çay teması */
+[data-theme="matcha"] {
+  --ink:        #243224;
+  --ink-soft:   #56654f;
+  --paper:      #eef0e1;
+  --paper-2:    #e3e7d2;
+  --card:       #fafcf2;
+  --line:       #cdd6b4;
+  --line-soft:  #dbe2c5;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93822c;
+  --gold-bg:    #ece3c0;
+  --jade:       #3c7048;
+  --jade-bg:    #d6e8d3;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+}
+
+/* SAKURA — kiraz çiçeği teması */
+[data-theme="sakura"] {
+  --ink:        #3e2630;
+  --ink-soft:   #7d5d68;
+  --paper:      #f7eee8;
+  --paper-2:    #f0e0d8;
+  --card:       #fffaf6;
+  --line:       #e8c9c2;
+  --line-soft:  #f0d9d2;
+  --hanko:      #b5495f;
+  --hanko-bg:   #f6dde2;
+  --gold:       #aa7e3e;
+  --gold-bg:    #f2e4c8;
+  --jade:       #4a7a5e;
+  --jade-bg:    #dcecdf;
+  --sky:        #5b6f9a;
+  --sky-bg:     #e0e4f0;
+}
+
+/* INDIGO — Japon mavisi (藍) teması */
+[data-theme="indigo"] {
+  --ink:        #1c2838;
+  --ink-soft:   #4d5e72;
+  --paper:      #e9edf3;
+  --paper-2:    #dde3ec;
+  --card:       #f8fafc;
+  --line:       #c2cedd;
+  --line-soft:  #d2dbe6;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93782e;
+  --gold-bg:    #e9e0c4;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2456a3;
+  --sky-bg:     #d2e0f4;
+}
+
+/* =====================================================================
+   RESET — touch-safe defaults
+   ===================================================================== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', BlinkMacSystemFont,
+               'Segoe UI', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+rt { font-size: .55em; }
+ruby { -webkit-touch-callout: none; }
+
+/* ─── BOOT SPLASH (kısa açılış ekranı) ──────────────────────────────── */
+#boot-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .4rem;
+  transition: opacity .35s ease;
+}
+#boot-splash.is-hidden { opacity: 0; pointer-events: none; }
+#boot-splash-title {
+  font-size: 1.6rem; font-weight: 700; color: var(--ink);
+  letter-spacing: .02em;
+}
+#boot-splash-motto {
+  font-size: .85rem; color: var(--ink-soft); font-style: italic;
+}
+
+/* Every interactive element gets a real, generous hit target */
+button, .tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  position: relative;
+}
+button:disabled { opacity: .5; cursor: default; }
+
+/* =====================================================================
+   ICON SYSTEM — tek aile, inline SVG. Hepsi 24x24 viewBox, ince çizgi,
+   yuvarlak uç/köşe. currentColor ile bulunduğu butonun rengini alır.
+   ===================================================================== */
+.ic {
+  width: 1.2em;
+  height: 1.2em;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ic-fill { fill: currentColor; stroke: none; }
+.ic-lg { width: 52px; height: 52px; stroke-width: 1.4; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin .ic { animation: spin .9s linear infinite; transform-origin: center; }
+
+input, textarea, select {
+  font: inherit;
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-sm);
+  padding: .7rem .85rem;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  min-height: var(--tap);
+  -webkit-appearance: none;
+  appearance: none;
+}
+textarea { min-height: 7rem; }
+input:focus, textarea:focus, select:focus { border-color: var(--sky); }
+label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35rem; }
+
+/* =====================================================================
+   APP SHELL
+   ===================================================================== */
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: calc(var(--safe-t) + .25rem) 1rem calc(76px + var(--safe-b) + 1rem);
+}
+
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ (tablet / masaüstü tarayıcı / Electron penceresi)
+   768px ve üzeri ekranlarda alt navigasyon sol kenarda dikey bir
+   "sidebar"a dönüşür; içerik onun yanında, kendi içinde okunabilir bir
+   genişlikte (max 720px) kalır. Mobil/dar ekranda HİÇBİR ŞEY değişmez
+   — bu blok sadece >=768px'te devreye girer.
+   ===================================================================== */
+/* TOP BAR — in normal flow, not sticky. Avoids stacking-context/touch bugs. */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 0 1rem;
+}
+#topbar-title {
+  flex: 1;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topbar-title .accent { color: var(--hanko); }
+
+.icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  box-shadow: var(--sh-sm);
+  color: var(--ink);
+  font-size: 1.15rem;          /* ikonlar em ile bu boyuta ölçeklenir */
+  flex-shrink: 0;
+}
+.icon-btn:active { background: var(--paper-2); transform: scale(.94); box-shadow: none; }
+.icon-btn .ic { width: 1.2em; height: 1.2em; }
+
+/* ─── GÜNCELLEME BUTONU + BALONCUK (sadece Electron/PC) ─────────────── */
+#btn-update {
+  background: var(--hanko);
+  border-color: var(--hanko);
+  color: #fff;
+  position: relative;
+  animation: update-pulse 2.2s ease-in-out infinite;
+}
+#btn-update:active { background: var(--hanko); opacity: .85; transform: scale(.94); }
+@keyframes update-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168,54,42,.55); }
+  50% { box-shadow: 0 0 0 6px rgba(168,54,42,0); }
+}
+
+.update-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 2rem);
+  background: var(--card);
+  border: var(--bd) solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  padding: .9rem;
+  z-index: 50;
+}
+.update-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px; right: 14px;
+  width: 12px; height: 12px;
+  background: var(--card);
+  border-left: var(--bd) solid var(--line);
+  border-top: var(--bd) solid var(--line);
+  transform: rotate(45deg);
+}
+.update-pop-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem;
+  margin-bottom: .5rem;
+}
+.update-pop-title { font-weight: 700; font-size: .92rem; color: var(--hanko); }
+.update-pop-close { background: none; border: none; color: var(--ink-soft); width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; }
+.update-pop-close .ic { width: 1em; height: 1em; }
+.update-pop-close:active { background: var(--paper-2); }
+.update-pop-version { font-size: .8rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.update-pop-notes {
+  font-size: .82rem; line-height: 1.55; color: var(--ink);
+  background: var(--paper-2); border-radius: var(--r-sm);
+  padding: .6rem .7rem; margin-bottom: .7rem;
+  max-height: 160px; overflow-y: auto;
+  white-space: pre-wrap;
+}
+.update-pop-progress {
+  height: 6px; border-radius: 3px; background: var(--paper-2);
+  overflow: hidden; margin-bottom: .6rem;
+}
+.update-pop-progress-fill { height: 100%; background: var(--hanko); transition: width .25s ease; }
+
+/* ─── FURİGANA OTOMASYONU (kanjiapi.dev) ────────────────────────────── */
+.furigana-suggest {
+  display: flex; flex-wrap: wrap; gap: .4rem;
+  margin-top: .4rem; min-height: 0;
+}
+.furigana-suggest:empty { margin-top: 0; }
+.furigana-chip {
+  font-size: .8rem; padding: .3rem .65rem; border-radius: var(--r-pill);
+  background: var(--paper-2); border: var(--bd) solid var(--line);
+  color: var(--ink); cursor: pointer;
+}
+.furigana-chip:active { background: var(--line-soft); }
+.furigana-chip.is-loading { color: var(--ink-soft); }
+.furigana-chip.is-empty { color: var(--ink-soft); font-style: italic; }
+
+.furigana-mark-row { margin-top: .4rem; }
+.btn-sm { font-size: .8rem; padding: .45rem .8rem; min-height: 0; }
+
+.fm-editor {
+  margin-top: .5rem; padding: .7rem; border-radius: var(--r-sm);
+  background: var(--paper-2); border: var(--bd) solid var(--line);
+}
+.fm-editor-hint { font-size: .76rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.fm-sentence { font-size: 1.05rem; line-height: 2; }
+.fm-token {
+  cursor: pointer; border-radius: 4px; padding: 0 1px;
+}
+.fm-token.fm-kanji { background: rgba(168,54,42,.10); }
+.fm-token.fm-kanji:active { background: rgba(168,54,42,.22); }
+.fm-token.fm-marked { background: var(--jade); color: #fff; }
+.fm-token.fm-marked rt { color: #fff; }
+.fm-token-popover {
+  margin-top: .6rem; padding: .6rem; border-radius: var(--r-sm);
+  background: var(--card); border: var(--bd) solid var(--line);
+}
+
+/* ─── STREAK / TAKVİM ────────────────────────────────────────────────── */
+.streak-card {
+  display: flex; align-items: center; gap: .9rem;
+  margin-bottom: 1rem; padding: .8rem .9rem;
+}
+.streak-flame {
+  flex-shrink: 0; width: 2.1em; height: 2.1em;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .2s ease;
+}
+.streak-flame .ic { width: 100%; height: 100%; }
+.streak-flame.lvl-cold { color: var(--ink-soft); }
+.streak-flame.lvl-warm { color: var(--gold); }
+.streak-flame.lvl-hot { color: var(--hanko); transform: scale(1.12); }
+.streak-flame.lvl-blaze {
+  color: var(--hanko); transform: scale(1.28);
+  filter: drop-shadow(0 0 6px rgba(168,54,42,.45));
+}
+.streak-info { flex: 1; min-width: 0; }
+.streak-count { font-size: 1.3rem; font-weight: 700; line-height: 1.15; }
+.streak-count .unit { font-size: .82rem; font-weight: 500; color: var(--ink-soft); margin-left: .25rem; }
+.streak-sub { font-size: .78rem; color: var(--ink-soft); margin-top: .1rem; }
+.streak-week-grid { display: flex; gap: .32rem; flex-shrink: 0; }
+.streak-day {
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+}
+.streak-day-label { font-size: .6rem; color: var(--ink-soft); line-height: 1; }
+.streak-day-dot {
+  width: 1.05em; height: 1.05em; border-radius: 50%;
+  background: var(--paper-2);
+  border: var(--bd) solid var(--line);
+}
+.streak-day-dot.is-active { background: var(--hanko); border-color: var(--hanko); }
+.streak-day-dot.is-shielded { background: var(--sky); border-color: var(--sky); }
+.streak-day.is-today .streak-day-label { color: var(--ink); font-weight: 700; }
+.streak-day.is-today .streak-day-dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--ink-soft); }
+
+.streak-detail-head {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem; margin-bottom: 1rem;
+}
+.streak-detail-flame { width: 3.2em; height: 3.2em; flex-shrink: 0; }
+.streak-detail-flame .ic { width: 100%; height: 100%; }
+.streak-detail-count { font-size: 2rem; font-weight: 700; line-height: 1; }
+.streak-detail-label { font-size: .82rem; color: var(--ink-soft); margin-top: .2rem; }
+
+.shield-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .8rem .9rem; margin-bottom: 1rem;
+}
+.shield-icon { color: var(--sky); flex-shrink: 0; width: 1.4em; height: 1.4em; }
+.shield-icon .ic { width: 100%; height: 100%; }
+.shield-text { flex: 1; font-size: .86rem; }
+.shield-count { font-weight: 700; }
+
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.cal-nav-title { font-weight: 700; font-size: .95rem; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .35rem; }
+.cal-weekday { text-align: center; font-size: .68rem; color: var(--ink-soft); padding-bottom: .3rem; }
+.cal-day {
+  aspect-ratio: 1; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; background: var(--paper-2); color: var(--ink-soft);
+}
+.cal-day.is-active { background: var(--hanko); color: #fff; font-weight: 600; }
+.cal-day.is-shielded { background: var(--sky); color: #fff; font-weight: 600; }
+.cal-day.is-today { box-shadow: inset 0 0 0 2px var(--ink-soft); }
+.cal-day.is-empty { background: transparent; }
+.cal-legend { display: flex; gap: 1rem; margin-top: .8rem; font-size: .76rem; color: var(--ink-soft); }
+.cal-legend-item { display: flex; align-items: center; gap: .35rem; }
+.cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
+
+/* =====================================================================
+   VIEW ROUTER
+   ===================================================================== */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn .18s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* =====================================================================
+   GENERIC CARD
+   ===================================================================== */
+.card {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+  padding: 1.1rem;
+  margin-bottom: .75rem;
+}
+.card-row { display: flex; align-items: flex-start; gap: .75rem; }
+.card-title { font-weight: 700; font-size: 1.02rem; flex: 1; min-width: 0; word-break: break-word; }
+.deck-meta { font-size: .82rem; color: var(--ink-soft); margin-top: .2rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .25rem .6rem;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.badge .ic { width: 13px; height: 13px; stroke-width: 2; margin-right: .3em; margin-left: -.05em; }
+.badge-sky   { background: var(--sky-bg);   color: var(--sky);   }
+.badge-jade  { background: var(--jade-bg);  color: var(--jade);  }
+.badge-gold  { background: var(--gold-bg);  color: var(--gold);  }
+.badge-hanko { background: var(--hanko-bg); color: var(--hanko); }
+.badge-soft  { background: var(--paper-2);  color: var(--ink-soft); }
+
+/* =====================================================================
+   BUTTONS — all sized to --tap, stacked when tight rather than squeezed
+   ===================================================================== */
+.btn {
+  min-height: var(--tap);
+  padding: 0 1.1rem;
+  border-radius: var(--r-md);
+  font-size: .92rem;
+  font-weight: 700;
+  white-space: normal;
+  word-break: keep-all;
+}
+.btn .ic { width: 1.15em; height: 1.15em; }
+.btn:active { transform: scale(.97); }
+.btn-block { width: 100%; }
+.btn-primary { background: var(--ink); color: var(--paper); box-shadow: var(--sh-sm); }
+.btn-primary:active { background: #000; box-shadow: none; }
+.btn-ghost   { background: var(--card); color: var(--ink); border: var(--bd-ctrl) solid var(--line); }
+.btn-ghost:active { background: var(--paper-2); }
+.btn-danger  { background: var(--hanko-bg); color: var(--hanko); }
+.btn-danger:active { background: #ecc6bf; }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+.btn-row .btn { flex: 1 1 auto; min-width: 0; }
+
+/* =====================================================================
+   GLOBAL STATS (deck list top)
+   ===================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: .55rem;
+  margin-bottom: 1.1rem;
+}
+.stat-box {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .7rem .4rem;
+  text-align: center;
+}
+.stat-num { font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
+.stat-lbl { font-size: .68rem; color: var(--ink-soft); margin-top: .15rem; }
+
+/* =====================================================================
+   SECTION HEADER
+   ===================================================================== */
+.section-hd {
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 1.4rem 0 .6rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-hd::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* =====================================================================
+   MASTERED BANNER
+   ===================================================================== */
+.mastered-banner {
+  border: var(--bd-ctrl) solid var(--jade);
+  background: var(--jade-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.mastered-banner .mb-top { display: flex; align-items: center; gap: .7rem; margin-bottom: .1rem; }
+.mastered-banner .mb-icon { color: var(--jade); line-height: 0; }
+.mastered-banner .mb-icon .ic { width: 26px; height: 26px; }
+.mastered-banner .mb-title { font-weight: 700; font-size: .98rem; color: var(--ink); }
+.mastered-banner .mb-sub { font-size: .8rem; color: var(--jade); }
+
+/* =====================================================================
+   CARD LIST ITEM (deck detail) — full row is one big tap target
+   ===================================================================== */
+.card-list-item {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .7rem .85rem;
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+.cli-kanji {
+  font-size: 1.6rem;
+  line-height: 1;
+  min-width: 2.6rem;
+  text-align: center;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  flex-shrink: 0;
+}
+.cli-info { flex: 1; min-width: 0; }
+.cli-info .cli-furi { font-weight: 700; font-size: .92rem; }
+.cli-info .cli-meaning { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cli-actions { display: flex; gap: .25rem; flex-shrink: 0; }
+.cli-actions .icon-btn { width: 40px; height: 40px; font-size: 1rem; box-shadow: none; }
+
+/* =====================================================================
+   STUDY SCREEN
+   ===================================================================== */
+.study-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: 1.1rem;
+}
+.study-progress {
+  flex: 1;
+  height: 6px;
+  background: var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.study-progress-fill {
+  height: 100%;
+  background: var(--hanko);
+  border-radius: 3px;
+  transition: width .25s ease;
+}
+.study-count { font-size: .8rem; color: var(--ink-soft); white-space: nowrap; flex-shrink: 0; }
+
+.flashcard {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 280px;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 1.1rem;
+}
+.fc-flip-container {
+  perspective: 1000px;
+  margin-bottom: 1.1rem;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fc-flip-container:active { cursor: grabbing; }
+.fc-flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .5s ease;
+}
+.fc-flip-inner.no-transition { transition: none; }
+.fc-flip-front,
+.fc-flip-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 280px;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.fc-flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.fc-flip-hint {
+  text-align: center;
+  font-size: .72rem;
+  color: var(--ink-soft);
+  margin-top: -.5rem;
+  margin-bottom: .8rem;
+  opacity: .7;
+}
+.fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
+.fc-kanji {
+  font-size: clamp(4.5rem, 24vw, 8rem);
+  line-height: 1;
+  font-weight: 400;
+  color: var(--ink);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
+}
+.fc-back { width: 100%; text-align: center; }
+.fc-ruby {
+  font-size: 2.1rem;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  line-height: 2;
+  margin-bottom: .3rem;
+}
+.fc-furigana { font-size: 1.25rem; color: var(--ink-soft); margin-bottom: .6rem; }
+.fc-meaning { font-size: 1.2rem; font-weight: 700; margin-bottom: .9rem; }
+.fc-divider { border: none; border-top: 1px solid var(--line); margin: .8rem 0; }
+.fc-example { font-size: 1.05rem; line-height: 1.85; }
+.fc-example .hl { color: var(--hanko); font-weight: 700; }
+.fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
+.fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
+
+/* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
+.fc-preview-wrap {
+  display: none;
+  margin-bottom: .75rem;
+  position: sticky;
+  top: .5rem;
+  z-index: 5;
+}
+.fc-preview-wrap.has-content { display: block; }
+.fc-preview {
+  min-height: 180px;
+  perspective: 800px;
+  position: relative;
+}
+.fc-preview-inner {
+  min-height: 180px;
+  position: relative;
+  transition: transform .45s ease;
+  transform-style: preserve-3d;
+}
+.fc-preview-front,
+.fc-preview-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem 1rem;
+  min-height: 180px;
+}
+.fc-preview-back {
+  transform: rotateY(180deg);
+  position: absolute;
+  inset: 0;
+}
+.fc-preview .fc-kanji { font-size: clamp(2.5rem, 14vw, 4.5rem); }
+.fc-preview .fc-ruby { font-size: 1.8rem; line-height: 2; margin-bottom: .2rem; }
+.fc-preview .fc-furigana { font-size: 1.1rem; }
+.fc-preview .fc-meaning { font-size: 1.05rem; font-weight: 700; margin-bottom: .6rem; }
+.fc-preview-sparse .fc-preview .fc-ruby { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+.fc-preview-sparse .fc-preview .fc-meaning { font-size: 1.2rem; }
+.fc-preview .fc-divider { border: none; border-top: 1px solid var(--line); margin: .5rem 0; width: 100%; }
+.fc-preview .fc-example { font-size: .9rem; line-height: 1.7; }
+.fc-preview .fc-exampletr { font-size: .78rem; }
+.fc-preview-label {
+  font-size: .7rem;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: .3rem 0 .5rem;
+  letter-spacing: .03em;
+}
+
+#btn-show {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1.02rem;
+  font-weight: 700;
+  box-shadow: var(--sh-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+}
+#btn-show:active { background: #000; transform: scale(.985); box-shadow: none; }
+
+/* Answer grid: ALWAYS 2x2, generous targets, no neighbor mis-taps */
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+}
+.ans-btn {
+  min-height: 64px;
+  border-radius: var(--r-md);
+  font-size: .9rem;
+  font-weight: 700;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .5rem .3rem;
+  border: 1.5px solid transparent;
+}
+.ans-btn:active { transform: scale(.96); }
+.ans-btn .next-time { font-size: .72rem; font-weight: 400; opacity: .85; }
+.ans-again { background: var(--hanko-bg); color: var(--hanko); }
+.ans-hard  { background: var(--gold-bg);  color: var(--gold); }
+.ans-good  { background: var(--sky-bg);   color: var(--sky); }
+.ans-easy  { background: var(--jade-bg);  color: var(--jade); }
+
+.study-done { text-align: center; padding: 3rem 1rem; }
+.study-done .done-icon { margin-bottom: .8rem; color: var(--jade); line-height: 0; }
+.study-done h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; }
+.study-done p { color: var(--ink-soft); margin-bottom: 1.4rem; }
+
+/* =====================================================================
+   FORMS
+   ===================================================================== */
+.form-group { margin-bottom: 1rem; }
+.form-hint { font-size: .78rem; color: var(--ink-soft); margin-top: .35rem; }
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+.settings-item {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .75rem .9rem;
+  margin-bottom: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.si-row { display: flex; align-items: center; gap: .8rem; }
+.si-label { flex: 1; font-size: .9rem; min-width: 0; display: flex; align-items: center; gap: .4rem; }
+.si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; }
+.si-input { width: 92px; text-align: right; min-height: 42px; flex-shrink: 0; }
+.si-info-btn {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--paper-2);
+  color: var(--ink-soft); font-size: .72rem; font-weight: 800; flex-shrink: 0;
+  border: 1px solid var(--line-soft); line-height: 1;
+}
+.si-info-btn:active { background: var(--line-soft); }
+.si-info-panel {
+  display: none; background: var(--paper-2); border-radius: var(--r-sm);
+  padding: .7rem .8rem; font-size: .82rem; color: var(--ink); line-height: 1.5;
+}
+.si-info-panel.show { display: block; }
+.danger-zone {
+  background: var(--hanko-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Versiyon belirteci */
+.version-tag {
+  text-align: center; font-size: .76rem; color: var(--ink-soft);
+  margin-top: 1.5rem; padding-bottom: .5rem;
+}
+.version-motto {
+  font-size: .72rem; color: var(--ink-soft); opacity: .7; font-style: italic;
+}
+
+/* ─── TEMA SEÇİCİ (Ayarlar > Görünüm) ───────────────────────────────── */
+.theme-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: .7rem; margin-bottom: .9rem;
+}
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+.theme-swatch {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: var(--bd-ctrl) solid var(--line);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-option.is-active .theme-swatch { border: 2.5px solid var(--hanko); box-shadow: var(--sh-sm); }
+.theme-swatch-check { color: #fff; width: 1.1em; height: 1.1em; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.theme-label { font-size: .72rem; color: var(--ink-soft); }
+.theme-option.is-active .theme-label { color: var(--ink); font-weight: 600; }
+
+/* =====================================================================
+   BOTTOM NAV — fixed, full-width, large equal-area tap zones
+   ===================================================================== */
+#bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: var(--card);
+  border-top: var(--bd) solid var(--line);
+  box-shadow: var(--sh-pop);
+  padding-bottom: var(--safe-b);
+  z-index: 30;
+}
+.nav-item {
+  flex: 1 1 0;
+  min-height: 64px;
+  flex-direction: column;
+  gap: .2rem;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.nav-item svg, .nav-item .ic { width: 24px; height: 24px; }
+.nav-item.active { color: var(--hanko); }
+.nav-item:active { background: var(--paper-2); }
+
+/* =====================================================================
+   TOAST
+   ===================================================================== */
+#toast {
+  position: fixed;
+  left: 50%; bottom: calc(80px + var(--safe-b));
+  transform: translateX(-50%) translateY(16px);
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  background: var(--ink);
+  color: var(--paper);
+  padding: .65rem 1.2rem;
+  border-radius: var(--r-pill);
+  font-size: .86rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s, transform .22s;
+  z-index: 100;
+  max-width: 88vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast .ic { width: 17px; height: 17px; }
+#sync-badge { display: inline-flex; line-height: 0; }
+#sync-badge .ic { width: 16px; height: 16px; }
+
+/* =====================================================================
+   MODAL — normal-flow overlay, no fixed-element tap traps
+   ===================================================================== */
+#modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,17,12,.5);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s;
+}
+#modal-bg.show { opacity: 1; visibility: visible; }
+#modal {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(20,17,12,.2);
+  padding: 1.4rem 1.1rem calc(1.6rem + var(--safe-b));
+  width: 100%;
+  max-width: 600px;
+  max-height: 86vh;
+  overflow-y: auto;
+  transform: translateY(30px);
+  transition: transform .25s;
+}
+#modal-bg.show #modal { transform: translateY(0); }
+#modal h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; }
+
+/* =====================================================================
+   EMPTY STATE
+   ===================================================================== */
+.empty { text-align: center; padding: 3rem 1rem; color: var(--ink-soft); }
+.empty-icon { margin-bottom: .7rem; color: #c4b99c; line-height: 0; }
+.empty p { margin-bottom: 1.2rem; }
+
+/* =====================================================================
+   MISC
+   ===================================================================== */
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.text-muted { color: var(--ink-soft); font-size: .85rem; }
+.w-100 { width: 100%; }
+.required { color: var(--hanko); }
+
+@media (min-width: 480px) {
+  .stat-num { font-size: 1.5rem; }
+}
+
+/* =====================================================================
+   WEB GENİŞ EKRAN — sidebar yok, sadece içerik genişler.
+   Hem web hem Electron'da geçerli (temel genişletme).
+   ===================================================================== */
+@media (min-width: 768px) {
+  #app {
+    max-width: 720px;
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #app { max-width: 800px; }
+  .flashcard,
+  .fc-flip-front,
+  .fc-flip-back {
+    min-height: 320px;
+    padding: 2.5rem 1.8rem;
+  }
+  .fc-flip-container { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .fc-kanji { font-size: clamp(5rem, 14vw, 8rem); }
+  #btn-show,
+  .answer-grid {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #btn-show { display: block; }
+  #modal-bg { align-items: center; }
+  #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+}
+
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ — SADECE ELECTRON
+   .is-electron class'ı Electron ortamında body'ye eklenir.
+   Web/PWA tarafında bu class yoktur, dolayısıyla layout hep mobil kalır.
+   ===================================================================== */
+@media (min-width: 768px) {
+  .is-electron #app {
+    max-width: 720px;
+    margin: 0 auto;
+    margin-left: calc(220px + max(2rem, (100vw - 220px - 720px) / 2));
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+
+  .is-electron #bottom-nav {
+    position: fixed;
+    left: 0; top: 0; bottom: 0; right: auto;
+    width: 220px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: .3rem;
+    padding: calc(var(--safe-t) + 1.5rem) .8rem 1rem;
+    border-top: none;
+    border-right: var(--bd) solid var(--line);
+    box-shadow: none;
+  }
+  .is-electron .nav-item {
+    flex: none !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: .7rem !important;
+    min-height: 44px !important;
+    border-radius: var(--r-md);
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    padding: 0 .7rem !important;
+  }
+  .is-electron .nav-item.active { background: var(--hanko-bg, var(--paper-2)); }
+  .is-electron .nav-item:active { background: var(--paper-2); }
+}
+
+/* =====================================================================
+   MASAÜSTÜ OPTİMİZASYONU (1024px+)
+   Geniş ekranlarda daha iyi alan kullanımı: grid deste listesi,
+   büyük flashcard, yan yana form, ortada modal.
+   ===================================================================== */
+@media (min-width: 1024px) {
+  .is-electron #app {
+    max-width: 960px;
+    padding: calc(var(--safe-t) + 1.5rem) 2.5rem 2.5rem;
+  }
+
+  /* Deste listesi: otomatik 2-3 sütun grid */
+  .is-electron #deck-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: .75rem;
+  }
+  .is-electron #deck-list > .card { margin-bottom: 0; }
+
+  /* İstatistik kutuları */
+  .is-electron .stats-grid { gap: .85rem; }
+  .is-electron .stat-box { padding: 1rem .6rem; }
+  .is-electron .stat-num { font-size: 1.7rem; }
+
+  /* Deste detay: 6 sütun istatistik */
+  .is-electron #deck-detail-content .stats-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  /* Flashcard: daha büyük, ortada */
+  .is-electron .flashcard,
+  .is-electron .fc-flip-container {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .is-electron .flashcard,
+  .is-electron .fc-flip-front,
+  .is-electron .fc-flip-back {
+    min-height: 340px;
+    padding: 3rem 2rem;
+  }
+  .is-electron .fc-kanji { font-size: clamp(5.5rem, 12vw, 9rem); }
+  .is-electron .fc-ruby { font-size: 2.5rem; }
+  .is-electron .fc-meaning { font-size: 1.4rem; }
+  .is-electron .fc-example { font-size: 1.15rem; }
+  .is-electron #btn-show,
+  .is-electron .answer-grid {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .is-electron #btn-show { display: block; }
+
+  /* Kart ekleme: preview + form yan yana */
+  .is-electron #view-add.view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+  }
+  .is-electron #view-add .section-hd { grid-column: 1 / -1; }
+  .is-electron #view-add .fc-preview-wrap {
+    position: sticky;
+    top: calc(var(--safe-t) + 1.5rem);
+    grid-row: 2 / 4;
+  }
+
+  /* Ayarlar: 2 sütun grid */
+  .is-electron #settings-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem 1.5rem;
+  }
+
+  /* Modal: ortada, tam yuvarlak köşeler */
+  .is-electron #modal-bg { align-items: center; }
+  .is-electron #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+
+  /* Genel spacing */
+  .is-electron .section-hd { font-size: .95rem; margin-top: 1.5rem; }
+  .is-electron .btn { padding: .65rem 1.3rem; }
+  .is-electron .form-group { margin-bottom: 1rem; }
+}
+</style>
+<link id="gfont-Libre-Baskerville" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@300;400;500;600;700&amp;display=swap">
+<link id="gfont-Pacifico" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico:wght@300;400;500;600;700&amp;display=swap">
+<link id="gfont-Righteous" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Righteous:wght@300;400;500;600;700&amp;display=swap">
+<link id="gfont-Permanent-Marker" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker:wght@300;400;500;600;700&amp;display=swap">
+<link id="gfont-Lato" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&amp;display=swap">
+</head>
+<body>
+
+<div id="boot-splash">
+  <div id="boot-splash-title">Stacks</div>
+  <div id="boot-splash-motto">Keep stacking.</div>
+</div>
+
+<div id="app">
+
+  <div id="topbar">
+    <button class="icon-btn tap" id="btn-back" style="display:none" aria-label="Geri">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div id="topbar-title">Stacks</div>
+    <span id="sync-badge" style="margin-right:.3rem"></span>
+
+    <div id="update-wrap" style="display:none;position:relative">
+      <button class="icon-btn tap" id="btn-update" aria-label="Güncelleme mevcut">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+      </button>
+      <div id="update-popover" class="update-popover" style="display:none"></div>
+    </div>
+
+    <button class="icon-btn tap" id="btn-add-deck" aria-label="Yeni deste">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <!-- VIEW: DECK LIST -->
+  <div id="view-decks" class="view active">
+    <div class="stats-grid" id="global-stats"></div>
+    <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
+    <div class="section-hd" data-t="my_decks">My Decks</div>
+    <div id="deck-list"></div>
+    <div id="deck-list-empty" class="empty" style="display:none">
+      <div class="empty-icon"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg></div>
+      <p data-t="no_decks">No decks yet. Tap + above to create one.</p>
+    </div>
+  </div>
+
+  <!-- VIEW: DECK DETAIL -->
+  <div id="view-deck" class="view">
+    <div id="deck-detail-content"></div>
+  </div>
+
+  <!-- VIEW: STUDY -->
+  <div id="view-study" class="view">
+    <div id="study-screen"></div>
+  </div>
+
+  <!-- VIEW: REVIEW (Gözden Geçir - SRS'e dokunmaz, sadece göz atma) -->
+  <div id="view-review" class="view">
+    <div id="review-screen"></div>
+  </div>
+
+  <!-- VIEW: STREAK (takvim + kalkan detayı) -->
+  <div id="view-streak" class="view">
+    <div id="streak-screen"></div>
+  </div>
+
+  <!-- VIEW: ADD CARD -->
+  <div id="view-add" class="view">
+    <div class="section-hd" data-t="add_card_title">Add card</div>
+    <div id="add-preview-wrap" class="fc-preview-wrap"></div>
+    <div class="card">
+        <div class="form-group">
+          <label data-t="target_deck">Target deck</label>
+          <select id="add-deck-select"></select>
+        </div>
+        <div class="form-group">
+          <label><span data-t="kanji_label">Kanji / Word</span> <span class="required">*</span></label>
+          <input type="text" id="add-kanji" data-pt="kanji_placeholder" placeholder="e.g. 漢字">
+        </div>
+        <div class="form-group">
+          <label><span data-t="furigana_label">Furigana (reading)</span> <span class="required">*</span></label>
+          <input type="text" id="add-furigana" data-pt="furigana_placeholder" placeholder="e.g. かんじ">
+          <div class="furigana-suggest" id="add-furigana-suggest"></div>
+        </div>
+        <div class="form-group">
+          <label><span data-t="meaning_label">Meaning</span> <span class="required">*</span></label>
+          <input type="text" id="add-meaning" data-pt="meaning_placeholder" placeholder="e.g. kanji, Chinese character">
+        </div>
+        <div class="form-group">
+          <label data-t="example_jp_label">Example sentence (Japanese)</label>
+          <input type="text" id="add-example-jp" data-pt="example_jp_placeholder" placeholder="e.g. 毎日漢字を勉強します。">
+          <div class="furigana-mark-row" id="add-example-mark-row" style="display:none">
+            <button type="button" class="btn btn-ghost tap btn-sm" id="add-example-mark-btn">
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/><path d="M7.6 7.6l2 2M14.4 14.4l2 2M16.4 7.6l-2 2M9.6 14.4l-2 2"/></svg>
+              <span data-t="mark_words_btn">Mark words (add furigana)</span>
+            </button>
+          </div>
+          <div id="add-example-furigana-editor"></div>
+        </div>
+        <div class="form-group">
+          <label data-t="example_tr_label">Example translation (optional)</label>
+          <input type="text" id="add-example-tr" data-pt="example_tr_placeholder" placeholder="e.g. I study kanji every day.">
+        </div>
+        <button class="btn btn-block btn-primary tap" id="btn-save-card" data-t="save">Save</button>
+    </div>
+
+    <div class="section-hd" data-t="bulk_import_title">Bulk import</div>
+    <div class="card">
+      <div class="form-group">
+        <label data-t="target_deck">Target deck</label>
+        <select id="bulk-deck-select"></select>
+      </div>
+      <div class="form-group">
+        <label data-t="card_list">Card list</label>
+        <textarea id="bulk-input" rows="7"
+          placeholder="漢字 | かんじ | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | みず | water | 水を飲みます。&#10;食べる | たべる | to eat | パンを食べる。"></textarea>
+        <div class="form-hint" data-t="bulk_format">Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)</div>
+      </div>
+      <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-t="import_btn">Import</button>
+    </div>
+  </div>
+
+  <!-- VIEW: SETTINGS -->
+  <div id="view-settings" class="view">
+    <div class="section-hd" data-t="settings_lang">Language</div>
+    <div class="card" id="lang-section" style="display:flex;gap:.5rem;flex-wrap:wrap"></div>
+
+    <div class="section-hd" data-t="settings_theme">Appearance</div>
+    <div class="card" id="theme-section"></div>
+
+    <div class="section-hd" data-t="settings_sync">Cross-device Sync</div>
+    <div id="sync-section" class="card"></div>
+
+    <div class="section-hd" data-t="settings_srs">SRS settings</div>
+    <div id="settings-fields"></div>
+
+    <div class="section-hd" data-t="settings_backup">Backup</div>
+    <div class="card">
+      <p class="text-muted mt-1" style="margin-bottom:.8rem" data-t="backup_desc">Download or upload all data as JSON.</p>
+      <div class="btn-row">
+        <button class="btn btn-ghost tap" id="btn-export"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-t="export_btn">Export</span></button>
+        <button class="btn btn-ghost tap" id="btn-import-trigger"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span data-t="import_data_btn">Import</span></button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none">
+    </div>
+    <div id="storage-warning" class="card" style="display:none;border:var(--bd-ctrl) solid var(--hanko)">
+      <p style="color:var(--hanko);font-weight:700;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-t="storage_warning_title">Data is not persistent</span></p>
+      <p class="text-muted mt-1" data-t="storage_warning_text">localStorage is not accessible.</p>
+    </div>
+    <div class="danger-zone">
+      <p style="font-weight:700;color:var(--hanko);margin-bottom:.6rem;display:flex;align-items:center;gap:.45em"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 2.8 20a1.2 1.2 0 0 0 1 1.8h16.4a1.2 1.2 0 0 0 1-1.8L12 4.5Z"/><path d="M12 10v4.5"/><path d="M12 17.8h.01"/></svg><span data-t="danger_zone">Danger zone</span></p>
+      <button class="btn btn-danger tap" id="btn-reset-all" data-t="reset_all">Reset all data</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<nav id="bottom-nav">
+  <button class="nav-item active tap" data-view="decks" id="nav-decks">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
+    <span data-t="nav_decks">Decks</span>
+  </button>
+  <button class="nav-item tap" data-view="add" id="nav-add">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" style="width: 17px; height: 14px"/><path d="M12 9.3v5.4M9.3 12h5.4"/></svg>
+    <span data-t="nav_add">Add card</span>
+  </button>
+  <button class="nav-item tap" data-view="settings" id="nav-settings">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>
+    <span data-t="nav_settings">Settings</span>
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">Modal</h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

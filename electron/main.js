@@ -1,9 +1,10 @@
 // ============================================================
 // KANJI SRS — ELECTRON MASAÜSTÜ UYGULAMASI (main process)
 // ============================================================
-// Bu dosya, web uygulamasını (web/index.html) bir masaüstü
+// Bu dosya, Vite build çıktısını (dist/index.html) bir masaüstü
 // penceresinde açan "kabuk"tur. İçindeki mantığa dokunmaz,
-// sadece bir pencere açıp web/index.html dosyasını yükler.
+// sadece bir pencere açıp dist/index.html dosyasını yükler.
+// Dev modda Vite dev server URL'ini (http://localhost:5173) yükler.
 //
 // Otomatik güncelleme: electron-updater, GitHub Releases'i
 // kontrol eder. Yeni bir sürüm bulunduğunda main process bunu
@@ -38,7 +39,12 @@ function createWindow() {
     title: 'Stacks',
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'web', 'index.html'));
+  const isDev = !app.isPackaged;
+  if (isDev) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
+  } else {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  }
 
   // Dış linkler (varsa) sistem tarayıcısında açılsın, uygulama içinde değil
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

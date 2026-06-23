@@ -4,33 +4,65 @@ Japonca kanji/kelime öğrenme uygulaması — SRS (Spaced Repetition System) ta
 
 ## Mimari
 
-- **Tek HTML dosyası:** Tüm uygulama `web/index.html` içinde yaşar (vanilla JS + CSS, framework yok).
-- **PWA:** `web/sw.js` service worker ile çevrimdışı çalışır.
-- **Electron:** `electron/main.js` masaüstü sarmalayıcısı.
+- **Modüler Vanilla JS:** CSS `src/index.html`'de inline, JS `src/main.js`'de. Supabase, DB ve state katmanları ayrı modüllerde.
+- **Vite:** Build aracı ve dev server. `vite-plugin-pwa` ile PWA (manifest + service worker) otomatik üretilir.
+- **Electron:** `electron/main.js` masaüstü sarmalayıcısı. Production'da `dist/index.html` yükler.
 - **Supabase:** Bulut senkronizasyonu için `supabase-schema.sql` şeması.
 
 ## Klasör Yapısı
 
 ```
-web/                  ← PWA kaynakları (ana kopya)
+package.json              ← root (vite devDep)
+vite.config.js            ← Vite + PWA yapılandırması
+src/
+  index.html              ← HTML yapısı + inline CSS
+  main.js                 ← Orkestrasyon: i18n, sync, state, router, boot
+  utils.js                ← Saf yardımcılar (esc, uid, today, tarih, shuffle)
+  core/
+    srsEngine.js          ← Saf SRS algoritması (DOM/browser bağımsız)
+  components/
+    CardView.js           ← Study/review kartları, flip animasyonları, grade
+    DeckList.js           ← Deste listesi, kart CRUD, furigana assist
+    Analytics.js          ← İstatistikler, streak, takvim
+    Settings.js           ← Tema, SRS ayarları, sync UI, export/import
+  services/
+    supabaseClient.js     ← Supabase bağlantı ayarları + sbFetch
+    dbService.js          ← Bulut sorguları (cloudPull/Push, sync)
+  store/
+    appState.js           ← CONFIG, storage layer, migrations
+public/
+  icons/                  ← PWA ikonları (Vite tarafından dist/'e kopyalanır)
+dist/                     ← Vite build çıktısı (gitignore)
 electron/
-  web/                ← web/ klasörünün birebir kopyası — her zaman senkron tutulmalı
-  main.js             ← Electron ana süreç
+  main.js                 ← Electron ana süreç (dev: Vite URL, prod: dist/)
   preload.js
   package.json
-  build/              ← Electron derleme çıktıları / ikonlar
+  build/                  ← Electron derleme çıktıları / ikonlar
 ```
+
+## Geliştirme Komutları
+
+- `npm run dev` — Vite dev server (http://localhost:5173)
+- `npm run build` — Production build → `dist/`
+- `npm run preview` — Build çıktısını önizle
+- `npm run electron:dev` — Vite build + Electron başlat (dist/ üzerinden)
+- `npm run electron:build` — Vite build + Electron production build (installer)
+- `cd electron && npm start` — Electron'u ayrı başlat (önce `npm run build`)
 
 ## Kritik Kurallar
 
-### Dosya Senkronizasyonu
-`electron/web/` klasörü her zaman `web/` ile birebir aynı olmalı. `web/` altında yapılan her değişiklik `electron/web/` altına da yansıtılmalı.
-
 ### Versiyon Senkronizasyonu
-Versiyon numarası 3 yerde tutulur ve hepsi aynı olmalı:
-1. `web/index.html` → `const APP_VERSION = '...'`
-2. `web/sw.js` → `const CACHE_NAME = 'kanji-srs-v...'`
-3. `electron/package.json` → `"version": "..."`
+Versiyon numarası 2 yerde tutulur ve ikisi aynı olmalı:
+1. `src/main.js` → `const APP_VERSION = '...'`
+2. `electron/package.json` → `"version": "..."`
+
+(Service worker artık `vite-plugin-pwa` tarafından otomatik üretiliyor, CACHE_NAME yok.)
+
+### ES Module + onclick Uyumluluğu
+`src/main.js` `<script type="module">` ile yüklenir. Inline `onclick` handler'larda kullanılan fonksiyonlar dosyanın sonundaki `Object.assign(window, {...})` bloğu ile global scope'a açılır. Yeni bir fonksiyon `onclick` ile kullanılacaksa bu listeye eklenmeli.
+
+### Bileşen Mimarisi
+Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır ve `app.state`, `app.t()`, `app.icon()` vb. üzerinden erişir. State getter ile canlı kalır — `state` reassign edilse bile bileşenler güncel değeri alır. Çapraz bağımlılıklar (ör. `CardView` → `app.recordReview`) `app` context'ine init sonrası eklenir.
 
 ### `t()` Fonksiyonu Koruması
 `t()` global çeviri (i18n) fonksiyonudur. **Hiçbir zaman** yerel değişken, parametre veya fonksiyon adı olarak `t` kullanılmamalıdır — çeviri fonksiyonunu gölgeler ve sessizce bozar.
@@ -66,6 +98,18 @@ Versiyon numarası 3 yerde tutulur ve hepsi aynı olmalı:
 - Ön yüz: sadece kanji yazılırken, arka yüz: furigana/anlam yazılırken flip animasyonuyla
 - `position: sticky` ile scroll'da takip eder
 - İçerik az olunca (örnek cümle yok) kanji büyük kalır (`fc-preview-sparse`)
+
+## SRS Engine (`src/core/srsEngine.js`)
+
+- **Saf modül:** DOM/browser API bağımlılığı yok, tüm fonksiyonlar `settings` ve `now` parametresi alır
+- **Anki-style SM-2:** learning steps → graduated review → mastery
+- `computeSRS(card, grade, settings, now, preview)` — çekirdek hesaplama
+- `previewSRS(card, grade, settings, now)` — kartı değiştirmeden sonraki aralığı gösterir
+- `applySRS(card, grade, settings, now)` — kartın `srs` alanını günceller (mutates)
+- `buildQueueFromCards(cards, masteredOnly, now, dailyLimit, newToday)` — çalışma kuyruğu oluşturur
+- `createSrsData(defaultEase)` — yeni kart için boş SRS bloğu
+- `fmtDur(ms)` — milisaniyeyi `1m`, `10m`, `1h`, `3d` formatına çevirir
+- `main.js`'deki `_buildQueue()` ve `buildQueue()` wrapper'lar state'den parametreleri çözümleyip engine'e iletir
 
 ## Çalışma Ekranı Gesture Flip
 
