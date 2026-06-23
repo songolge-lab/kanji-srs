@@ -9,9 +9,9 @@
 <link rel="manifest" href="manifest.json" id="pwa-manifest-link">
 <meta name="theme-color" content="#1c1a17">
 
-<!-- Tema VE ikon, sayfa boyanmadan ÖNCE uygulanır (FOUC önleme):
+<!-- Tema, sayfa boyanmadan ÖNCE uygulanır (FOUC önleme):
      kullanıcı Sumi (dark) temadaysa sayfa bir an için açık renkte
-     yanıp sönmesin; seçtiği app ikonu manifest'i de doğru gelsin. -->
+     yanıp sönmesin diye. -->
 <script>
 (function() {
   try {
@@ -22,16 +22,6 @@
       theme = 'sumi';
     }
     if (theme && theme !== 'washi') document.documentElement.setAttribute('data-theme', theme);
-
-    var iconLocked = localStorage.getItem('stacks-app-icon-locked') === '1';
-    var savedIcon = localStorage.getItem('stacks-app-icon');
-    // Kilitliyse kayıtlı ikon sabit kullanılır; kilitli değilse ikon zaten
-    // temayla senkron tutulur (bkz. setTheme), o yüzden güncel tema kullanılır.
-    var iconTheme = (iconLocked && savedIcon) ? savedIcon : theme;
-    if (iconTheme && iconTheme !== 'washi') {
-      var manifestLink = document.getElementById('pwa-manifest-link');
-      if (manifestLink) manifestLink.setAttribute('href', 'manifest-' + iconTheme + '.json');
-    }
   } catch (e) {}
 })();
 </script>
@@ -864,39 +854,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .theme-label { font-size: .72rem; color: var(--ink-soft); }
 .theme-option.is-active .theme-label { color: var(--ink); font-weight: 600; }
 
-/* ─── APP İKONU SEÇİCİ (Ayarlar > Uygulama İkonu) ───────────────────── */
-.app-icon-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: .8rem .7rem; margin-bottom: .6rem;
-}
-.app-icon-option {
-  display: flex; flex-direction: column; align-items: center; gap: .35rem;
-  position: relative;
-}
-.app-icon-thumb-wrap { position: relative; }
-.app-icon-thumb {
-  width: 56px; height: 56px; border-radius: 16px;
-  border: var(--bd-ctrl) solid var(--line);
-  cursor: pointer; display: block; background: none; padding: 0;
-}
-.app-icon-thumb img { width: 100%; height: 100%; border-radius: 14px; display: block; }
-.app-icon-option.is-active .app-icon-thumb { border: 2.5px solid var(--hanko); }
-.app-icon-lock-btn {
-  position: absolute; bottom: -4px; right: -4px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--card); border: var(--bd) solid var(--line);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink-soft); padding: 0;
-}
-.app-icon-lock-btn .ic { width: .68em; height: .68em; }
-.app-icon-lock-btn.is-locked { background: var(--hanko); border-color: var(--hanko); color: #fff; }
-.app-icon-label { font-size: .68rem; color: var(--ink-soft); text-align: center; }
-.app-icon-option.is-active .app-icon-label { color: var(--ink); font-weight: 600; }
-.app-icon-note {
-  font-size: .78rem; color: var(--ink-soft); line-height: 1.5;
-  border-top: var(--bd) solid var(--line); padding-top: .7rem; margin-top: .3rem;
-}
-
 /* =====================================================================
    BOTTOM NAV — fixed, full-width, large equal-area tap zones
    ===================================================================== */
@@ -1293,9 +1250,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <div class="section-hd" data-t="settings_theme">Appearance</div>
     <div class="card" id="theme-section"></div>
 
-    <div class="section-hd" data-t="settings_icon">App Icon</div>
-    <div class="card" id="app-icon-section"></div>
-
     <div class="section-hd" data-t="settings_sync">Cross-device Sync</div>
     <div id="sync-section" class="card"></div>
 
@@ -1424,7 +1378,7 @@ example_tr_label:'Example translation (optional)',example_tr_placeholder:'e.g. I
 save:'Save',bulk_import_title:'Bulk import',card_list:'Card list',
 bulk_format:'Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)',
 import_btn:'Import',create_deck_first:'Create a deck first',
-settings_lang:'Language',settings_theme:'Appearance',settings_icon:'App Icon',
+settings_lang:'Language',settings_theme:'Appearance',
 settings_sync:'Cross-device Sync',settings_srs:'SRS settings',settings_backup:'Backup',
 backup_desc:'Download or upload all data (decks, cards, SRS state) as JSON.',
 export_btn:'Export',import_data_btn:'Import',
@@ -1502,8 +1456,6 @@ update_new:'New update available',update_version:'Version {version}',update_down
 update_downloading:'Downloading…',update_ready:'Update ready',
 update_downloaded:'Version {version} downloaded',update_install:'Restart and Install',
 preview_front:'Front',preview_back:'Back',
-icon_change_hint:'To see the new icon on phone, remove app from home screen and re-add from Safari/Chrome.',
-icon_lock:'Lock',icon_unlock:'Unlock',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Browse',streak_screen_title:'Study Calendar',
 },
@@ -1538,7 +1490,7 @@ example_tr_label:'Örnek çeviri (Türkçe, opsiyonel)',example_tr_placeholder:'
 save:'Kaydet',bulk_import_title:'Toplu içe aktar',card_list:'Kart listesi',
 bulk_format:'Format: Kanji | Furigana | Anlam | Örnek JP (opsiyonel) | Örnek TR (opsiyonel)',
 import_btn:'İçe aktar',create_deck_first:'Önce bir deste oluştur',
-settings_lang:'Dil',settings_theme:'Görünüm',settings_icon:'Uygulama İkonu',
+settings_lang:'Dil',settings_theme:'Görünüm',
 settings_sync:'Cihazlar Arası Senkron',settings_srs:'SRS ayarları',settings_backup:'Yedekleme',
 backup_desc:'Tüm veriyi (desteler, kartlar, SRS durumu) JSON olarak indir veya yükle.',
 export_btn:'Dışa aktar',import_data_btn:'İçe aktar',
@@ -1616,8 +1568,6 @@ update_new:'Yeni güncelleme mevcut',update_version:'Sürüm {version}',update_d
 update_downloading:'İndiriliyor…',update_ready:'Güncelleme hazır',
 update_downloaded:'Sürüm {version} indirildi',update_install:'Yeniden Başlat ve Kur',
 preview_front:'Ön yüz',preview_back:'Arka yüz',
-icon_change_hint:'Telefonda yeni ikonun görünmesi için uygulamayı ana ekrandan silip Safari/Chrome\'dan tekrar eklemen gerekir.',
-icon_lock:'Kilitle',icon_unlock:'Kilidi aç',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Gözden Geçir',streak_screen_title:'Çalışma Takvimi',
 },
@@ -1652,7 +1602,7 @@ example_tr_label:'예문 번역 (선택사항)',example_tr_placeholder:'예: 매
 save:'저장',bulk_import_title:'일괄 가져오기',card_list:'카드 목록',
 bulk_format:'형식: 한자 | 후리가나 | 의미 | 예문 JP (선택) | 예문 번역 (선택)',
 import_btn:'가져오기',create_deck_first:'먼저 덱을 만드세요',
-settings_lang:'언어',settings_theme:'테마',settings_icon:'앱 아이콘',
+settings_lang:'언어',settings_theme:'테마',
 settings_sync:'기기 간 동기화',settings_srs:'SRS 설정',settings_backup:'백업',
 backup_desc:'모든 데이터(덱, 카드, SRS 상태)를 JSON으로 다운로드하거나 업로드합니다.',
 export_btn:'내보내기',import_data_btn:'가져오기',
@@ -1730,8 +1680,6 @@ update_new:'새 업데이트 가능',update_version:'버전 {version}',update_do
 update_downloading:'다운로드 중…',update_ready:'업데이트 준비 완료',
 update_downloaded:'버전 {version} 다운로드됨',update_install:'재시작 및 설치',
 preview_front:'앞면',preview_back:'뒷면',
-icon_change_hint:'휴대폰에서 새 아이콘을 보려면 홈 화면에서 앱을 삭제하고 Safari/Chrome에서 다시 추가하세요.',
-icon_lock:'잠금',icon_unlock:'잠금 해제',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'훑어보기',streak_screen_title:'학습 캘린더',
 },
@@ -1766,7 +1714,7 @@ example_tr_label:'Жишээ орчуулга (сонголттой)',example_tr
 save:'Хадгалах',bulk_import_title:'Бөөнөөр оруулах',card_list:'Картын жагсаалт',
 bulk_format:'Формат: Ханз | Фуригана | Утга | Жишээ JP (сонголт) | Жишээ орчуулга (сонголт)',
 import_btn:'Оруулах',create_deck_first:'Эхлээд багц үүсгэнэ үү',
-settings_lang:'Хэл',settings_theme:'Харагдах байдал',settings_icon:'Аппын дүрс',
+settings_lang:'Хэл',settings_theme:'Харагдах байдал',
 settings_sync:'Төхөөрөмж хоорондын синк',settings_srs:'SRS тохиргоо',settings_backup:'Нөөцлөл',
 backup_desc:'Бүх өгөгдлийг (багц, карт, SRS төлөв) JSON хэлбэрээр татах эсвэл ачаалах.',
 export_btn:'Экспорт',import_data_btn:'Импорт',
@@ -1844,8 +1792,6 @@ update_new:'Шинэ шинэчлэл бий',update_version:'Хувилбар {
 update_downloading:'Татаж байна…',update_ready:'Шинэчлэл бэлэн',
 update_downloaded:'Хувилбар {version} татагдлаа',update_install:'Дахин эхлүүлж суулгах',
 preview_front:'Урд тал',preview_back:'Ар тал',
-icon_change_hint:'Утсанд шинэ дүрсийг харахын тулд аппыг нүүр хуудаснаас устгаад Safari/Chrome-оос дахин нэмнэ үү.',
-icon_lock:'Түгжих',icon_unlock:'Түгжээ тайлах',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Тойм',streak_screen_title:'Суралцах хуанли',
 },
@@ -2152,11 +2098,7 @@ function applyTheme(themeId) {
 function setTheme(themeId) {
   localStorage.setItem(THEME_STORAGE_KEY, themeId);
   applyTheme(themeId);
-  // Tema değişince ikon de otomatik o temanın ikonuna geçer — TABİİ Kİ
-  // kullanıcı ikon kilidi açtıysa (bkz. APP_ICONS). Kilitliyse dokunulmaz.
-  if (!getIconLocked()) setAppIcon(themeId, /* fromThemeChange */ true);
   renderThemeSection();
-  renderAppIconSection();
 }
 function setFollowSystemTheme(on) {
   localStorage.setItem(THEME_FOLLOW_SYSTEM_KEY, on ? '1' : '0');
@@ -2167,73 +2109,8 @@ function setFollowSystemTheme(on) {
     const themeId = prefersDark ? 'sumi' : 'washi';
     localStorage.setItem(THEME_STORAGE_KEY, themeId);
     applyTheme(themeId);
-    if (!getIconLocked()) setAppIcon(themeId, true);
   }
   renderThemeSection();
-  renderAppIconSection();
-}
-
-// ─── APP İKONU SİSTEMİ ──────────────────────────────────────────────────
-// Her temanın kendi varsayılan ikonu vardır (tema değişince ikon de
-// otomatik değişir). Kullanıcı "kilit" ile bunu durdurup kendi seçtiği
-// ikonu sabit tutabilir. PWA ikonu gerçek sistem seviyesinde DEĞİŞMEZ
-// (iOS/Android kısıtı) — manifest dinamik olarak değiştirilir ve
-// kullanıcıya "ana ekrandan silip tekrar ekle" talimatı gösterilir.
-const APP_ICON_STORAGE_KEY = 'stacks-app-icon';
-const APP_ICON_LOCK_KEY = 'stacks-app-icon-locked';
-// THEMES listesindeki id'lerle birebir eşleşir (her temanın kendi ikonu)
-const APP_ICONS = THEMES.map(th => ({ id: th.id, label: th.label, manifestSrc: th.id === 'washi' ? 'manifest.json' : `manifest-${th.id}.json`, thumb: th.id === 'washi' ? 'icons/icon-120.png' : `icons/${th.id}/icon-120.png` }));
-
-function getCurrentAppIcon() {
-  return localStorage.getItem(APP_ICON_STORAGE_KEY) || getCurrentTheme();
-}
-function getIconLocked() {
-  return localStorage.getItem(APP_ICON_LOCK_KEY) === '1';
-}
-function setIconLocked(locked) {
-  localStorage.setItem(APP_ICON_LOCK_KEY, locked ? '1' : '0');
-  renderAppIconSection();
-}
-function setAppIcon(iconId, fromThemeChange) {
-  localStorage.setItem(APP_ICON_STORAGE_KEY, iconId);
-  const found = APP_ICONS.find(i => i.id === iconId);
-  const link = document.querySelector('link[rel="manifest"]');
-  if (link && found) link.setAttribute('href', found.manifestSrc);
-  if (!fromThemeChange) {
-    renderAppIconSection();
-    showAppIconChangeNotice();
-  }
-}
-
-function showAppIconChangeNotice() {
-  showToast(t('icon_change_hint'), 4200);
-}
-
-function renderAppIconSection() {
-  const box = document.getElementById('app-icon-section');
-  if (!box) return;
-  const current = getCurrentAppIcon();
-  const locked = getIconLocked();
-
-  const itemsHTML = APP_ICONS.map(i => {
-    const isActive = current === i.id;
-    return `
-      <div class="app-icon-option${isActive ? ' is-active' : ''}">
-        <div class="app-icon-thumb-wrap">
-          <button type="button" class="app-icon-thumb tap" onclick="setAppIcon('${i.id}')" aria-label="${esc(i.label)} ikonu">
-            <img src="${i.thumb}" alt="${esc(i.label)}">
-          </button>
-          ${isActive ? `<button type="button" class="app-icon-lock-btn tap${locked ? ' is-locked' : ''}" onclick="setIconLocked(${locked ? 'false' : 'true'})" aria-label="${locked ? t('icon_unlock') : t('icon_lock')}">${icon(locked ? 'lock' : 'unlock')}</button>` : ''}
-        </div>
-        <span class="app-icon-label">${esc(i.label)}</span>
-      </div>
-    `;
-  }).join('');
-
-  box.innerHTML = `
-    <div class="app-icon-grid">${itemsHTML}</div>
-    <div class="app-icon-note">${t('icon_change_hint')}</div>
-  `;
 }
 
 function renderThemeSection() {
@@ -3855,7 +3732,6 @@ function settingItemHTML(key, label, smallText, inputHTML) {
 
 function renderSettings() {
   renderThemeSection();
-  renderAppIconSection();
   renderSyncSection();
   const s = state.settings;
   document.getElementById('settings-fields').innerHTML =
