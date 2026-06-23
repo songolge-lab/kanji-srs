@@ -751,9 +751,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   transition: transform .45s ease;
   transform-style: preserve-3d;
 }
-.fc-preview-wrap.show-back .fc-preview-inner {
-  transform: rotateY(180deg);
-}
 .fc-preview-front,
 .fc-preview-back {
   backface-visibility: hidden;
@@ -3476,53 +3473,40 @@ function renderReview() {
 
   const card = reviewQueue[reviewIndex];
   const pct = ((reviewIndex + 1) / reviewQueue.length) * 100;
+  const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
 
-  const frontHTML = `
+  screen.innerHTML = `
     <div class="study-header">
       <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
       <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
     </div>
-    <div class="flashcard">
-      <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
-      <div class="fc-kanji">${esc(card.kanji)}</div>
-    </div>
-  `;
-
-  if (!reviewShowingBack) {
-    screen.innerHTML = frontHTML + `
-      <button id="btn-show" class="tap" onclick="showReviewBack()">${icon('eye')}${t('show_answer')}</button>
-      <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
-      </div>
-    `;
-  } else {
-    const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
-    screen.innerHTML = `
-      <div class="study-header">
-        <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
-        <div class="study-count">${reviewIndex + 1}/${reviewQueue.length}</div>
-      </div>
-      <div class="flashcard">
-        <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
-        <div class="fc-back">
-          <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
-          <div class="fc-meaning">${esc(card.meaningTr)}</div>
-          ${card.exampleJp ? `
-          <hr class="fc-divider">
-          <div class="fc-example">${exHighlight}</div>
-          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+    <div class="fc-flip-container" id="review-flip">
+      <div class="fc-flip-inner" id="review-flip-inner">
+        <div class="fc-flip-front">
+          <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
+          <div class="fc-kanji">${esc(card.kanji)}</div>
+        </div>
+        <div class="fc-flip-back">
+          <span class="fc-state-badge badge badge-soft">${icon('eye')}${t('browse_badge')}</span>
+          <div class="fc-back">
+            <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+            <div class="fc-meaning">${esc(card.meaningTr)}</div>
+            ${card.exampleJp ? `
+            <hr class="fc-divider">
+            <div class="fc-example">${exHighlight}</div>
+            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+          </div>
         </div>
       </div>
-      <div class="btn-row mt-2">
-        <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
-        <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
-      </div>
-    `;
-  }
+    </div>
+    <div class="fc-flip-hint">← ${t('flip_hint')} →</div>
+    <div class="btn-row mt-2">
+      <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
+      <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
+    </div>
+  `;
+  initFlipGestureToggle('review-flip', 'review-flip-inner');
 }
-
-function showReviewBack() { reviewShowingBack = true; renderReview(); }
 
 function reviewNext() {
   if (reviewIndex < reviewQueue.length - 1) { reviewIndex++; reviewShowingBack = false; renderReview(); }
@@ -3673,6 +3657,57 @@ function initFlipGesture() {
   container.addEventListener('touchend', onEnd);
 }
 
+function initFlipGestureToggle(containerId, innerId) {
+  const container = document.getElementById(containerId);
+  const inner = document.getElementById(innerId);
+  if (!container || !inner) return;
+
+  let startX = 0, dragRotation = 0, dragging = false, isBack = false;
+  const threshold = 90;
+
+  function getX(e) {
+    return e.touches ? e.touches[0].clientX : e.clientX;
+  }
+  function baseAngle() { return isBack ? 180 : 0; }
+
+  function onStart(e) {
+    dragging = true;
+    startX = getX(e);
+    dragRotation = 0;
+    inner.classList.add('no-transition');
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const dx = getX(e) - startX;
+    const w = container.offsetWidth || 300;
+    dragRotation = Math.max(-180, Math.min(180, (dx / w) * 200));
+    inner.style.transform = `rotateY(${baseAngle() + dragRotation}deg)`;
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    inner.classList.remove('no-transition');
+
+    if (Math.abs(dragRotation) >= threshold) {
+      isBack = !isBack;
+      inner.style.transform = `rotateY(${baseAngle()}deg)`;
+    } else {
+      inner.style.transform = `rotateY(${baseAngle()}deg)`;
+    }
+    dragRotation = 0;
+  }
+
+  container.addEventListener('mousedown', onStart);
+  container.addEventListener('mousemove', onMove);
+  container.addEventListener('mouseup', onEnd);
+  container.addEventListener('mouseleave', onEnd);
+  container.addEventListener('touchstart', onStart, { passive: true });
+  container.addEventListener('touchmove', onMove, { passive: true });
+  container.addEventListener('touchend', onEnd);
+}
+
 function gradeCard(grade) {
   const card = studyQueue[studyCardIndex];
   const wasNew = card.srs.state === 'new';
@@ -3709,10 +3744,11 @@ function updatePreview(prefix, containerId) {
   }
 
   wrap.classList.add('has-content');
-  wrap.classList.toggle('show-back', !!hasBack);
   const sparse = !exJp && !exTr;
   wrap.classList.toggle('fc-preview-sparse', sparse);
 
+  const flipId = containerId + '-flip';
+  const flipInnerId = containerId + '-flip-inner';
   const frontHTML = `<div class="fc-kanji">${kanji ? esc(kanji) : '&nbsp;'}</div>`;
   let backHTML = '';
   if (kanji || furigana) {
@@ -3725,13 +3761,14 @@ function updatePreview(prefix, containerId) {
   }
 
   wrap.innerHTML = `
-    <div class="fc-preview">
-      <div class="fc-preview-inner">
+    <div class="fc-preview fc-flip-container" id="${flipId}" style="cursor:grab">
+      <div class="fc-preview-inner fc-flip-inner" id="${flipInnerId}">
         <div class="fc-preview-front">${frontHTML}</div>
         <div class="fc-preview-back"><div class="fc-back" style="width:100%;text-align:center">${backHTML}</div></div>
       </div>
     </div>
-    <div class="fc-preview-label">${hasBack ? t('preview_back') : t('preview_front')}</div>`;
+    <div class="fc-flip-hint" style="font-size:.68rem">← ${t('flip_hint')} →</div>`;
+  if (hasBack) initFlipGestureToggle(flipId, flipInnerId);
 }
 
 function attachPreviewListeners(prefix, containerId) {
