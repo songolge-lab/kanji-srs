@@ -1,6 +1,6 @@
 {
   "name": "kanji-srs-desktop",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Kanji SRS — Kişisel Kanji Flashcard ve Aralıklı Tekrar Uygulaması",
   "main": "main.js",
   "author": "Harun",
@@ -44,8 +44,10 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Stacks"
