@@ -660,6 +660,49 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   position: relative;
   margin-bottom: 1.1rem;
 }
+.fc-flip-container {
+  perspective: 1000px;
+  margin-bottom: 1.1rem;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fc-flip-container:active { cursor: grabbing; }
+.fc-flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .5s ease;
+}
+.fc-flip-inner.no-transition { transition: none; }
+.fc-flip-front,
+.fc-flip-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 280px;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.fc-flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.fc-flip-hint {
+  text-align: center;
+  font-size: .72rem;
+  color: var(--ink-soft);
+  margin-top: -.5rem;
+  margin-bottom: .8rem;
+  opacity: .7;
+}
 .fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
 .fc-kanji {
   font-size: clamp(4.5rem, 24vw, 8rem);
@@ -974,10 +1017,13 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 @media (min-width: 1024px) {
   #app { max-width: 800px; }
-  .flashcard {
+  .flashcard,
+  .fc-flip-front,
+  .fc-flip-back {
     min-height: 320px;
     padding: 2.5rem 1.8rem;
   }
+  .fc-flip-container { max-width: 600px; margin-left: auto; margin-right: auto; }
   .fc-kanji { font-size: clamp(5rem, 14vw, 8rem); }
   #btn-show,
   .answer-grid {
@@ -1067,12 +1113,17 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   }
 
   /* Flashcard: daha büyük, ortada */
-  .is-electron .flashcard {
-    min-height: 340px;
-    padding: 3rem 2rem;
+  .is-electron .flashcard,
+  .is-electron .fc-flip-container {
     max-width: 640px;
     margin-left: auto;
     margin-right: auto;
+  }
+  .is-electron .flashcard,
+  .is-electron .fc-flip-front,
+  .is-electron .fc-flip-back {
+    min-height: 340px;
+    padding: 3rem 2rem;
   }
   .is-electron .fc-kanji { font-size: clamp(5.5rem, 12vw, 9rem); }
   .is-electron .fc-ruby { font-size: 2.5rem; }
@@ -1309,7 +1360,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 // ─── CONFIG ───────────────────────────────────────────────────────────
 // APP_VERSION: electron/package.json'daki "version" ile senkron tutulmalı.
 // Yeni sürüm çıkardığında ikisini de aynı anda güncelle.
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 // Tek aile: 24x24 viewBox, ince çizgi, yuvarlak uç/köşe (CSS .ic ile).
@@ -1455,7 +1506,7 @@ confirm_reset:'ALL data (decks, cards, statistics) will be deleted. Are you sure
 update_new:'New update available',update_version:'Version {version}',update_download:'Download',
 update_downloading:'Downloading…',update_ready:'Update ready',
 update_downloaded:'Version {version} downloaded',update_install:'Restart and Install',
-preview_front:'Front',preview_back:'Back',
+preview_front:'Front',preview_back:'Back',flip_hint:'Drag to flip',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Browse',streak_screen_title:'Study Calendar',
 },
@@ -1567,7 +1618,7 @@ confirm_reset:'TÜM veri (desteler, kartlar, istatistik) silinecek. Emin misin?'
 update_new:'Yeni güncelleme mevcut',update_version:'Sürüm {version}',update_download:'İndir',
 update_downloading:'İndiriliyor…',update_ready:'Güncelleme hazır',
 update_downloaded:'Sürüm {version} indirildi',update_install:'Yeniden Başlat ve Kur',
-preview_front:'Ön yüz',preview_back:'Arka yüz',
+preview_front:'Ön yüz',preview_back:'Arka yüz',flip_hint:'Kartı çevirmek için sürükle',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Gözden Geçir',streak_screen_title:'Çalışma Takvimi',
 },
@@ -1679,7 +1730,7 @@ confirm_reset:'모든 데이터(덱, 카드, 통계)가 삭제됩니다. 확인�
 update_new:'새 업데이트 가능',update_version:'버전 {version}',update_download:'다운로드',
 update_downloading:'다운로드 중…',update_ready:'업데이트 준비 완료',
 update_downloaded:'버전 {version} 다운로드됨',update_install:'재시작 및 설치',
-preview_front:'앞면',preview_back:'뒷면',
+preview_front:'앞면',preview_back:'뒷면',flip_hint:'드래그하여 뒤집기',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'훑어보기',streak_screen_title:'학습 캘린더',
 },
@@ -1791,7 +1842,7 @@ confirm_reset:'БҮХ өгөгдөл (багц, карт, статистик) у
 update_new:'Шинэ шинэчлэл бий',update_version:'Хувилбар {version}',update_download:'Татах',
 update_downloading:'Татаж байна…',update_ready:'Шинэчлэл бэлэн',
 update_downloaded:'Хувилбар {version} татагдлаа',update_install:'Дахин эхлүүлж суулгах',
-preview_front:'Урд тал',preview_back:'Ар тал',
+preview_front:'Урд тал',preview_back:'Ар тал',flip_hint:'Чирж эргүүлэх',
 keep_stacking:'Keep stacking.',version_tag:'Stacks · v{version}',
 study_screen_title:'読む',review_screen_title:'Тойм',streak_screen_title:'Суралцах хуанли',
 },
@@ -3500,21 +3551,39 @@ function renderStudy() {
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
 
+  const previews = [0,1,2,3].map(g => previewSRS(card, g).label);
+  const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+
   if (!studyShowingBack) {
     screen.innerHTML = `
       <div class="study-header">
         <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
         <div class="study-count">${done}/${done + remaining}</div>
       </div>
-      <div class="flashcard">
-        <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-        <div class="fc-kanji">${esc(card.kanji)}</div>
+      <div class="fc-flip-container" id="fc-flip">
+        <div class="fc-flip-inner" id="fc-flip-inner">
+          <div class="fc-flip-front">
+            <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+            <div class="fc-kanji">${esc(card.kanji)}</div>
+          </div>
+          <div class="fc-flip-back">
+            <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+            <div class="fc-back">
+              <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+              <div class="fc-meaning">${esc(card.meaningTr)}</div>
+              ${card.exampleJp ? `
+              <hr class="fc-divider">
+              <div class="fc-example">${exHighlight}</div>
+              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+            </div>
+          </div>
+        </div>
       </div>
+      <div class="fc-flip-hint">← ${t('flip_hint')} →</div>
       <button id="btn-show" class="tap" onclick="showBack()">${icon('eye')}${t('show_answer')}</button>
     `;
+    initFlipGesture();
   } else {
-    const previews = [0,1,2,3].map(g => previewSRS(card, g).label);
-    const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
     screen.innerHTML = `
       <div class="study-header">
         <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
@@ -3551,6 +3620,58 @@ function stateLabel(srs) {
 }
 
 function showBack() { studyShowingBack = true; renderStudy(); }
+
+function initFlipGesture() {
+  const container = document.getElementById('fc-flip');
+  const inner = document.getElementById('fc-flip-inner');
+  if (!container || !inner) return;
+
+  let startX = 0, currentRotation = 0, dragging = false, flipped = false;
+  const threshold = 90;
+
+  function getX(e) {
+    return e.touches ? e.touches[0].clientX : e.clientX;
+  }
+
+  function onStart(e) {
+    if (flipped) return;
+    dragging = true;
+    startX = getX(e);
+    inner.classList.add('no-transition');
+  }
+
+  function onMove(e) {
+    if (!dragging || flipped) return;
+    const dx = getX(e) - startX;
+    const containerWidth = container.offsetWidth || 300;
+    currentRotation = Math.max(-180, Math.min(180, (dx / containerWidth) * 200));
+    inner.style.transform = `rotateY(${currentRotation}deg)`;
+  }
+
+  function onEnd() {
+    if (!dragging || flipped) return;
+    dragging = false;
+    inner.classList.remove('no-transition');
+
+    if (Math.abs(currentRotation) >= threshold) {
+      flipped = true;
+      const dir = currentRotation > 0 ? 180 : -180;
+      inner.style.transform = `rotateY(${dir}deg)`;
+      setTimeout(() => showBack(), 350);
+    } else {
+      currentRotation = 0;
+      inner.style.transform = 'rotateY(0deg)';
+    }
+  }
+
+  container.addEventListener('mousedown', onStart);
+  container.addEventListener('mousemove', onMove);
+  container.addEventListener('mouseup', onEnd);
+  container.addEventListener('mouseleave', onEnd);
+  container.addEventListener('touchstart', onStart, { passive: true });
+  container.addEventListener('touchmove', onMove, { passive: true });
+  container.addEventListener('touchend', onEnd);
+}
 
 function gradeCard(grade) {
   const card = studyQueue[studyCardIndex];

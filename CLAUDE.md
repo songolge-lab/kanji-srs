@@ -66,3 +66,11 @@ Versiyon numarası 3 yerde tutulur ve hepsi aynı olmalı:
 - Ön yüz: sadece kanji yazılırken, arka yüz: furigana/anlam yazılırken flip animasyonuyla
 - `position: sticky` ile scroll'da takip eder
 - İçerik az olunca (örnek cümle yok) kanji büyük kalır (`fc-preview-sparse`)
+
+## Çalışma Ekranı Gesture Flip
+
+- Kartı mouse/parmak ile sürükleyerek çevirme (`initFlipGesture()`)
+- `.fc-flip-container` > `.fc-flip-inner` > `.fc-flip-front` + `.fc-flip-back` yapısı
+- Sürükleme mesafesi kartın genişliğine orantılı `rotateY()` uygular
+- 90° eşiği geçilirse flip tamamlanır, geçilmezse geri döner
+- "Show answer" butonu da hâlâ çalışır (fallback)
