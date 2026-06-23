@@ -3500,6 +3500,7 @@ function renderReview() {
       </div>
     </div>
     <div class="fc-flip-hint">← ${t('flip_hint')} →</div>
+    <button id="btn-show" class="tap" onclick="flipCardToggle('review-flip-inner')">${icon('eye')}${t('show_answer')}</button>
     <div class="btn-row mt-2">
       <button class="btn btn-ghost tap" onclick="reviewPrev()" ${reviewIndex===0?'disabled':''}>${icon('chevL')}${t('prev_card')}</button>
       <button class="btn btn-ghost tap" onclick="reviewNext()" ${reviewIndex>=reviewQueue.length-1?'disabled':''}>${t('next_card')}${icon('chevR')}</button>
@@ -3662,14 +3663,18 @@ function initFlipGestureToggle(containerId, innerId) {
   const inner = document.getElementById(innerId);
   if (!container || !inner) return;
 
-  // currentAngle kümülatif: asla resetlenmez, böylece flip her zaman
-  // sürükleme yönünde devam eder (ters yönde 270° atlama olmaz).
-  let startX = 0, currentAngle = 0, dragRotation = 0, dragging = false;
+  // Kümülatif açı inner.dataset.angle'da saklanır: asla resetlenmez,
+  // böylece flip her zaman sürükleme yönünde devam eder (ters 270° yok).
+  // dataset'te saklanması "Cevabı göster" butonunun da aynı açıyı
+  // güncelleyebilmesini sağlar (bkz. flipCardToggle).
+  inner.dataset.angle = '0';
+  let startX = 0, dragRotation = 0, dragging = false;
   const threshold = 90;
 
   function getX(e) {
     return e.touches ? e.touches[0].clientX : e.clientX;
   }
+  function curAngle() { return parseFloat(inner.dataset.angle) || 0; }
 
   function onStart(e) {
     dragging = true;
@@ -3683,7 +3688,7 @@ function initFlipGestureToggle(containerId, innerId) {
     const dx = getX(e) - startX;
     const w = container.offsetWidth || 300;
     dragRotation = Math.max(-180, Math.min(180, (dx / w) * 200));
-    inner.style.transform = `rotateY(${currentAngle + dragRotation}deg)`;
+    inner.style.transform = `rotateY(${curAngle() + dragRotation}deg)`;
   }
 
   function onEnd() {
@@ -3691,10 +3696,12 @@ function initFlipGestureToggle(containerId, innerId) {
     dragging = false;
     inner.classList.remove('no-transition');
 
+    let angle = curAngle();
     if (Math.abs(dragRotation) >= threshold) {
-      currentAngle += (dragRotation > 0 ? 180 : -180);
+      angle += (dragRotation > 0 ? 180 : -180);
     }
-    inner.style.transform = `rotateY(${currentAngle}deg)`;
+    inner.dataset.angle = String(angle);
+    inner.style.transform = `rotateY(${angle}deg)`;
     dragRotation = 0;
   }
 
@@ -3705,6 +3712,16 @@ function initFlipGestureToggle(containerId, innerId) {
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true });
   container.addEventListener('touchend', onEnd);
+}
+
+// "Cevabı göster" butonu için: kartı 180° döndürerek arka yüze geçir.
+function flipCardToggle(innerId) {
+  const inner = document.getElementById(innerId);
+  if (!inner) return;
+  const angle = (parseFloat(inner.dataset.angle) || 0) + 180;
+  inner.dataset.angle = String(angle);
+  inner.classList.remove('no-transition');
+  inner.style.transform = `rotateY(${angle}deg)`;
 }
 
 function gradeCard(grade) {
