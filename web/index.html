@@ -736,14 +736,9 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 .fc-preview-wrap.has-content { display: block; }
 .fc-preview {
-  background: var(--card);
-  border: var(--bd) solid var(--line-soft);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh-md);
   min-height: 180px;
   perspective: 800px;
   position: relative;
-  overflow: hidden;
 }
 .fc-preview-inner {
   min-height: 180px;
@@ -753,7 +748,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 .fc-preview-front,
 .fc-preview-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3662,13 +3662,14 @@ function initFlipGestureToggle(containerId, innerId) {
   const inner = document.getElementById(innerId);
   if (!container || !inner) return;
 
-  let startX = 0, dragRotation = 0, dragging = false, isBack = false;
+  // currentAngle kümülatif: asla resetlenmez, böylece flip her zaman
+  // sürükleme yönünde devam eder (ters yönde 270° atlama olmaz).
+  let startX = 0, currentAngle = 0, dragRotation = 0, dragging = false;
   const threshold = 90;
 
   function getX(e) {
     return e.touches ? e.touches[0].clientX : e.clientX;
   }
-  function baseAngle() { return isBack ? 180 : 0; }
 
   function onStart(e) {
     dragging = true;
@@ -3682,7 +3683,7 @@ function initFlipGestureToggle(containerId, innerId) {
     const dx = getX(e) - startX;
     const w = container.offsetWidth || 300;
     dragRotation = Math.max(-180, Math.min(180, (dx / w) * 200));
-    inner.style.transform = `rotateY(${baseAngle() + dragRotation}deg)`;
+    inner.style.transform = `rotateY(${currentAngle + dragRotation}deg)`;
   }
 
   function onEnd() {
@@ -3691,11 +3692,9 @@ function initFlipGestureToggle(containerId, innerId) {
     inner.classList.remove('no-transition');
 
     if (Math.abs(dragRotation) >= threshold) {
-      isBack = !isBack;
-      inner.style.transform = `rotateY(${baseAngle()}deg)`;
-    } else {
-      inner.style.transform = `rotateY(${baseAngle()}deg)`;
+      currentAngle += (dragRotation > 0 ? 180 : -180);
     }
+    inner.style.transform = `rotateY(${currentAngle}deg)`;
     dragRotation = 0;
   }
 
