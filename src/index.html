@@ -731,6 +731,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   border-radius: var(--r-lg);
   box-shadow: var(--sh-md);
   min-height: 280px;
+  max-height: 80vh;
   padding: 2.2rem 1.4rem;
   display: flex;
   flex-direction: column;
@@ -739,7 +740,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   position: relative;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.fc-flip-front::-webkit-scrollbar,
+.fc-flip-back::-webkit-scrollbar { display: none; }
 .fc-flip-back {
   position: absolute;
   inset: 0;
@@ -756,7 +762,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
 .fc-kanji {
   font-size: clamp(4.5rem, 24vw, 8rem);
-  line-height: 1;
+  line-height: 1.6;
   font-weight: 400;
   color: var(--ink);
   font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
@@ -767,8 +773,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 /* Uzun cümlelerde dev font kart sınırlarını taşırmasın: metin uzadıkça
    CardView küçültücü sınıf ekler (kanjiSizeClass). */
-.fc-kanji.fc-kanji-sm { font-size: clamp(2rem, 10vw, 3.4rem); line-height: 1.25; }
-.fc-kanji.fc-kanji-xs { font-size: clamp(1.35rem, 6.5vw, 2.1rem); line-height: 1.45; }
+.fc-kanji.fc-kanji-sm { font-size: clamp(1.6rem, 8vw, 2.8rem); line-height: 1.6; }
+.fc-kanji.fc-kanji-xs { font-size: clamp(1.1rem, 5vw, 1.6rem); line-height: 1.8; }
 .fc-back { width: 100%; text-align: center; }
 .fc-ruby {
   font-size: 2.1rem;
@@ -779,12 +785,14 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-furigana { font-size: 1.25rem; color: var(--ink-soft); margin-bottom: .6rem; }
 .fc-meaning { font-size: 1.2rem; font-weight: 700; margin-bottom: .9rem; }
 .fc-divider { border: none; border-top: 1px solid var(--line); margin: .8rem 0; }
-.fc-example { font-size: 1.05rem; line-height: 1.85; }
+.fc-example { font-size: 1.05rem; line-height: 2.2; }
 .fc-example .hl { color: var(--hanko); font-weight: 700; }
 .fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
 .kanji-clickable { border-bottom: 1px dashed var(--ink-soft); cursor: pointer; }
 .fc-flip-front .kanji-clickable,
 .fc-preview-front .kanji-clickable {
+  color: var(--hanko);
+  font-weight: 700;
   border-bottom: none;
   cursor: default;
   pointer-events: none;
@@ -850,7 +858,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-preview-sparse .fc-preview .fc-ruby { font-size: clamp(2.2rem, 10vw, 3.5rem); }
 .fc-preview-sparse .fc-preview .fc-meaning { font-size: 1.2rem; }
 .fc-preview .fc-divider { border: none; border-top: 1px solid var(--line); margin: .5rem 0; width: 100%; }
-.fc-preview .fc-example { font-size: .9rem; line-height: 1.7; }
+.fc-preview .fc-example { font-size: .9rem; line-height: 2.1; }
 .fc-preview .fc-exampletr { font-size: .78rem; }
 .fc-preview-label {
   font-size: .7rem;

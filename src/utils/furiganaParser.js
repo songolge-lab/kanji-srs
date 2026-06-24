@@ -54,7 +54,13 @@ function inflateIfGzip(u8) {
 // Yalnızca file:// protokolünde devreye girer; dev (http) ve web fetch kullanır.
 function dictBytesViaIpc(name) {
   return Promise.resolve(window.electronAPI.readDict(name))
-    .then((bytes) => bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+    .then((bytes) => {
+      const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      if (!u8 || u8.byteLength === 0) {
+        throw new Error('Empty dict data received for: ' + name);
+      }
+      return u8;
+    });
 }
 
 // Özel sözlük yükleyici. kuromoji'nin yerleşik BrowserDictionaryLoader'ı her

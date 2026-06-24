@@ -156,12 +156,11 @@ ipcMain.handle('furigana:read-dict', (_event, name) => {
   const dictDir = app.isPackaged
     ? path.join(process.resourcesPath, 'dict')
     : path.join(__dirname, '..', 'dist', 'dict');
-  try {
-    return fs.readFileSync(path.join(dictDir, name));
-  } catch (err) {
-    console.error('[furigana:read-dict]', name, err.message);
-    return null;
+  const filePath = path.join(dictDir, name);
+  if (!fs.existsSync(filePath)) {
+    throw new Error('Dict file not found: ' + filePath);
   }
+  return fs.readFileSync(filePath);
 });
 
 app.whenReady().then(() => {

@@ -25,8 +25,8 @@ function kanjiText(text) {
 // daha küçük bir font-size sınıfı uygular (CSS .fc-kanji-sm / .fc-kanji-xs).
 function kanjiSizeClass(text) {
   const len = (text || '').trim().length;
-  if (len > 18) return ' fc-kanji-xs';
-  if (len > 7) return ' fc-kanji-sm';
+  if (len > 15) return ' fc-kanji-xs';
+  if (len > 8) return ' fc-kanji-sm';
   return '';
 }
 
@@ -212,7 +212,12 @@ export function gradeCard(grade) {
     app.showToast(app.t('toast_mastered', {kanji: card.kanji}), 2200);
   }
   studyDoneToday++;
-  studyCardIndex++;
+  if (grade === 0 || card.srs.state === 'learning') {
+    studyQueue.splice(studyCardIndex, 1);
+    studyQueue.push(card);
+  } else {
+    studyCardIndex++;
+  }
   studyShowingBack = false;
   app.save();
   renderStudy();
@@ -410,13 +415,22 @@ export function updatePreview(prefix, containerId) {
 
 export function attachPreviewListeners(prefix, containerId) {
   [prefix + 'kanji', prefix + 'furigana', prefix + 'meaning', prefix + 'example-jp', prefix + 'example-tr'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', () => updatePreview(prefix, containerId));
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el._previewHandler) el.removeEventListener('input', el._previewHandler);
+    el._previewHandler = () => updatePreview(prefix, containerId);
+    el.addEventListener('input', el._previewHandler);
   });
 }
 
 // ─── KEYBOARD (called from main.js) ─────────────────────────────────
 export function handleStudyKey(e) {
-  if (e.code === 'Space') { e.preventDefault(); if (!studyShowingBack) showBack(); }
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!studyShowingBack) showBack();
+    else gradeCard(2);
+    return;
+  }
   if (studyShowingBack) {
     if (e.key === '1') gradeCard(0);
     else if (e.key === '2') gradeCard(1);
