@@ -147,13 +147,21 @@ ipcMain.handle('update:get-pending', () => {
 // ─── OFFLINE FURIGANA SÖZLÜK OKUYUCU ───────────────────────────────────
 // Packaged app `file://` üzerinden yüklendiği için renderer dict dosyalarını
 // fetch edemez (Chromium file: şemasını desteklemez). Bytes'ı buradan,
-// dist/dict altından Node fs ile okuyup veririz. Güvenlik: yalnızca beklenen
-// `*.dat.gz` dosya adlarına izin verilir (path traversal engellenir).
+// extraResources/dict altından Node fs ile okuyup veririz. Güvenlik: yalnızca
+// beklenen `*.dat.gz` dosya adlarına izin verilir (path traversal engellenir).
 ipcMain.handle('furigana:read-dict', (_event, name) => {
   if (typeof name !== 'string' || !/^[a-z0-9_]+\.dat\.gz$/i.test(name)) {
     throw new Error('Invalid dict file: ' + name);
   }
-  return fs.readFileSync(path.join(__dirname, 'dist', 'dict', name));
+  const dictDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'dict')
+    : path.join(__dirname, '..', 'dist', 'dict');
+  try {
+    return fs.readFileSync(path.join(dictDir, name));
+  } catch (err) {
+    console.error('[furigana:read-dict]', name, err.message);
+    return null;
+  }
 });
 
 app.whenReady().then(() => {

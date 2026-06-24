@@ -1,3 +1,5 @@
+import { wrapKanji } from './utils/kanjiUtils.js';
+
 export function esc(s) {
   if (!s) return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -49,12 +51,9 @@ export function highlightKanji(sentence, kanji, furiganaMap) {
   const keys = Object.keys(map).sort((a, b) => b.length - a.length);
   for (const word of keys) {
     if (!word) continue;
-    // Yalnızca kanji içeren ve okuması yüzeyden farklı bloklar ruby alır.
-    // Saf hiragana/katakana ya da redundant (okuma == yüzey) girişler düz
-    // metin kalır → を, します gibi parçaların üstüne tekrar kana basılmaz.
     if (!/[一-鿿㐀-䶿]/.test(word) || map[word] === word) continue;
     const isMainKanji = kanji && word === kanji;
-    const ruby = `<ruby${isMainKanji ? ' class="hl"' : ''}>${esc(word)}<rt>${esc(map[word])}</rt></ruby>`;
+    const ruby = `<ruby${isMainKanji ? ' class="hl"' : ''}>${wrapKanji(esc(word))}<rt>${esc(map[word])}</rt></ruby>`;
     result = result.split(esc(word)).join(ruby);
   }
   if (kanji && !map[kanji]) {
@@ -63,9 +62,14 @@ export function highlightKanji(sentence, kanji, furiganaMap) {
     const parts = result.split(/(<ruby[^>]*>.*?<\/ruby>)/);
     result = parts.map(part => {
       if (part.startsWith('<ruby')) return part;
-      return part.replace(kanjiRe, `<span class="hl">${esc(kanji)}</span>`);
+      return part.replace(kanjiRe, `<span class="hl">${wrapKanji(esc(kanji))}</span>`);
     }).join('');
   }
+  // Wrap remaining kanji not already inside kanji-clickable spans or ruby elements
+  result = result.replace(
+    /(<span class="kanji-clickable"[^>]*>[^<]*<\/span>|<ruby[^>]*>[\s\S]*?<\/ruby>|<[^>]+>)|([一-龯㐀-䶿])/g,
+    (m, html, ch) => html || `<span class="kanji-clickable" data-kanji="${ch}">${ch}</span>`
+  );
   return result;
 }
 

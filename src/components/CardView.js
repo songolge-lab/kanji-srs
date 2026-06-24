@@ -9,6 +9,7 @@ export function init(ctx) {
   if (!kanjiListenerAdded) {
     kanjiListenerAdded = true;
     document.addEventListener('click', (e) => {
+      if (e.target.closest('.fc-flip-front, .fc-preview-front')) return;
       const el = e.target.closest('.kanji-clickable');
       if (el) app.openKanjiModal(el.dataset.kanji);
     });

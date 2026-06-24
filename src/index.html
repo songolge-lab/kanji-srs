@@ -783,6 +783,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-example .hl { color: var(--hanko); font-weight: 700; }
 .fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
 .kanji-clickable { border-bottom: 1px dashed var(--ink-soft); cursor: pointer; }
+.fc-flip-front .kanji-clickable,
+.fc-preview-front .kanji-clickable {
+  border-bottom: none;
+  cursor: default;
+  pointer-events: none;
+}
 /* Arka yüzdeki kanji'ler örnek cümlelerdeki vurgu rengiyle (hanko) öne çıkar. */
 .fc-back .kanji-clickable,
 .fc-preview-back .kanji-clickable {

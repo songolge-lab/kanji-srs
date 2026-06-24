@@ -27,7 +27,10 @@
       "main.js",
       "preload.js",
       "build/**/*",
-      { "from": "../dist", "to": "dist", "filter": ["**/*"] }
+      { "from": "../dist", "to": "dist", "filter": ["**/*", "!dict/**"] }
+    ],
+    "extraResources": [
+      { "from": "../dist/dict", "to": "dict", "filter": ["*.dat.gz"] }
     ],
     "publish": [
       {

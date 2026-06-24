@@ -11,6 +11,7 @@ import * as TestEditor from './components/TestEditor.js';
 import * as TestView from './components/TestView.js';
 import * as TestResults from './components/TestResults.js';
 import * as KanjiModal from './components/KanjiModal.js';
+import { generateFuriganaMap } from './utils/furiganaParser.js';
 
 /* =====================================================================
    KANJI SRS — ANA ORKESTRASYON
@@ -579,6 +580,21 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── BOOT ────────────────────────────────────────────────────────────
+async function backfillFuriganaMaps() {
+  let dirty = false;
+  for (const deck of state.decks) {
+    for (const card of deck.cards) {
+      if (card.exampleJp && (!card.exampleFuriganaMap || !Object.keys(card.exampleFuriganaMap).length)) {
+        try {
+          card.exampleFuriganaMap = await generateFuriganaMap(card.exampleJp);
+          dirty = true;
+        } catch { /* tokenizer not ready yet — skip */ }
+      }
+    }
+  }
+  if (dirty) save();
+}
+
 async function boot() {
   await loadApp();
   showView('decks');
@@ -589,6 +605,7 @@ async function boot() {
     for (const c of ex.cards) exDeck.cards.push(makeCard(c.kanji, c.furigana, c.meaning, c.exJp, c.exTr));
     save(); DeckList.renderDeckList(); Analytics.renderGlobalStats();
   }
+  backfillFuriganaMaps();
 }
 boot();
 
