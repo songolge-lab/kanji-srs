@@ -49,6 +49,10 @@ export function highlightKanji(sentence, kanji, furiganaMap) {
   const keys = Object.keys(map).sort((a, b) => b.length - a.length);
   for (const word of keys) {
     if (!word) continue;
+    // Yalnızca kanji içeren ve okuması yüzeyden farklı bloklar ruby alır.
+    // Saf hiragana/katakana ya da redundant (okuma == yüzey) girişler düz
+    // metin kalır → を, します gibi parçaların üstüne tekrar kana basılmaz.
+    if (!/[一-鿿㐀-䶿]/.test(word) || map[word] === word) continue;
     const isMainKanji = kanji && word === kanji;
     const ruby = `<ruby${isMainKanji ? ' class="hl"' : ''}>${esc(word)}<rt>${esc(map[word])}</rt></ruby>`;
     result = result.split(esc(word)).join(ruby);

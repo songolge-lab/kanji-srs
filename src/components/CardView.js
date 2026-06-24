@@ -1,4 +1,4 @@
-import { esc, nowMs, highlightKanji, buildRuby, shuffle } from '../utils.js';
+import { esc, nowMs, highlightKanji, shuffle } from '../utils.js';
 import { previewSRS, applySRS } from '../core/srsEngine.js';
 import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
 
@@ -18,6 +18,71 @@ export function init(ctx) {
 function kanjiText(text) {
   const escaped = esc(text);
   return isJapaneseCard() ? wrapKanji(escaped) : escaped;
+}
+
+// Uzun cümlelerde dev font'un kartı taşırmaması için: metin uzadıkça
+// daha küçük bir font-size sınıfı uygular (CSS .fc-kanji-sm / .fc-kanji-xs).
+function kanjiSizeClass(text) {
+  const len = (text || '').trim().length;
+  if (len > 18) return ' fc-kanji-xs';
+  if (len > 7) return ' fc-kanji-sm';
+  return '';
+}
+
+const KANJI_RUN = /[一-龯㐀-䶿]/;
+
+// Bağlama duyarlı ruby: yalnızca KANJI koşuları <rt> okuma alır; saf
+// hiragana/katakana parçalar (を, します gibi) düz metin kalır — okuma
+// yüzeyle aynıysa hiç ruby üretilmez. Japonca kartlarda kanji koşuları
+// `.kanji-clickable` ile sarılır (tıklanabilir + arka yüzde vurgulanır).
+function smartRuby(surface, reading) {
+  surface = (surface || '').toString();
+  reading = (reading || '').toString();
+  const jp = isJapaneseCard();
+  const renderKanji = (txt) => jp ? wrapKanji(esc(txt)) : esc(txt);
+
+  // Okuma yok ya da yüzeyle birebir aynı → düz metin (redundant kana yok).
+  if (!reading || surface === reading) return renderKanji(surface);
+
+  // Yüzeyi kanji / kana koşularına böl.
+  const segs = [];
+  let buf = '', type = null;
+  for (const ch of surface) {
+    const t = KANJI_RUN.test(ch) ? 'k' : 'h';
+    if (type === null) { buf = ch; type = t; }
+    else if (t === type) { buf += ch; }
+    else { segs.push({ type, text: buf }); buf = ch; type = t; }
+  }
+  if (buf) segs.push({ type, text: buf });
+
+  // Hiç kanji yoksa → düz metin (rt yok).
+  if (!segs.some((s) => s.type === 'k')) return renderKanji(surface);
+
+  let r = reading, html = '';
+  for (let i = 0; i < segs.length; i++) {
+    const seg = segs[i];
+    if (seg.type === 'h') {
+      // Kana koşusu: düz metin, okumadan eşleşen kısmı tüket.
+      const idx = r.indexOf(seg.text);
+      r = idx >= 0 ? r.slice(idx + seg.text.length) : r;
+      html += esc(seg.text);
+      continue;
+    }
+    // Kanji koşusu: okumayı bir sonraki kana koşusuna kadar al.
+    const next = segs[i + 1];
+    let rd;
+    if (next && next.type === 'h') {
+      const ni = r.indexOf(next.text);
+      rd = ni >= 0 ? r.slice(0, ni) : r;
+      r = ni >= 0 ? r.slice(ni) : '';
+    } else {
+      rd = r; r = '';
+    }
+    html += rd
+      ? `<ruby>${renderKanji(seg.text)}<rt>${esc(rd)}</rt></ruby>`
+      : renderKanji(seg.text);
+  }
+  return html;
 }
 
 // ─── STUDY STATE ─────────────────────────────────────────────────────
@@ -88,12 +153,12 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            <div class="fc-kanji">${kanjiText(card.kanji)}</div>
+            <div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>
           </div>
           <div class="fc-flip-back">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
             <div class="fc-back">
-              <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+              <div class="fc-ruby">${smartRuby(card.kanji, card.furigana)}</div>
               <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
               ${card.exampleJp ? `
               <hr class="fc-divider">
@@ -116,7 +181,7 @@ export function renderStudy() {
       <div class="flashcard">
         <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
         <div class="fc-back">
-          <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana)}</div>
           <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
           ${card.exampleJp ? `
           <hr class="fc-divider">
@@ -205,12 +270,12 @@ export function renderReview() {
       <div class="fc-flip-inner" id="review-flip-inner">
         <div class="fc-flip-front">
           <span class="fc-state-badge badge badge-soft">${app.icon('eye')}${app.t('browse_badge')}</span>
-          <div class="fc-kanji">${kanjiText(card.kanji)}</div>
+          <div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>
         </div>
         <div class="fc-flip-back">
           <span class="fc-state-badge badge badge-soft">${app.icon('eye')}${app.t('browse_badge')}</span>
           <div class="fc-back">
-            <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
+            <div class="fc-ruby">${smartRuby(card.kanji, card.furigana)}</div>
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
             ${card.exampleJp ? `
             <hr class="fc-divider">
@@ -323,9 +388,9 @@ export function updatePreview(prefix, containerId) {
   wrap.classList.toggle('fc-preview-sparse', !exJp && !exTr);
   const flipId = containerId + '-flip';
   const flipInnerId = containerId + '-flip-inner';
-  const frontHTML = `<div class="fc-kanji">${kanji ? esc(kanji) : '&nbsp;'}</div>`;
+  const frontHTML = `<div class="fc-kanji${kanjiSizeClass(kanji)}">${kanji ? esc(kanji) : '&nbsp;'}</div>`;
   let backHTML = '';
-  if (kanji || furigana) backHTML += `<div class="fc-ruby">${buildRuby(esc(kanji || '?'), esc(furigana || '...'))}</div>`;
+  if (kanji || furigana) backHTML += `<div class="fc-ruby">${smartRuby(kanji || '?', furigana || '...')}</div>`;
   if (meaning) backHTML += `<div class="fc-meaning">${esc(meaning)}</div>`;
   if (exJp) {
     backHTML += `<hr class="fc-divider"><div class="fc-example">${esc(exJp)}</div>`;

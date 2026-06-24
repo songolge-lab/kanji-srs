@@ -169,6 +169,15 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 - **i18n:** `close`, `kanji_detail`, `kanji_onyomi`, `kanji_kunyomi`, `kanji_not_found` anahtarları 4 dile eklendi; anlam etiketi için mevcut `meaning_label` yeniden kullanılır.
 - **CSS:** `index.html`'de `.kanji-detail-rows` / `.kanji-detail-row` / `.kanji-detail-label` / `.kanji-detail-value` (label–değer satır düzeni).
 
+## Kanji Detail (Phase 3 — Flashcard arka yüz & ruby iyileştirmeleri)
+
+Kullanıcı testi sonrası 4 düzeltme (`CardView.js` + `utils.js` + `index.html`):
+
+- **Arka yüz kanji tıklanabilir + vurgulu (`smartRuby`):** `CardView.js`'de `smartRuby(surface, reading)` yardımcı fonksiyonu, eski `buildRuby` çağrılarının yerini aldı (study/review/preview tüm arka yüzlerde). Yüzeyi kanji/kana koşularına böler; **yalnızca kanji koşuları `<rt>` okuma alır**, saf kana (を, します) düz metin kalır. Japonca kartlarda kanji koşuları `wrapKanji` ile `.kanji-clickable` sarılır → arka yüzdeki ana kanji artık tıklanabilir (modal açar). Tıklamayı zaten `init()`'teki **document-level** delegated listener yakalar (ön+arka tümünü kapsar).
+- **Vurgu rengi:** `index.html` → `.fc-back .kanji-clickable` / `.fc-preview-back .kanji-clickable` `color: var(--hanko)` + `font-weight:700` (örnek cümle `.hl` vurgusuyla aynı renk). Ön yüz (`.fc-kanji`) etkilenmez.
+- **Uzun cümle taşması:** `.fc-kanji`'ye `max-width:100%` + `overflow-wrap:anywhere` + `word-wrap:break-word`. Ayrıca `CardView.kanjiSizeClass(text)` metin uzunluğuna göre `.fc-kanji-sm` (>7 karakter) / `.fc-kanji-xs` (>18) küçültücü sınıfını ekler → dev font kart sınırlarını taşırmaz. (CJK kırılımı için `word-break:keep-all` yerine `normal`/`anywhere` kullanıldı; aksi halde boşluksuz kanji dizisi yine taşardı.)
+- **Redundant ruby kana:** `utils.js` → `highlightKanji` örnek cümle döngüsüne savunmacı koşul: kanji içermeyen ya da `okuma === yüzey` olan blok ruby almaz (eski parser'dan kalan kana girişlerini de temizler).
+
 ## Offline Akıllı Furigana Parser (Phase 2)
 
 Eski online sözlük API'si (`kanjiapi.dev`) tamamen kaldırıldı. Artık okuma üretimi **offline ve bağlama duyarlı** — `今日`→きょう, `明日`→あした gibi doğru okumayı otomatik seçer.

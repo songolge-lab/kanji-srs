@@ -16,7 +16,7 @@ import * as KanjiModal from './components/KanjiModal.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = 'v1.2.2';
+const APP_VERSION = 'v1.2.3';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
