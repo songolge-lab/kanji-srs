@@ -458,6 +458,65 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .cal-legend-item { display: flex; align-items: center; gap: .35rem; }
 .cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
 
+/* ─── GITHUB-STYLE KATKI HEATMAP ──────────────────────────────────────
+   Hücre boyutu sabit (kare garantisi) + dar ekranda yatay scroll. Renk
+   tonları color-mix ile tema değişkenlerinden türetilir → tüm temalarda
+   (açık/koyu) otomatik uyum; eski motorlar için GitHub yeşili fallback. */
+.heatmap-card {
+  --heat-cell: 11px; --heat-gap: 3px;
+  padding: .8rem .9rem; margin-bottom: 1rem;
+}
+.heatmap-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: .6rem; margin-bottom: .6rem;
+}
+.heatmap-title { font-weight: 700; font-size: .92rem; }
+.heatmap-sub { font-size: .72rem; color: var(--ink-soft); }
+.heatmap-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem; }
+.heatmap-inner { display: inline-block; min-width: min-content; }
+.heatmap-months {
+  display: grid; grid-auto-flow: column; grid-auto-columns: var(--heat-cell);
+  gap: var(--heat-gap); margin-left: calc(1.9em + var(--heat-gap)); margin-bottom: 3px;
+}
+.heatmap-month {
+  font-size: .58rem; color: var(--ink-soft); line-height: 1;
+  white-space: nowrap; overflow: visible;
+}
+.heatmap-body { display: flex; gap: var(--heat-gap); }
+.heatmap-weekdays {
+  display: grid; grid-template-rows: repeat(7, var(--heat-cell));
+  gap: var(--heat-gap); width: 1.9em; flex-shrink: 0;
+}
+.heatmap-wd {
+  font-size: .55rem; color: var(--ink-soft); line-height: var(--heat-cell);
+  text-align: right; padding-right: .25rem;
+}
+.heatmap-grid {
+  display: grid; grid-template-rows: repeat(7, var(--heat-cell));
+  grid-auto-flow: column; grid-auto-columns: var(--heat-cell);
+  gap: var(--heat-gap);
+}
+.heat-cell {
+  width: var(--heat-cell); height: var(--heat-cell); border-radius: 2px;
+  background: var(--paper-2);
+}
+.heat-empty { background: transparent; }
+.heat-0 { background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--line-soft); }
+.heat-1 { background: #9be9a8; background: color-mix(in srgb, var(--jade) 30%, var(--paper-2)); }
+.heat-2 { background: #40c463; background: color-mix(in srgb, var(--jade) 55%, var(--paper-2)); }
+.heat-3 { background: #30a14e; background: color-mix(in srgb, var(--jade) 78%, var(--paper-2)); }
+.heat-4 { background: #216e39; background: var(--jade); }
+.heat-shielded { background: var(--sky); background: color-mix(in srgb, var(--sky) 50%, var(--paper-2)); }
+.heat-cell.is-today { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.heatmap-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .8rem; margin-top: .7rem; font-size: .72rem; color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+.heatmap-legend { display: flex; align-items: center; gap: .25rem; }
+.heatmap-legend .heat-cell { display: inline-block; }
+.heatmap-legend-lbl { font-size: .68rem; color: var(--ink-soft); }
+
 /* =====================================================================
    TEST MANAGER & EDITOR
    ===================================================================== */
@@ -1321,6 +1380,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <div id="view-decks" class="view active">
     <div class="stats-grid" id="global-stats"></div>
     <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
+    <div class="card heatmap-card" id="heatmap-card"></div>
     <div class="section-hd" data-t="my_decks">My Decks</div>
     <div id="deck-list"></div>
     <div id="deck-list-empty" class="empty" style="display:none">

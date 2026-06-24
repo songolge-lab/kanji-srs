@@ -49,12 +49,22 @@ function updateStreak() {
   const td = today();
   if (!hasActivityOn(td)) {
     const yest = addDaysToDateStr(td, -1);
-    if (!hasActivityOn(yest)) { state.stats.streak = 0; return; }
+    if (!hasActivityOn(yest)) { state.stats.streak = 0; state.stats.currentStreak = 0; return; }
   }
+  // Kaynak doğruluk: seriyi bugünden geriye yürüyerek YENİDEN HESAPLA.
+  // Maliyet O(seri uzunluğu) ve oturum başına yalnızca bir kez (review kaydında)
+  // çalışır → pratikte negligible. Kasıtlı olarak blueprint'in "O(1) artımlı sayaç"
+  // yaklaşımı tercih EDİLMEDİ: bu motor, kalkanla korunan günleri (_shielded
+  // işaretçileri) seri içinde sayar ve buluttan gelen / saati değişen state'lerde
+  // KENDİ KENDİNİ ONARIR. Elle tutulan bir sayaç bu işaretçilerle senkron kalamaz.
+  // Kalıcı alanlar (currentStreak/longestStreak/lastStudyDate) aynı kaynaktan türetilir.
   let streak = 0;
   let cursor = td;
   while (hasActivityOn(cursor)) { streak++; cursor = addDaysToDateStr(cursor, -1); }
   state.stats.streak = streak;
+  state.stats.currentStreak = streak;
+  if (streak > (state.stats.longestStreak || 0)) state.stats.longestStreak = streak;
+  if (state.stats.reviewsByDate[td] > 0) state.stats.lastStudyDate = td;
 }
 
 function awardWeeklyShieldIfEarned() {
@@ -128,6 +138,7 @@ export function renderGlobalStats() {
     <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">${app.t('today_label')}</div></div>
   `;
   renderStreakCard();
+  renderHeatmap();
 }
 
 export function renderStreakCard() {
@@ -160,6 +171,86 @@ export function renderStreakCard() {
       <div class="streak-sub">${app.icon('shield')} ${app.t('shields_have', {count: shields})}</div>
     </div>
     <div class="streak-week-grid">${dotsHTML}</div>
+  `;
+}
+
+// ─── GITHUB-STYLE CONTRIBUTION HEATMAP ───────────────────────────────
+// Saf Vanilla JS + CSS Grid (harici kütüphane yok). 53 hafta × 7 gün penceresi.
+// grid-auto-flow:column ile hücreler üstten-alta, sonra sola-sağa akar.
+function heatLevel(count) {
+  if (count <= 0) return 0;
+  if (count <= 10) return 1;
+  if (count <= 20) return 2;
+  if (count <= 40) return 3;
+  return 4;
+}
+
+export function renderHeatmap() {
+  const host = document.getElementById('heatmap-card');
+  if (!host) return; // sadece deck dashboard'unda var
+  const { state } = app;
+  const rbd = state.stats.reviewsByDate || {};
+  const td = today();
+  const thisWeekMonday = weekStartOf(td);
+  const startMonday = addDaysToDateStr(thisWeekMonday, -7 * 52); // 53 sütunluk pencere
+  const monthAbbr = app.t('months_short').split(',');
+  const wkLabels = app.t('weekdays_short').split(',');
+
+  let yearTotal = 0;
+  let cellsHTML = '';
+  let monthsHTML = '';
+  let lastMonthShown = -1;
+
+  for (let w = 0; w < 53; w++) {
+    const weekMonday = addDaysToDateStr(startMonday, w * 7);
+    const mNum = Number(weekMonday.slice(5, 7));
+    // Ay etiketi: ayın değiştiği ilk haftada göster (son sütunlar taşmasın diye w<50).
+    if (mNum !== lastMonthShown && w < 50) {
+      monthsHTML += `<span class="heatmap-month">${esc(monthAbbr[mNum - 1] || '')}</span>`;
+      lastMonthShown = mNum;
+    } else {
+      monthsHTML += `<span class="heatmap-month"></span>`;
+    }
+    for (let d = 0; d < 7; d++) {
+      const date = addDaysToDateStr(weekMonday, d);
+      if (dateStrDiffDays(date, td) > 0) { cellsHTML += `<span class="heat-cell heat-empty"></span>`; continue; }
+      const count = rbd[date] || 0;
+      const shielded = count === 0 && !!rbd[date + '_shielded'];
+      if (count > 0) yearTotal += count;
+      const cls = ['heat-cell', `heat-${heatLevel(count)}`];
+      if (shielded) cls.push('heat-shielded');
+      if (date === td) cls.push('is-today');
+      const title = count > 0 ? app.t('heatmap_tooltip', { count, date }) : app.t('heatmap_none', { date });
+      cellsHTML += `<span class="${cls.join(' ')}" title="${esc(title)}"></span>`;
+    }
+  }
+
+  const longest = state.stats.longestStreak || 0;
+  const legendSwatches = [0, 1, 2, 3, 4].map(l => `<span class="heat-cell heat-${l}"></span>`).join('');
+  const weekdayColHTML = wkLabels.map((lbl, i) => `<span class="heatmap-wd">${i % 2 === 0 ? esc(lbl) : ''}</span>`).join('');
+
+  host.innerHTML = `
+    <div class="heatmap-head">
+      <span class="heatmap-title">${app.t('heatmap_title')}</span>
+      <span class="heatmap-sub">${esc(app.t('heatmap_longest', { count: longest }))}</span>
+    </div>
+    <div class="heatmap-scroll">
+      <div class="heatmap-inner">
+        <div class="heatmap-months">${monthsHTML}</div>
+        <div class="heatmap-body">
+          <div class="heatmap-weekdays">${weekdayColHTML}</div>
+          <div class="heatmap-grid">${cellsHTML}</div>
+        </div>
+      </div>
+    </div>
+    <div class="heatmap-foot">
+      <span class="heatmap-year-total">${esc(app.t('heatmap_year_total', { count: yearTotal }))}</span>
+      <span class="heatmap-legend">
+        <span class="heatmap-legend-lbl">${app.t('heatmap_less')}</span>
+        ${legendSwatches}
+        <span class="heatmap-legend-lbl">${app.t('heatmap_more')}</span>
+      </span>
+    </div>
   `;
 }
 
