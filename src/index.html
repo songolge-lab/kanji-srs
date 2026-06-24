@@ -657,17 +657,26 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   display: flex;
   align-items: center;
   gap: .7rem;
+  min-width: 0;
 }
 .cli-kanji {
   font-size: 1.6rem;
   line-height: 1;
   min-width: 2.6rem;
+  /* Uzun kanji/cümle alanı tüm satırı kaplayıp okuma+anlamı taşırmasın:
+     genişliği sınırla, taşınca ellipsis (Task 2 — sınır taşması). */
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-align: center;
   font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   flex-shrink: 0;
 }
 .cli-info { flex: 1; min-width: 0; }
-.cli-info .cli-furi { font-weight: 700; font-size: .92rem; }
+/* Furigana/okuma satırı flexbox tarafından sıkıştırılıp Japonca karakterleri
+   dikey istiflemesin: tek satır + taşınca ellipsis (Task 2). */
+.cli-info .cli-furi { font-weight: 700; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cli-info .cli-meaning { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cli-actions { display: flex; gap: .25rem; flex-shrink: 0; }
 .cli-actions .icon-btn { width: 40px; height: 40px; font-size: 1rem; box-shadow: none; }
@@ -737,6 +746,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   position: relative;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -744,6 +754,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+/* Göz at / durum rozeti güvenli alanı: rozet barındıran yüzlerde üst dolgu
+   artırılır ki uzun metnin ruby/furigana satırı rozetle çakışmasın (Task 4).
+   Hem flip yüzleri (.fc-flip-front/back) hem cevap-açık kart (.flashcard). */
+.fc-flip-front:has(.fc-state-badge),
+.fc-flip-back:has(.fc-state-badge),
+.flashcard:has(.fc-state-badge) { padding-top: 3.4rem; }
 .fc-flip-front::-webkit-scrollbar,
 .fc-flip-back::-webkit-scrollbar { display: none; }
 .fc-flip-back {
@@ -843,9 +859,19 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   padding: 1.4rem 1rem;
   min-height: 180px;
+  /* Modal içi önizleme uzun metinde ekranı şişirmesin: yüksekliği sınırla,
+     içinde kaydır (gizli scrollbar), genişliği taşırma (Task 3). */
+  max-height: 40vh;
+  max-width: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.fc-preview-front::-webkit-scrollbar,
+.fc-preview-back::-webkit-scrollbar { display: none; }
 .fc-preview-back {
   transform: rotateY(180deg);
   position: absolute;

@@ -30,7 +30,14 @@ export function loadState() {
   if (_inMemory) return _memStore ? JSON.parse(_memStore) : null;
   const raw = _tryLS(() => localStorage.getItem('kanji_srs_v1'));
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+  try { return JSON.parse(raw); }
+  catch {
+    // VERİ KAYBI KORUMASI: Bozuk veriyi sessizce null'a düşürmeden önce ham
+    // string'i yedekle. Aksi halde null dönünce bir sonraki save() boş state'i
+    // yazar ve kullanıcının (kurtarılabilir olabilecek) verisi kalıcı silinir.
+    _tryLS(() => localStorage.setItem('kanji_srs_v1_corrupt_backup', raw));
+    return null;
+  }
 }
 
 export function testStorage() {

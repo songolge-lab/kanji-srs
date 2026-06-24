@@ -66,6 +66,15 @@ Versiyon numarası 2 yerde tutulur ve ikisi aynı olmalı:
 
 **Sessiz Otomatik Güncelleme (NSIS oneClick) Hotfix — v1.2.2:** Windows'ta auto-update sırasında NSIS sihirbazını ("Next > Next") atlamak için sessiz kurulum etkinleştirildi. `electron/package.json` → `build.nsis`: `oneClick: true`, `perMachine: false` (UAC admin promptunu önler), `allowToChangeInstallationDirectory: false`, `runAfterFinish: true`. `electron/main.js` → `update:install` handler'ı `autoUpdater.quitAndInstall(true, true)` (sessiz + otomatik yeniden başlat) kullanır.
 
+### Güvenlik, Dayanıklılık & Offline Düzeltmeleri (Audit)
+Derin denetim sonrası 5 düzeltme:
+
+1. **Veri kaybı koruması (`src/store/appState.js`):** `loadState()` bozuk JSON'da `null` dönmeden ÖNCE ham string'i `localStorage['kanji_srs_v1_corrupt_backup']`'a yedekler. Aksi halde `null` → bir sonraki `save()` boş state yazıp kullanıcı verisini kalıcı siler.
+2. **IPC memory leak (`electron/preload.js`):** Tüm `onUpdate*`/`onDownloadProgress` dinleyicileri artık named handler kullanıp bir **teardown** fonksiyonu döner (`() => ipcRenderer.removeListener(...)`) → renderer listener'ı temizleyebilir, her yeniden bağlanışta handler birikmesi önlenir.
+3. **Yakalanmayan promise (`src/main.js` auto-update popover):** `api.downloadUpdate()` ve `api.installUpdate()` çağrılarına `.catch()` eklendi → hata olursa state `'available'`a döner (sonsuz "downloading" ekranı engellenir). NOT: `downloadUpdate()` IPC promise'i hemen resolve olduğundan ağ kopması `update:error` kanalıyla gelir; bu yüzden `onUpdateError` da `'downloading'` → `'available'` geri çevirecek şekilde bağlandı (eskiden no-op'tu).
+4. **Offline PWA çökmesi (`vite.config.js`):** Manuel Workbox `runtimeCaching` `navigate` ve `\.(js|css|…)$` kuralları KALDIRILDI — `vite-plugin-pwa` precache manifest'i ile çakışıp offline'da boş/dinozor ekranına yol açıyordu. **Sadece** kuromoji sözlüğü için `CacheFirst` kuralı kaldı. Manuel statik-varlık/navigasyon kuralı bir daha EKLENMEMELİ.
+5. **Electron siyah ekran (`vite.config.js` + `electron/main.js`):** `vite.config.js` → `base: './'` (zaten mevcuttu; `file://` protokolünde mutlak yollar kırılır, korunmalı). `electron/main.js` → siyah ekranı teşhis için geçici eklenen `mainWindow.webContents.openDevTools({ mode: 'detach' })` satırı **v1.2.5'te KALDIRILDI** (production'da DevTools açık kalmamalı). Bir daha eklenmemeli.
+
 ### ES Module + onclick Uyumluluğu
 `src/main.js` `<script type="module">` ile yüklenir. Inline `onclick` handler'larda kullanılan fonksiyonlar dosyanın sonundaki `Object.assign(window, {...})` bloğu ile global scope'a açılır. Yeni bir fonksiyon `onclick` ile kullanılacaksa bu listeye eklenmeli.
 
@@ -202,3 +211,12 @@ Eski online sözlük API'si (`kanjiapi.dev`) tamamen kaldırıldı. Artık okuma
 - **`setupFuriganaAssist`:** Ana okuma alanı — kanji yazıldıkça (debounce 600ms) `generateFurigana` ile **sessizce otomatik doldurulur** (imza: `(kanjiInputId, furiganaInputId)` — 2 arg). Sadece alan boş ya da en son otomatik değer iken yazar (`dataset.autoFilled`) → manuel düzenlemeyi ezmez. **"Searching reading…" durum pili / öneri çipleri tamamen kaldırıldı:** `furigana-suggest` kutu elementleri (add/modal-add/edit) ve `.furigana-suggest`/`.furigana-chip` CSS'i silindi; `furigana_searching` i18n anahtarı artık kullanılmıyor (4 dilde zararsız olarak kaldı).
 - **`setupExampleFuriganaAssist`:** Örnek cümle yazıldıkça (debounce) tüm cümle parse edilir, `furiganaMap` otomatik üretilir ve ruby render edilir. Eski "kanji'ye tıkla → oku" akışı ve "Mark words" tetikleyicisi (`rowId`) kaldırıldı/gizlendi.
 - Kaldırılan kod: `KANJI_API_BASE`, `fetchKanjiReadings`, `fetchWordReadings`, `fetchReadingSuggestions`, eski `renderTokenEditor`/`onTokenClick`/`applyMark`. Kullanılmayan i18n anahtarları (`furigana_editor_hint`, `furigana_word_not_found`, `furigana_manual_label`, `furigana_not_found`, `furigana_searching`) zararsız olduğundan 4 dilde bırakıldı (artık hiçbiri render edilmiyor).
+
+## Uzun Metin Layout Sağlamlaştırma (v1.2.5)
+
+50+ karakterlik dizelerin layout sınırlarını taşırmaması için `src/index.html` CSS'inde 4 düzeltme (canlı önizleme ile doğrulandı):
+
+1. **Ön yüz tam ortalama:** `.fc-flip-front`/`.fc-flip-back` yüzlerine `text-align: center` eklendi (zaten `align-items`/`justify-content: center` vardı) → çok satıra kırılan uzun metin yatay olarak da ortalanır.
+2. **Deste listesinde dikey istiflenme engeli (`.card-list-item`):** Orta okuma satırı (`.cli-furi`) flexbox tarafından sıkışıp Japonca karakterleri dikey istiflemesin diye `white-space:nowrap; overflow:hidden; text-overflow:ellipsis` aldı (`.cli-meaning` zaten vardı). `.card-list-item`'a `min-width:0` eklendi. **Asıl sınır taşması:** `.cli-kanji` `flex-shrink:0` + sınırsız genişlikle uzun kanji/cümlede tüm satırı kaplayıp sayfayı yatay taşırıyordu → `max-width:40%` + `nowrap`/`ellipsis` ile sınırlandı (okuma+anlam alanı korunur).
+3. **Dev modal önizlemesi sınırlandırma (`.fc-preview-front`/`.fc-preview-back`):** Add/Edit modal önizleme kartı uzun metinde ekranı şişirmesin diye `max-height:40vh` + `max-width:100%` + `overflow-y:auto` (gizli scrollbar) → kullanıcı kartın içinde kaydırır, modal patlamaz.
+4. **Rozet güvenli alanı (Task 4):** `.fc-state-badge` ("Göz at"/durum rozeti) uzun metnin ruby/furigana satırıyla çakışmasın diye rozet barındıran yüzlere `:has(.fc-state-badge)` ile `padding-top:3.4rem` eklendi — hem flip yüzleri (`.fc-flip-front/back`) hem cevap-açık kart (`.flashcard`).

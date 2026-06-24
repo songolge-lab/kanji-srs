@@ -17,7 +17,7 @@ import { generateFuriganaMap } from './utils/furiganaParser.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = 'v1.2.4';
+const APP_VERSION = 'v1.2.5';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
@@ -626,9 +626,9 @@ if ('serviceWorker' in navigator && !window.electronAPI?.isElectron) {
   const popover = document.getElementById('update-popover');
   let currentInfo = null, currentState = 'none';
   function renderPopover() {
-    if (currentState === 'available') { popover.innerHTML = `<div class="update-pop-head"><span class="update-pop-title">${t('update_new')}</span><button class="update-pop-close tap" id="up-close">${icon('close')}</button></div><div class="update-pop-version">${t('update_version', {version: esc(currentInfo.version)})}</div>${currentInfo.releaseNotes ? `<div class="update-pop-notes">${esc(currentInfo.releaseNotes)}</div>` : ''}<button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} ${t('update_download')}</button>`; document.getElementById('up-download').addEventListener('click', () => { currentState = 'downloading'; renderPopover(); api.downloadUpdate(); }); }
+    if (currentState === 'available') { popover.innerHTML = `<div class="update-pop-head"><span class="update-pop-title">${t('update_new')}</span><button class="update-pop-close tap" id="up-close">${icon('close')}</button></div><div class="update-pop-version">${t('update_version', {version: esc(currentInfo.version)})}</div>${currentInfo.releaseNotes ? `<div class="update-pop-notes">${esc(currentInfo.releaseNotes)}</div>` : ''}<button class="btn btn-primary btn-block tap" id="up-download">${icon('download')} ${t('update_download')}</button>`; document.getElementById('up-download').addEventListener('click', () => { currentState = 'downloading'; renderPopover(); api.downloadUpdate().catch(() => { currentState = 'available'; renderPopover(); }); }); }
     else if (currentState === 'downloading') { popover.innerHTML = `<div class="update-pop-head"><span class="update-pop-title">${t('update_downloading')}</span></div><div class="update-pop-progress"><div class="update-pop-progress-fill" id="up-progress-fill" style="width:0%"></div></div><div class="update-pop-version">${t('update_version', {version: esc(currentInfo.version)})}</div>`; }
-    else if (currentState === 'downloaded') { popover.innerHTML = `<div class="update-pop-head"><span class="update-pop-title">${t('update_ready')}</span><button class="update-pop-close tap" id="up-close">${icon('close')}</button></div><div class="update-pop-version">${t('update_downloaded', {version: esc(currentInfo.version)})}</div><button class="btn btn-primary btn-block tap" id="up-install">${t('update_install')}</button>`; document.getElementById('up-install').addEventListener('click', () => api.installUpdate()); }
+    else if (currentState === 'downloaded') { popover.innerHTML = `<div class="update-pop-head"><span class="update-pop-title">${t('update_ready')}</span><button class="update-pop-close tap" id="up-close">${icon('close')}</button></div><div class="update-pop-version">${t('update_downloaded', {version: esc(currentInfo.version)})}</div><button class="btn btn-primary btn-block tap" id="up-install">${t('update_install')}</button>`; document.getElementById('up-install').addEventListener('click', () => { api.installUpdate().catch(() => { currentState = 'available'; renderPopover(); }); }); }
     const closeBtn = document.getElementById('up-close'); if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closePopover(); });
   }
   function openPopover() { renderPopover(); popover.style.display = 'block'; }
@@ -638,7 +638,10 @@ if ('serviceWorker' in navigator && !window.electronAPI?.isElectron) {
   api.onUpdateAvailable((info) => { currentInfo = info; currentState = 'available'; wrap.style.display = 'block'; });
   api.onDownloadProgress((p) => { const fill = document.getElementById('up-progress-fill'); if (fill) fill.style.width = p.percent + '%'; });
   api.onUpdateDownloaded((info) => { currentInfo = { ...currentInfo, version: info.version }; currentState = 'downloaded'; openPopover(); });
-  api.onUpdateError(() => {});
+  // Ağ kopması/indirme hatası 'update:error' kanalıyla gelir (downloadUpdate
+  // promise'i hemen resolve olduğu için .catch ile yakalanmaz). İndirme
+  // ekranında takılı kalmamak için state'i 'available'a geri çevir.
+  api.onUpdateError(() => { if (currentState === 'downloading') { currentState = 'available'; renderPopover(); } });
   api.getPendingUpdate().then((pending) => { if (pending.state !== 'none') { currentInfo = pending.info; currentState = pending.state; wrap.style.display = 'block'; } }).catch(() => {});
 })();
 

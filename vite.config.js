@@ -33,6 +33,10 @@ export default defineConfig({
         navigateFallback: 'index.html',
         // kuromoji sözlüğü ~17MB — precache yerine ilk kullanımda cache'le.
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
+        // SADECE kuromoji sözlüğü için runtimeCaching. Navigasyon ('navigate')
+        // ve statik varlık (js/css/png…) için MANUEL kural EKLEME: bunlar
+        // vite-plugin-pwa'nın kendi precache manifest'i ile çakışır ve offline'da
+        // boş/dinozor ekranına yol açar. Uygulama kabuğu zaten precache ediliyor.
         runtimeCaching: [
           {
             // Offline furigana parser sözlük dosyaları (değişmez → CacheFirst)
@@ -43,16 +47,6 @@ export default defineConfig({
               expiration: { maxEntries: 20 },
               cacheableResponse: { statuses: [0, 200] },
             },
-          },
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: { cacheName: 'pages' },
-          },
-          {
-            urlPattern: /\.(js|css|png|jpg|svg|ico|woff2?)$/,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'assets' },
           },
         ],
       },
