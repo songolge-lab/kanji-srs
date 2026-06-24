@@ -6,25 +6,22 @@ export function init(ctx) { app = ctx; }
 
 // ─── FURIGANA ASSIST (offline, bağlama duyarlı) ──────────────────────
 // Online sözlük API'sinin yerini `furiganaParser.js` (offline kuromoji)
-// aldı. Ana okuma alanı yazıldıkça otomatik doldurulur; seçim çipleri yok.
-function setupFuriganaAssist(kanjiInputId, furiganaInputId, statusBoxId) {
+// aldı. Ana okuma alanı yazıldıkça SESSİZCE otomatik doldurulur — durum
+// çipleri/önerileri yok ("Searching reading…" pili kaldırıldı).
+function setupFuriganaAssist(kanjiInputId, furiganaInputId) {
   let kanjiInput = document.getElementById(kanjiInputId);
   const furiganaInput = document.getElementById(furiganaInputId);
-  const box = document.getElementById(statusBoxId);
   if (!kanjiInput || !furiganaInput) return;
   const fresh = kanjiInput.cloneNode(true);
   kanjiInput.parentNode.replaceChild(fresh, kanjiInput);
   kanjiInput = fresh;
   warmupFurigana(); // form açılır açılmaz sözlüğü ısıt (ilk yazımda hazır olsun)
-  const setStatus = (html) => { if (box) box.innerHTML = html; };
   const runLookup = debounce(async () => {
     const text = kanjiInput.value.trim();
-    if (!text) { setStatus(''); return; }
-    setStatus(`<span class="furigana-chip is-loading">${app.t('furigana_searching')}</span>`);
+    if (!text) return;
     let reading = '';
-    try { reading = await generateFurigana(text); } catch { setStatus(''); return; }
+    try { reading = await generateFurigana(text); } catch { return; }
     if (kanjiInput.value.trim() !== text) return; // kullanıcı yazmaya devam etti
-    setStatus('');
     if (!reading) return;
     // Sadece alan boşken ya da en son OTOMATİK doldurduğumuz değerdeyken yaz —
     // kullanıcının elle düzeltmesini asla ezme.
@@ -231,7 +228,7 @@ export function openDeck(deckId) { app.currentDeckId = deckId; app.showView('dec
 // ─── ADD FORM ────────────────────────────────────────────────────────
 export function renderAddForm() {
   populateDeckSelects();
-  setupFuriganaAssist('add-kanji', 'add-furigana', 'add-furigana-suggest');
+  setupFuriganaAssist('add-kanji', 'add-furigana');
   setupExampleFuriganaAssist('add-example-jp', 'add-example-mark-row', 'add-example-mark-btn', 'add-example-furigana-editor');
   app.attachPreviewListeners('add-', 'add-preview-wrap');
   app.updatePreview('add-', 'add-preview-wrap');
@@ -270,7 +267,6 @@ export function saveCard() {
   document.getElementById('add-example-tr').value = '';
   document.getElementById('add-example-furigana-editor').innerHTML = '';
   document.getElementById('add-example-mark-row').style.display = 'none';
-  document.getElementById('add-furigana-suggest').innerHTML = '';
   app.updatePreview('add-', 'add-preview-wrap');
 }
 
@@ -353,13 +349,13 @@ export function showAddCardModal(deckId) {
   app.openModal(`${esc(deck.name)} — ${app.t('add_card')}`, `
     <div id="modal-add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="form-group"><label>${app.t('kanji_label')} <span class="required">*</span></label><input type="text" id="modal-add-kanji" placeholder="${app.t('kanji_placeholder')}"></div>
-    <div class="form-group"><label>${app.t('furigana_label')} <span class="required">*</span></label><input type="text" id="modal-add-furigana" placeholder="${app.t('furigana_placeholder')}"><div class="furigana-suggest" id="modal-add-furigana-suggest"></div></div>
+    <div class="form-group"><label>${app.t('furigana_label')} <span class="required">*</span></label><input type="text" id="modal-add-furigana" placeholder="${app.t('furigana_placeholder')}"></div>
     <div class="form-group"><label>${app.t('meaning_label')} <span class="required">*</span></label><input type="text" id="modal-add-meaning" placeholder="${app.t('meaning_placeholder')}"></div>
     <div class="form-group"><label>${app.t('example_jp_label')}</label><input type="text" id="modal-add-example-jp" placeholder="${app.t('example_jp_placeholder')}"><div class="furigana-mark-row" id="modal-add-example-mark-row" style="display:none"><button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${app.icon('spark')} ${app.t('mark_words_btn')}</button></div><div id="modal-add-example-furigana-editor"></div></div>
     <div class="form-group"><label>${app.t('example_tr_label')}</label><input type="text" id="modal-add-example-tr" placeholder="${app.t('example_tr_placeholder')}"></div>
     <div class="btn-row"><button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">${app.t('save')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
   `);
-  setupFuriganaAssist('modal-add-kanji', 'modal-add-furigana', 'modal-add-furigana-suggest');
+  setupFuriganaAssist('modal-add-kanji', 'modal-add-furigana');
   setupExampleFuriganaAssist('modal-add-example-jp', 'modal-add-example-mark-row', 'modal-add-example-mark-btn', 'modal-add-example-furigana-editor');
   ['modal-add-kanji','modal-add-furigana','modal-add-meaning','modal-add-example-jp','modal-add-example-tr'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') saveCardFromModal(deckId); });
@@ -391,7 +387,6 @@ export function saveCardFromModal(deckId) {
   document.getElementById('modal-add-example-tr').value = '';
   document.getElementById('modal-add-example-furigana-editor').innerHTML = '';
   document.getElementById('modal-add-example-mark-row').style.display = 'none';
-  document.getElementById('modal-add-furigana-suggest').innerHTML = '';
   app.updatePreview('modal-add-', 'modal-add-preview-wrap');
   document.getElementById('modal-add-kanji').focus();
 }
@@ -402,14 +397,14 @@ export function showEditModal(deckId, cardId) {
   if (!card) return;
   app.openModal(app.t('modal_edit_card'), `
     <div class="form-group"><label>${app.t('kanji_label')}</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
-    <div class="form-group"><label>${app.t('furigana_label')}</label><input id="edit-furigana" value="${esc(card.furigana)}"><div class="furigana-suggest" id="edit-furigana-suggest"></div></div>
+    <div class="form-group"><label>${app.t('furigana_label')}</label><input id="edit-furigana" value="${esc(card.furigana)}"></div>
     <div class="form-group"><label>${app.t('meaning_label')}</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
     <div class="form-group"><label>${app.t('example_jp_label')}</label><input id="edit-example-jp" value="${esc(card.exampleJp)}"><div class="furigana-mark-row" id="edit-example-mark-row" style="display:${card.exampleJp ? 'flex' : 'none'}"><button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${app.icon('spark')} ${app.t('mark_words_btn')}</button></div><div id="edit-example-furigana-editor"></div></div>
     <div class="form-group"><label>${app.t('example_tr_label')}</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
     <div class="btn-row"><button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">${app.t('save')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
   `);
   document.getElementById('edit-example-jp').dataset.furiganaMap = JSON.stringify(card.exampleFuriganaMap || {});
-  setupFuriganaAssist('edit-kanji', 'edit-furigana', 'edit-furigana-suggest');
+  setupFuriganaAssist('edit-kanji', 'edit-furigana');
   setupExampleFuriganaAssist('edit-example-jp', 'edit-example-mark-row', 'edit-example-mark-btn', 'edit-example-furigana-editor');
 }
 

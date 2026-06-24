@@ -364,21 +364,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 .update-pop-progress-fill { height: 100%; background: var(--hanko); transition: width .25s ease; }
 
-/* ─── FURİGANA OTOMASYONU (kanjiapi.dev) ────────────────────────────── */
-.furigana-suggest {
-  display: flex; flex-wrap: wrap; gap: .4rem;
-  margin-top: .4rem; min-height: 0;
-}
-.furigana-suggest:empty { margin-top: 0; }
-.furigana-chip {
-  font-size: .8rem; padding: .3rem .65rem; border-radius: var(--r-pill);
-  background: var(--paper-2); border: var(--bd) solid var(--line);
-  color: var(--ink); cursor: pointer;
-}
-.furigana-chip:active { background: var(--line-soft); }
-.furigana-chip.is-loading { color: var(--ink-soft); }
-.furigana-chip.is-empty { color: var(--ink-soft); font-style: italic; }
-
+/* ─── FURİGANA OTOMASYONU (offline kuromoji) ────────────────────────── */
 .furigana-mark-row { margin-top: .4rem; }
 .btn-sm { font-size: .8rem; padding: .45rem .8rem; min-height: 0; }
 
@@ -1346,7 +1332,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
         <div class="form-group">
           <label><span data-t="furigana_label">Furigana (reading)</span> <span class="required">*</span></label>
           <input type="text" id="add-furigana" data-pt="furigana_placeholder" placeholder="e.g. かんじ">
-          <div class="furigana-suggest" id="add-furigana-suggest"></div>
         </div>
         <div class="form-group">
           <label><span data-t="meaning_label">Meaning</span> <span class="required">*</span></label>

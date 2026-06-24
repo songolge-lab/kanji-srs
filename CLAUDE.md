@@ -152,7 +152,7 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 
 ## Kanji Detail (Phase 1 — Data & Utils)
 
-- **`src/data/kanji_lite.json`:** Offline kanji sözlüğü. Her kanji için `onyomi`, `kunyomi` ve `meanings` (en/tr/ko/mn). Başlangıçta 10 temel kanji (日月火水木金土人大山).
+- **`src/data/kanji_lite.json`:** Offline kanji sözlüğü. Her kanji için `onyomi`, `kunyomi` ve `meanings` (en zorunlu; 10 elle düzenlenmiş giriş ayrıca tr/ko/mn içerir). **~3.121 kanji** — KANJIDIC türevi `davidluzgouveia/kanji-data` setinden sınıflandırılmış (Jōyō/Jinmeiyō/JLPT/frekans) kanjiler tek seferlik bir Node script ile üretildi (script çalıştırıldıktan sonra silindi). 10 elle düzenlenmiş çok dilli giriş (日月火水木金土人大山) üzerine bindirildi. Dosya formatı: kanji başına tek satır.
 - **`src/utils/kanjiUtils.js`:** Kanji tespit yardımcıları:
   - `isJapaneseCard(cardLanguage)` — `null`/`undefined`/`'ja'`/`'jp'` için `true` döner (deste/kart dil alanı olmadığından varsayılan Japonca)
   - `wrapKanji(text)` — CJK Unified Ideographs regex ile kanji karakterleri bulur, `<span class="kanji-clickable" data-kanji="X">X</span>` ile sarar (hiragana/katakana hariç)
@@ -163,7 +163,7 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
   - `init(app)` ile context alır; `open(kanji)` modalı açar.
   - Kanji'yi sözlükte bulur, büyük karakter + Onyomi (katakana) + Kunyomi (hiragana) + anlamı gösterir.
   - **Anlam dili:** `app.currentLang`'a göre seçilir, eksikse `en`'e döner.
-  - Sözlükte olmayan kanji için `kanji_not_found` mesajı (şu an 10 temel kanji var).
+  - Sözlükte olmayan kanji için `kanji_not_found` mesajı (~3.121 kanji kapsıyor; nadir/sınıflandırılmamış kanjiler kapsam dışı).
   - Mevcut paylaşılan modal altyapısını (`app.openModal`/`closeModal`) kullanır → dışarı tıklayınca kapanma (main.js'de bağlı) + "Close" butonu, tüm app modalleriyle tutarlı.
 - **Bağlantı:** `main.js`'de diğer bileşenler gibi `KanjiModal.init(app)` + cross-ref `app.openKanjiModal = KanjiModal.open`. `CardView.js`'deki global `.kanji-clickable` click listener'ı `app.openKanjiModal(kanji)` çağırır (önceki `console.log` kaldırıldı).
 - **i18n:** `close`, `kanji_detail`, `kanji_onyomi`, `kanji_kunyomi`, `kanji_not_found` anahtarları 4 dile eklendi; anlam etiketi için mevcut `meaning_label` yeniden kullanılır.
@@ -190,6 +190,6 @@ Eski online sözlük API'si (`kanjiapi.dev`) tamamen kaldırıldı. Artık okuma
 - **`main.js`:** `ipcMain.handle('furigana:read-dict', …)` → `dist/dict/<name>`'i `fs.readFileSync` ile okur. Güvenlik: yalnızca `^[a-z0-9_]+\.dat\.gz$` adlarına izin (path traversal engeli).
 
 ### `DeckList.js` entegrasyonu
-- **`setupFuriganaAssist`:** Ana okuma alanı — kanji yazıldıkça (debounce 600ms) `generateFurigana` ile **otomatik doldurulur**. Seçim çipleri kaldırıldı. Sadece alan boş ya da en son otomatik değer iken yazar (`dataset.autoFilled`) → manuel düzenlemeyi ezmez.
+- **`setupFuriganaAssist`:** Ana okuma alanı — kanji yazıldıkça (debounce 600ms) `generateFurigana` ile **sessizce otomatik doldurulur** (imza: `(kanjiInputId, furiganaInputId)` — 2 arg). Sadece alan boş ya da en son otomatik değer iken yazar (`dataset.autoFilled`) → manuel düzenlemeyi ezmez. **"Searching reading…" durum pili / öneri çipleri tamamen kaldırıldı:** `furigana-suggest` kutu elementleri (add/modal-add/edit) ve `.furigana-suggest`/`.furigana-chip` CSS'i silindi; `furigana_searching` i18n anahtarı artık kullanılmıyor (4 dilde zararsız olarak kaldı).
 - **`setupExampleFuriganaAssist`:** Örnek cümle yazıldıkça (debounce) tüm cümle parse edilir, `furiganaMap` otomatik üretilir ve ruby render edilir. Eski "kanji'ye tıkla → oku" akışı ve "Mark words" tetikleyicisi (`rowId`) kaldırıldı/gizlendi.
-- Kaldırılan kod: `KANJI_API_BASE`, `fetchKanjiReadings`, `fetchWordReadings`, `fetchReadingSuggestions`, eski `renderTokenEditor`/`onTokenClick`/`applyMark`. Kullanılmayan i18n anahtarları (`furigana_editor_hint`, `furigana_word_not_found`, `furigana_manual_label`, `furigana_not_found`) zararsız olduğundan bırakıldı; `furigana_searching` parse durumunu göstermek için kullanılır.
+- Kaldırılan kod: `KANJI_API_BASE`, `fetchKanjiReadings`, `fetchWordReadings`, `fetchReadingSuggestions`, eski `renderTokenEditor`/`onTokenClick`/`applyMark`. Kullanılmayan i18n anahtarları (`furigana_editor_hint`, `furigana_word_not_found`, `furigana_manual_label`, `furigana_not_found`, `furigana_searching`) zararsız olduğundan 4 dilde bırakıldı (artık hiçbiri render edilmiyor).
