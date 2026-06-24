@@ -31,7 +31,19 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: 'index.html',
+        // kuromoji sözlüğü ~17MB — precache yerine ilk kullanımda cache'le.
+        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
         runtimeCaching: [
+          {
+            // Offline furigana parser sözlük dosyaları (değişmez → CacheFirst)
+            urlPattern: /\/dict\/.*\.dat\.gz$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kuromoji-dict',
+              expiration: { maxEntries: 20 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',

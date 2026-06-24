@@ -1,0 +1,52 @@
+{
+  "日": {
+    "onyomi": "ニチ, ジツ",
+    "kunyomi": "ひ, -び, -か",
+    "meanings": { "en": "day/sun", "tr": "gün/güneş", "ko": "날/해", "mn": "өдөр/нар" }
+  },
+  "月": {
+    "onyomi": "ゲツ, ガツ",
+    "kunyomi": "つき",
+    "meanings": { "en": "month/moon", "tr": "ay", "ko": "달", "mn": "сар" }
+  },
+  "火": {
+    "onyomi": "カ",
+    "kunyomi": "ひ, -び, ほ-",
+    "meanings": { "en": "fire", "tr": "ateş", "ko": "불", "mn": "гал" }
+  },
+  "水": {
+    "onyomi": "スイ",
+    "kunyomi": "みず",
+    "meanings": { "en": "water", "tr": "su", "ko": "물", "mn": "ус" }
+  },
+  "木": {
+    "onyomi": "ボク, モク",
+    "kunyomi": "き, こ-",
+    "meanings": { "en": "tree/wood", "tr": "ağaç/odun", "ko": "나무", "mn": "мод" }
+  },
+  "金": {
+    "onyomi": "キン, コン",
+    "kunyomi": "かね, かな-, -がね",
+    "meanings": { "en": "gold/money", "tr": "altın/para", "ko": "금/돈", "mn": "алт/мөнгө" }
+  },
+  "土": {
+    "onyomi": "ド, ト",
+    "kunyomi": "つち",
+    "meanings": { "en": "earth/soil", "tr": "toprak", "ko": "흙/땅", "mn": "шороо/газар" }
+  },
+  "人": {
+    "onyomi": "ジン, ニン",
+    "kunyomi": "ひと, -り, -と",
+    "meanings": { "en": "person", "tr": "insan/kişi", "ko": "사람", "mn": "хүн" }
+  },
+  "大": {
+    "onyomi": "ダイ, タイ",
+    "kunyomi": "おお-, おお.きい, -おお.いに",
+    "meanings": { "en": "big/large", "tr": "büyük", "ko": "큰", "mn": "том/их" }
+  },
+  "山": {
+    "onyomi": "サン, セン",
+    "kunyomi": "やま",
+    "meanings": { "en": "mountain", "tr": "dağ", "ko": "산", "mn": "уул" }
+  }
+}

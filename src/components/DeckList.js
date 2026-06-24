@@ -1,67 +1,38 @@
 import { esc, debounce, buildRuby } from '../utils.js';
+import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 
 let app;
 export function init(ctx) { app = ctx; }
 
-// ─── KANJI API (furigana assist) ─────────────────────────────────────
-const KANJI_API_BASE = 'https://kanjiapi.dev/v1';
-
-async function fetchKanjiReadings(kanji) {
-  try {
-    const res = await fetch(`${KANJI_API_BASE}/kanji/${encodeURIComponent(kanji)}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const readings = [...(data.kun_readings || []), ...(data.on_readings || [])];
-    return readings.length ? readings : null;
-  } catch { return null; }
-}
-
-async function fetchWordReadings(word) {
-  try {
-    const res = await fetch(`${KANJI_API_BASE}/words/${encodeURIComponent(word)}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data)) return null;
-    const matches = new Set();
-    for (const entry of data) {
-      for (const variant of (entry.variants || [])) {
-        if (variant.written === word && variant.pronounced) matches.add(variant.pronounced);
-      }
-    }
-    return matches.size ? [...matches] : null;
-  } catch { return null; }
-}
-
-async function fetchReadingSuggestions(text) {
-  const trimmed = (text || '').trim();
-  if (!trimmed) return null;
-  if (!/[一-龯぀-ヿ]/.test(trimmed)) return null;
-  if ([...trimmed].length === 1) return await fetchKanjiReadings(trimmed);
-  return await fetchWordReadings(trimmed);
-}
-
-function setupFuriganaAssist(kanjiInputId, furiganaInputId, suggestBoxId) {
+// ─── FURIGANA ASSIST (offline, bağlama duyarlı) ──────────────────────
+// Online sözlük API'sinin yerini `furiganaParser.js` (offline kuromoji)
+// aldı. Ana okuma alanı yazıldıkça otomatik doldurulur; seçim çipleri yok.
+function setupFuriganaAssist(kanjiInputId, furiganaInputId, statusBoxId) {
   let kanjiInput = document.getElementById(kanjiInputId);
   const furiganaInput = document.getElementById(furiganaInputId);
-  const box = document.getElementById(suggestBoxId);
-  if (!kanjiInput || !furiganaInput || !box) return;
+  const box = document.getElementById(statusBoxId);
+  if (!kanjiInput || !furiganaInput) return;
   const fresh = kanjiInput.cloneNode(true);
   kanjiInput.parentNode.replaceChild(fresh, kanjiInput);
   kanjiInput = fresh;
+  warmupFurigana(); // form açılır açılmaz sözlüğü ısıt (ilk yazımda hazır olsun)
+  const setStatus = (html) => { if (box) box.innerHTML = html; };
   const runLookup = debounce(async () => {
     const text = kanjiInput.value.trim();
-    if (!text) { box.innerHTML = ''; return; }
-    box.innerHTML = `<span class="furigana-chip is-loading">${app.t('furigana_searching')}</span>`;
-    const readings = await fetchReadingSuggestions(text);
-    if (kanjiInput.value.trim() !== text) return;
-    if (!readings || !readings.length) {
-      box.innerHTML = furiganaInput.value.trim() ? '' : `<span class="furigana-chip is-empty">${app.t('furigana_not_found')}</span>`;
-      return;
+    if (!text) { setStatus(''); return; }
+    setStatus(`<span class="furigana-chip is-loading">${app.t('furigana_searching')}</span>`);
+    let reading = '';
+    try { reading = await generateFurigana(text); } catch { setStatus(''); return; }
+    if (kanjiInput.value.trim() !== text) return; // kullanıcı yazmaya devam etti
+    setStatus('');
+    if (!reading) return;
+    // Sadece alan boşken ya da en son OTOMATİK doldurduğumuz değerdeyken yaz —
+    // kullanıcının elle düzeltmesini asla ezme.
+    const cur = furiganaInput.value.trim();
+    if (cur === '' || cur === furiganaInput.dataset.autoFilled) {
+      furiganaInput.value = reading;
+      furiganaInput.dataset.autoFilled = reading;
     }
-    box.innerHTML = readings.map(r => `<button type="button" class="furigana-chip tap">${esc(r)}</button>`).join('');
-    box.querySelectorAll('.furigana-chip').forEach((chip, i) => {
-      chip.addEventListener('click', () => { furiganaInput.value = readings[i]; box.innerHTML = ''; });
-    });
   }, 600);
   kanjiInput.addEventListener('input', runLookup);
 }
@@ -80,62 +51,48 @@ function tokenizeSentence(sentence) {
   return tokens;
 }
 
+// Örnek cümle yazıldıkça (debounce) cümlenin tamamını offline parse eder,
+// furiganaMap'i otomatik üretir ve ruby olarak render eder. Eski "kanji'ye
+// tıkla → oku" akışı kaldırıldı; `btnId`/`rowId` (Mark words) artık gizli.
 function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   let input = document.getElementById(inputId);
   const row = document.getElementById(rowId);
-  let btn = document.getElementById(btnId);
   const editor = document.getElementById(editorId);
-  if (!input || !row || !btn || !editor) return;
+  if (!input || !editor) return;
   const freshInput = input.cloneNode(true);
   input.parentNode.replaceChild(freshInput, input); input = freshInput;
-  const freshBtn = btn.cloneNode(true);
-  btn.parentNode.replaceChild(freshBtn, btn); btn = freshBtn;
+  if (row) row.style.display = 'none'; // otomatik render — manuel tetikleyici yok
+
+  // Edit formu mevcut exampleFuriganaMap'i dataset'e önceden yükler.
   let furiganaMap = {};
-  let splitBlocks = new Set();
-  input.dataset.furiganaMap = '{}';
-  input.addEventListener('input', () => {
-    row.style.display = input.value.trim() ? 'flex' : 'none';
-    if (!input.value.trim()) { editor.innerHTML = ''; furiganaMap = {}; input.dataset.furiganaMap = '{}'; }
-  });
-  btn.addEventListener('click', () => renderTokenEditor());
+  try { furiganaMap = JSON.parse(input.dataset.furiganaMap || '{}') || {}; } catch { furiganaMap = {}; }
 
-  function renderTokenEditor() {
+  function render() {
     const sentence = input.value.trim();
-    if (!sentence) return;
+    if (!sentence) { editor.innerHTML = ''; return; }
     const tokens = tokenizeSentence(sentence);
-    function renderKanjiBlock(block) {
-      if (furiganaMap[block]) return `<span class="fm-token fm-marked tap" data-token-text="${esc(block)}">${buildRuby(esc(block), esc(furiganaMap[block]))}</span>`;
-      if (!splitBlocks.has(block)) return `<span class="fm-token fm-kanji tap" data-token-text="${esc(block)}">${esc(block)}</span>`;
-      const markedKeys = Object.keys(furiganaMap).filter(k => block.includes(k)).sort((a, b) => b.length - a.length);
-      let i = 0, html = '';
-      while (i < block.length) {
-        const matchKey = markedKeys.find(k => block.startsWith(k, i));
-        if (matchKey) { html += `<span class="fm-token fm-marked tap" data-token-text="${esc(matchKey)}">${buildRuby(esc(matchKey), esc(furiganaMap[matchKey]))}</span>`; i += matchKey.length; }
-        else { const ch = block[i]; html += `<span class="fm-token fm-kanji tap" data-token-text="${esc(ch)}">${esc(ch)}</span>`; i += 1; }
-      }
-      return html;
-    }
-    const tokensHTML = tokens.map(tok => tok.isKanji ? renderKanjiBlock(tok.text) : esc(tok.text)).join('');
-    editor.innerHTML = `<div class="fm-editor"><div class="fm-editor-hint">${app.t('furigana_editor_hint')}</div><div class="fm-sentence">${tokensHTML}</div><div id="${editorId}-popover"></div></div>`;
-    editor.querySelectorAll('.fm-token').forEach(el => el.addEventListener('click', () => onTokenClick(el.dataset.tokenText)));
+    const html = tokens.map((tok) => {
+      if (!tok.isKanji) return esc(tok.text);
+      const reading = furiganaMap[tok.text];
+      if (reading) return `<span class="fm-token fm-marked" data-token-text="${esc(tok.text)}">${buildRuby(esc(tok.text), esc(reading))}</span>`;
+      return `<span class="fm-token fm-kanji" data-token-text="${esc(tok.text)}">${esc(tok.text)}</span>`;
+    }).join('');
+    editor.innerHTML = `<div class="fm-editor"><div class="fm-sentence">${html}</div></div>`;
   }
 
-  async function onTokenClick(text) {
-    const pop = document.getElementById(`${editorId}-popover`);
-    if (!pop) return;
-    pop.innerHTML = `<div class="fm-token-popover">${app.t('furigana_searching')}</div>`;
-    const readings = await fetchReadingSuggestions(text);
-    if (!readings || !readings.length) {
-      if ([...text].length > 1) { splitBlocks.add(text); renderTokenEditor(); const pop2 = document.getElementById(`${editorId}-popover`); if (pop2) pop2.innerHTML = `<div class="fm-token-popover fm-editor-hint">${app.t('furigana_word_not_found', {word: esc(text)})}</div>`; return; }
-      pop.innerHTML = `<div class="fm-token-popover"><div class="form-group" style="margin-bottom:.5rem"><label>"${esc(text)}" ${app.t('furigana_manual_label')}</label><input type="text" id="${editorId}-manual"></div><button type="button" class="btn btn-primary tap btn-sm" id="${editorId}-manual-save">${app.t('save')}</button></div>`;
-      document.getElementById(`${editorId}-manual-save`).addEventListener('click', () => { const val = document.getElementById(`${editorId}-manual`).value.trim(); if (val) applyMark(text, val); });
-      return;
-    }
-    pop.innerHTML = `<div class="fm-token-popover"><div class="furigana-suggest">${readings.map(r => `<button type="button" class="furigana-chip tap" data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>`;
-    pop.querySelectorAll('.furigana-chip').forEach(chip => chip.addEventListener('click', () => applyMark(text, chip.dataset.r)));
-  }
+  const runParse = debounce(async () => {
+    const sentence = input.value.trim();
+    if (!sentence) { furiganaMap = {}; input.dataset.furiganaMap = '{}'; editor.innerHTML = ''; return; }
+    let map;
+    try { map = await generateFuriganaMap(sentence); } catch { return; } // offline parser hazır değil
+    if (input.value.trim() !== sentence) return; // kullanıcı yazmaya devam etti
+    furiganaMap = map;
+    input.dataset.furiganaMap = JSON.stringify(furiganaMap);
+    render();
+  }, 600);
 
-  function applyMark(text, reading) { furiganaMap[text] = reading; input.dataset.furiganaMap = JSON.stringify(furiganaMap); renderTokenEditor(); }
+  input.addEventListener('input', runParse);
+  render(); // edit formunda önceden yüklü cümle/harita varsa hemen göster
 }
 
 // ─── DECK LIST RENDER ────────────────────────────────────────────────
