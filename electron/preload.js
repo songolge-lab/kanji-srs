@@ -15,6 +15,11 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
 
+  // Renderer -> main: offline furigana sözlük dosyasını oku (dist/dict/<name>).
+  // Packaged app file:// üzerinden yüklendiğinden renderer fetch ile dict
+  // okuyamaz; bytes'ı main process Node fs ile okur ve döner.
+  readDict: (name) => ipcRenderer.invoke('furigana:read-dict', name),
+
   // Renderer -> main: güncellemeleri kontrol et / indir / kur
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),

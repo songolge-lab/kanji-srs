@@ -1,8 +1,24 @@
 import { esc, nowMs, highlightKanji, buildRuby, shuffle } from '../utils.js';
 import { previewSRS, applySRS } from '../core/srsEngine.js';
+import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
 
 let app;
-export function init(ctx) { app = ctx; }
+let kanjiListenerAdded = false;
+export function init(ctx) {
+  app = ctx;
+  if (!kanjiListenerAdded) {
+    kanjiListenerAdded = true;
+    document.addEventListener('click', (e) => {
+      const el = e.target.closest('.kanji-clickable');
+      if (el) app.openKanjiModal(el.dataset.kanji);
+    });
+  }
+}
+
+function kanjiText(text) {
+  const escaped = esc(text);
+  return isJapaneseCard() ? wrapKanji(escaped) : escaped;
+}
 
 // ─── STUDY STATE ─────────────────────────────────────────────────────
 let studyQueue = [];
@@ -72,13 +88,13 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            <div class="fc-kanji">${esc(card.kanji)}</div>
+            <div class="fc-kanji">${kanjiText(card.kanji)}</div>
           </div>
           <div class="fc-flip-back">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
             <div class="fc-back">
               <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
-              <div class="fc-meaning">${esc(card.meaningTr)}</div>
+              <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
               ${card.exampleJp ? `
               <hr class="fc-divider">
               <div class="fc-example">${exHighlight}</div>
@@ -101,7 +117,7 @@ export function renderStudy() {
         <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
         <div class="fc-back">
           <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
-          <div class="fc-meaning">${esc(card.meaningTr)}</div>
+          <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
           ${card.exampleJp ? `
           <hr class="fc-divider">
           <div class="fc-example">${exHighlight}</div>
@@ -189,13 +205,13 @@ export function renderReview() {
       <div class="fc-flip-inner" id="review-flip-inner">
         <div class="fc-flip-front">
           <span class="fc-state-badge badge badge-soft">${app.icon('eye')}${app.t('browse_badge')}</span>
-          <div class="fc-kanji">${esc(card.kanji)}</div>
+          <div class="fc-kanji">${kanjiText(card.kanji)}</div>
         </div>
         <div class="fc-flip-back">
           <span class="fc-state-badge badge badge-soft">${app.icon('eye')}${app.t('browse_badge')}</span>
           <div class="fc-back">
             <div class="fc-ruby">${buildRuby(esc(card.kanji), esc(card.furigana))}</div>
-            <div class="fc-meaning">${esc(card.meaningTr)}</div>
+            <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
             ${card.exampleJp ? `
             <hr class="fc-divider">
             <div class="fc-example">${exHighlight}</div>

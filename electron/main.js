@@ -16,6 +16,7 @@
 
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
@@ -141,6 +142,18 @@ ipcMain.handle('update:get-pending', () => {
   if (updateDownloaded) return { state: 'downloaded', info: pendingUpdateInfo };
   if (pendingUpdateInfo) return { state: 'available', info: pendingUpdateInfo };
   return { state: 'none' };
+});
+
+// ─── OFFLINE FURIGANA SÖZLÜK OKUYUCU ───────────────────────────────────
+// Packaged app `file://` üzerinden yüklendiği için renderer dict dosyalarını
+// fetch edemez (Chromium file: şemasını desteklemez). Bytes'ı buradan,
+// dist/dict altından Node fs ile okuyup veririz. Güvenlik: yalnızca beklenen
+// `*.dat.gz` dosya adlarına izin verilir (path traversal engellenir).
+ipcMain.handle('furigana:read-dict', (_event, name) => {
+  if (typeof name !== 'string' || !/^[a-z0-9_]+\.dat\.gz$/i.test(name)) {
+    throw new Error('Invalid dict file: ' + name);
+  }
+  return fs.readFileSync(path.join(__dirname, 'dist', 'dict', name));
 });
 
 app.whenReady().then(() => {

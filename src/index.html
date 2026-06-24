@@ -788,6 +788,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-example { font-size: 1.05rem; line-height: 1.85; }
 .fc-example .hl { color: var(--hanko); font-weight: 700; }
 .fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
+.kanji-clickable { border-bottom: 1px dashed var(--ink-soft); cursor: pointer; }
+.kanji-detail-rows { display: flex; flex-direction: column; gap: .2rem; }
+.kanji-detail-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.kanji-detail-row:last-child { border-bottom: none; }
+.kanji-detail-label { font-size: .8rem; flex-shrink: 0; }
+.kanji-detail-value { font-weight: 600; text-align: right; }
 .fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
 
 /* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
