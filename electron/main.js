@@ -136,7 +136,7 @@ function checkForUpdates() {
 
 // ─── RENDERER'DAN GELEN İSTEKLER (preload.js üzerinden) ────────────────
 ipcMain.handle('update:check', () => { checkForUpdates(); });
-ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate(); });
+ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate().catch(console.error); });
 ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(true, true); });
 ipcMain.handle('update:get-pending', () => {
   if (updateDownloaded) return { state: 'downloaded', info: pendingUpdateInfo };

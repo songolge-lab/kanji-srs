@@ -17,7 +17,7 @@ import { generateFuriganaMap } from './utils/furiganaParser.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = 'v2.0.0';
+const APP_VERSION = 'v2.0.1';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
@@ -388,7 +388,7 @@ async function connectSyncCode(code) {
     migrateCustomTests(state);
     migrateCardsToFSRS(state);
     setSyncCode(code); syncEnabled = true;
-    save(); await cloudPush(code, state);
+    await cloudPush(code, state); save();
     syncStatus = 'synced'; renderSyncBadge(); return true;
   } catch (e) { syncStatus = 'error'; renderSyncBadge(); showToast(t('warn_sync_error', {msg: e.message}), 3500); return false; }
 }

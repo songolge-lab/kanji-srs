@@ -1,4 +1,4 @@
-import { today, nowMs, addDaysToDateStr, dateStrToEpochDay, dateStrDiffDays, weekStartOf, esc } from '../utils.js';
+import { today, nowMs, addDaysToDateStr, dateStrToEpochDay, epochDayToDateStr, dateStrDiffDays, weekStartOf, esc } from '../utils.js';
 
 let app;
 export function init(ctx) { app = ctx; }
@@ -59,8 +59,8 @@ function updateStreak() {
   // KENDİ KENDİNİ ONARIR. Elle tutulan bir sayaç bu işaretçilerle senkron kalamaz.
   // Kalıcı alanlar (currentStreak/longestStreak/lastStudyDate) aynı kaynaktan türetilir.
   let streak = 0;
-  let cursor = td;
-  while (hasActivityOn(cursor)) { streak++; cursor = addDaysToDateStr(cursor, -1); }
+  let cursorEpoch = dateStrToEpochDay(td);
+  while (hasActivityOn(epochDayToDateStr(cursorEpoch))) { streak++; cursorEpoch--; }
   state.stats.streak = streak;
   state.stats.currentStreak = streak;
   if (streak > (state.stats.longestStreak || 0)) state.stats.longestStreak = streak;

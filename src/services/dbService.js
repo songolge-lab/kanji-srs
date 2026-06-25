@@ -26,13 +26,8 @@ export async function cloudPush(code, stateObj) {
 export function pickNewerState(local, remote) {
   if (!remote) return local;
   if (!local) return remote;
-  const score = (s) => {
-    let cards = 0, reviews = 0;
-    for (const d of (s.decks || [])) cards += d.cards.length;
-    for (const k in (s.stats?.reviewsByDate || {})) reviews += s.stats.reviewsByDate[k];
-    return cards * 1000 + reviews;
-  };
-  return score(remote) >= score(local) ? remote : local;
+  const lr = (s) => (s.stats?.lifetimeReviews || 0);
+  return lr(remote) >= lr(local) ? remote : local;
 }
 
 export function generateSyncCode() {
