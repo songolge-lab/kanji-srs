@@ -143,7 +143,15 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 Çok-cihaz senaryosunda v2.0.0 FSRS state'ini buluta yazdığında, **henüz güncellenmemiş bir v1.x istemci** legacy alanlar sayesinde çökmez ama FSRS ilerlemesini "göremez" (kendi SM-2 alanlarını kullanır). Tam tutarlılık ancak tüm cihazlar v2.0.0 olunca sağlanır. Kırıcı şema değişiminin kaçınılmaz sonucu; legacy-alan koruması en kötü durumu (veri bozulması) engeller.
 
 ### Sürüm/Release notu
-`main.js` APP_VERSION + `electron/package.json` + root `package.json` → `2.0.0`. **Main'e push kullanıcıya bir şey YAYINLAMAZ:** `.github/workflows/build-windows.yml` yalnızca `workflow_dispatch` (manuel) veya `v*` **tag** push'unda tetiklenir ve **draft** release üretir (manuel "Publish" gerekir).
+`main.js` APP_VERSION + `electron/package.json` + root `package.json` → `2.0.1`. **Main'e push kullanıcıya bir şey YAYINLAMAZ:** `.github/workflows/build-windows.yml` yalnızca `workflow_dispatch` (manuel) veya `v*` **tag** push'unda tetiklenir ve **draft** release üretir (manuel "Publish" gerekir).
+
+### v2.0.1 Red Team Audit Düzeltmeleri
+1. **Sync çakışma çözümü (`dbService.js` → `pickNewerState`):** Eski kart-sayısı+review skoru yerine `stats.lifetimeReviews` karşılaştırması (undefined → 0). Silinen kartların "diriltilmesi" (resurrecting cards) bugı düzeltildi.
+2. **Mid-sync ağ koruması (`main.js` → `connectSyncCode`):** `save()` çağrısı `await cloudPush()` başarısından **sonraya** alındı → ağ düşerse yerel state bozulmaz.
+3. **Electron unhandled promise (`electron/main.js`):** `autoUpdater.downloadUpdate()` çağrısına `.catch(console.error)` eklendi.
+4. **Streak döngüsü optimizasyonu (`Analytics.js` → `updateStreak`):** String tabanlı `addDaysToDateStr` döngüsü yerine tamsayı epoch-gün aritmetiği (`cursorEpoch--`) → GC baskısı azaltıldı.
+5. **Japonca buton taşması (`index.html` → `.ans-btn`):** `word-break: break-word` + `white-space: normal` eklendi → uzun çeviri stringleri mobilde grid sütunlarını kırmaz.
+6. **FSRS şeması:** `createSrsData()` zaten v2.0.0'da `D: 0, S: 0, reps: 0, lapses: 0` içeriyordu — değişiklik gerekmedi.
 
 ## Standalone Test Module (Data Layer)
 
