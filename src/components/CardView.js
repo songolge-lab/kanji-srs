@@ -212,7 +212,7 @@ export function gradeCard(grade) {
     app.showToast(app.t('toast_mastered', {kanji: card.kanji}), 2200);
   }
   studyDoneToday++;
-  if (grade === 0 || card.srs.state === 'learning') {
+  if (grade === 0 || card.srs.state === 'learning' || card.srs.state === 'relearning') {
     studyQueue.splice(studyCardIndex, 1);
     studyQueue.push(card);
   } else {

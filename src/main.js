@@ -1,4 +1,4 @@
-import { CONFIG, saveState, loadState, testStorage, getPersistedSyncCode, persistSyncCode, removePersistedSyncCode, createInitialState, migrateSettings, migrateStats, migrateDecks, migrateCustomTests } from './store/appState.js';
+import { CONFIG, saveState, loadState, testStorage, getPersistedSyncCode, persistSyncCode, removePersistedSyncCode, createInitialState, migrateSettings, migrateStats, migrateDecks, migrateCustomTests, migrateCardsToFSRS } from './store/appState.js';
 import { syncConfigured, cloudPull, cloudPush, pickNewerState, generateSyncCode } from './services/dbService.js';
 import { buildQueueFromCards, createSrsData } from './core/srsEngine.js';
 import { esc, uid, today, nowMs, daysToMs, shuffle } from './utils.js';
@@ -17,7 +17,7 @@ import { generateFuriganaMap } from './utils/furiganaParser.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = 'v1.3.0';
+const APP_VERSION = 'v2.0.0';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
@@ -386,6 +386,7 @@ async function connectSyncCode(code) {
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
     state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES);
     migrateCustomTests(state);
+    migrateCardsToFSRS(state);
     setSyncCode(code); syncEnabled = true;
     save(); await cloudPush(code, state);
     syncStatus = 'synced'; renderSyncBadge(); return true;
@@ -419,6 +420,7 @@ async function manualSync() {
     state.settings = migrateSettings({ ...CONFIG, ...state.settings });
     state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES);
     migrateCustomTests(state);
+    migrateCardsToFSRS(state);
     saveState(state); await cloudPush(syncCode, state);
     syncStatus = 'synced'; showToast(t('toast_synced'));
     DeckList.renderDeckList(); Analytics.renderGlobalStats();
@@ -457,18 +459,19 @@ function migrateAndSave() {
   state.settings = migrateSettings({ ...CONFIG, ...state.settings });
   state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES);
   migrateCustomTests(state);
+  migrateCardsToFSRS(state);
   save();
 }
 
 async function loadApp() {
   if (window.electronAPI?.isElectron) document.body.classList.add('is-electron');
   const saved = loadState();
-  if (saved) { state = saved; state.settings = migrateSettings({ ...CONFIG, ...state.settings }); state.stats = migrateStats(state.stats); state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES); migrateCustomTests(state); }
+  if (saved) { state = saved; state.settings = migrateSettings({ ...CONFIG, ...state.settings }); state.stats = migrateStats(state.stats); state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES); migrateCustomTests(state); migrateCardsToFSRS(state); }
   if (!testStorage()) { document.getElementById('storage-warning').style.display = 'block'; showToast(t('toast_storage_warning'), 4000); }
   const existingCode = getPersistedSyncCode();
   if (existingCode && syncConfigured()) {
     syncCode = existingCode; syncEnabled = true; syncStatus = 'syncing';
-    try { const remote = await cloudPull(existingCode); state = pickNewerState(state, remote ? remote.state : null); state.settings = migrateSettings({ ...CONFIG, ...state.settings }); state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES); migrateCustomTests(state); save(); syncStatus = 'synced'; }
+    try { const remote = await cloudPull(existingCode); state = pickNewerState(state, remote ? remote.state : null); state.settings = migrateSettings({ ...CONFIG, ...state.settings }); state.decks = migrateDecks(state.decks || [], EXAMPLE_DECK_NAMES); migrateCustomTests(state); migrateCardsToFSRS(state); save(); syncStatus = 'synced'; }
     catch { syncStatus = 'offline'; }
     renderSyncBadge();
   }

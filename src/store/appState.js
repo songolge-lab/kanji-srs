@@ -70,7 +70,7 @@ export function removePersistedSyncCode() {
 // ─── INITIAL STATE ───────────────────────────────────────────────────
 export function createInitialState() {
   return {
-    version: 1,
+    version: 2,
     settings: { ...CONFIG },
     stats: {
       reviewsByDate: {},
@@ -172,4 +172,66 @@ export function migrateDecks(decks, exampleDeckNames) {
     if (!('isExample' in d) && exampleDeckNames.has(d.name)) d.isExample = true;
   }
   return decks;
+}
+
+// ─── SM-2 → FSRS MIGRATION ───────────────────────────────────────────
+// Idempotent, additive, lossless. Approximates legacy `intervalDays` → FSRS
+// Stability (S) and `ease` (E-Factor) → FSRS Difficulty (D), so no card resets.
+//
+// DELIBERATE DEVIATION FROM THE EXTERNAL BLUEPRINT: the blueprint set
+// `ease`/`intervalDays` to undefined ("clean up legacy fields"). We do NOT
+// delete them — the whole `state` (incl. card.srs) is synced to Supabase and
+// `pickNewerState` does no schema-version check, so a still-on-v1.x client
+// (e.g. a lazily-updated PWA) could pull FSRS cards; without the legacy fields
+// its SM-2 engine computes `due = now + NaN` and silently corrupts. Keeping
+// the fields is forward-compatible, rollback-safe, and costs a few bytes. The
+// D/S math below is exactly as specified.
+export function migrateToFSRS(cardSrs) {
+  if (!cardSrs || typeof cardSrs !== 'object') return cardSrs;
+  if ('S' in cardSrs) return cardSrs; // already migrated (or a fresh FSRS card)
+
+  const now = Date.now();
+
+  // 1. intervalDays → Stability (S). At 90% retention, FSRS interval === S,
+  //    so the current interval maps directly onto stability.
+  const oldInterval = Math.max(0.1, cardSrs.intervalDays || 0);
+  const S = oldInterval;
+
+  // 2. SM-2 ease → FSRS Difficulty (D). ease 2.5 (avg) → D 5; ease 1.3 (min,
+  //    hardest) → D 10. Linear: D = 10 - ((ease - 1.3) / 1.2) * 5, clamped.
+  const oldEase = cardSrs.ease || 2.5;
+  let D = 10 - ((oldEase - 1.3) / 1.2) * 5;
+  D = Math.max(1, Math.min(10, D));
+
+  // 3. Deduce last_review from due/interval (SM-2 never stored it). Only
+  //    meaningful for cards already in day-scale review.
+  let lastReview = null;
+  if (cardSrs.state === 'review') {
+    const intervalMs = oldInterval * 86400000;
+    lastReview = cardSrs.due - intervalMs;
+    if (lastReview > now) lastReview = now; // sanity: never in the future
+  }
+
+  return {
+    ...cardSrs, // preserves state, stepIndex, due, reps, lapses, mastered
+    D: Number(D.toFixed(4)),
+    S: Number(S.toFixed(4)),
+    last_review: lastReview,
+    // ease / intervalDays intentionally PRESERVED (see note above)
+  };
+}
+
+// Apply migrateToFSRS to every card across every deck. Idempotent. Called on
+// every state ingestion path (boot load + all cloud-pull merges) so a v2 client
+// always normalizes whatever it loads, local or remote.
+export function migrateCardsToFSRS(state) {
+  if (!state || !Array.isArray(state.decks)) return state;
+  for (const d of state.decks) {
+    if (!d || !Array.isArray(d.cards)) continue;
+    for (const c of d.cards) {
+      if (c && c.srs) c.srs = migrateToFSRS(c.srs);
+    }
+  }
+  if (!(state.version >= 2)) state.version = 2; // FSRS schema marker
+  return state;
 }

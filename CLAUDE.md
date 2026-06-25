@@ -116,17 +116,34 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 - `position: sticky` ile scroll'da takip eder
 - İçerik az olunca (örnek cümle yok) kanji büyük kalır (`fc-preview-sparse`)
 
-## SRS Engine (`src/core/srsEngine.js`)
+## SRS Engine (`src/core/srsEngine.js`) — FSRS (v2.0.0)
 
-- **Saf modül:** DOM/browser API bağımlılığı yok, tüm fonksiyonlar `settings` ve `now` parametresi alır
-- **Anki-style SM-2:** learning steps → graduated review → mastery
-- `computeSRS(card, grade, settings, now, preview)` — çekirdek hesaplama
-- `previewSRS(card, grade, settings, now)` — kartı değiştirmeden sonraki aralığı gösterir
-- `applySRS(card, grade, settings, now)` — kartın `srs` alanını günceller (mutates)
-- `buildQueueFromCards(cards, masteredOnly, now, dailyLimit, newToday)` — çalışma kuyruğu oluşturur
-- `createSrsData(defaultEase)` — yeni kart için boş SRS bloğu
-- `fmtDur(ms)` — milisaniyeyi `1m`, `10m`, `1h`, `3d` formatına çevirir
-- `main.js`'deki `_buildQueue()` ve `buildQueue()` wrapper'lar state'den parametreleri çözümleyip engine'e iletir
+**v2.0.0'da SM-2 → FSRS (Free Spaced Repetition Scheduler, v4.5 eşdeğeri) geçişi yapıldı.** Bellek üç metrikle modellenir: Retrievability ($R$), Stability ($S$ gün), Difficulty ($D$ 1–10). 17 ağırlık `FSRS_W` dizisinde.
+
+- **Saf modül:** DOM/browser API bağımlılığı yok, tüm fonksiyonlar `settings` ve `now` parametresi alır.
+- **Hibrit tasarım (kritik):** Kısa vadeli **intraday learning steps** (dakika) KORUNDU. FSRS matematiği kart yalnızca **mezun olduğunda** (`>= 1 gün`) devreye girer — 'new'/'learning'/'relearning' durumlarında adımlar (steps), 'review' durumunda tam FSRS. Yeni `relearning` durumu eklendi (lapse → relearning steps).
+- `FSRS_W` — 17 ayarlı ağırlık (export).
+- `getRetrievability(t, s)` — `0.9^(t/s)`; `t === s` iken `R === 0.9` (export).
+- `computeInitialDS(grade)` — mezuniyette ilk D/S (grade FSRS 1–4) (export).
+- `computeNextDS(D, S, R, grade)` — review cevabında sonraki D/S; başarı/lapse formülleri ayrı (export).
+- `computeSRS(card, grade, settings, now, preview)` — çekirdek; grade `0=Again,1=Hard,2=Good,3=Easy` → FSRS `1,2,3,4`.
+- `previewSRS` / `applySRS` — imza değişmedi (UI butonları + grade akışı dokunulmadan çalışır).
+- `buildQueueFromCards(...)` — **`relearning` durumu learning kovasına dahil edildi** (aksi halde lapse'lenen kartlar kuyruktan kaybolurdu).
+- `createSrsData(defaultEase)` — yeni kart: FSRS alanları (`D:0, S:0, last_review:null`) + **legacy SM-2 ayna alanları (`ease`, `intervalDays`) korunur** (eski senkron istemci uyumu).
+- `fmtDur(ms)` — `1m`/`10m`/`1h`/`3d`/`2mo`/`1.5y` (FSRS büyük aralıklar ürettiğinden ay/yıl eklendi).
+- `CardView.gradeCard()`: re-queue koşuluna `relearning` eklendi (intraday relearning kartı oturum içinde döner).
+
+### SM-2 → FSRS Migrasyonu (`src/store/appState.js` → `migrateToFSRS` / `migrateCardsToFSRS`)
+- **Idempotent + additive (kayıpsız):** `intervalDays → S`, `ease → D` (`D = 10 - ((ease-1.3)/1.2)*5`, [1,10] clamp). `last_review`, review kartları için `due - interval`'den türetilir. Guard: `'S' in cardSrs`.
+- **BLUEPRINT'TEN KASITLI SAPMA:** Harici blueprint `ease`/`intervalDays`'i `undefined` yapmayı ("legacy temizliği") istedi — **uygulanmadı**. Sebep: tüm `state` (kart `srs` dahil) Supabase'e push edilir ve `pickNewerState` şema-versiyon kontrolü yapmaz → hâlâ v1.x olan bir istemci (ör. tembel güncellenen PWA) FSRS kartı çekerse, legacy alanlar silinmişse SM-2 motoru `due = now + NaN` üretip veriyi sessizce bozar. Alanları korumak ileri-uyumlu + geri-dönüş güvenli. ("Streak motoru kararı"ndaki "blueprint öncülünü kod denetiminde doğrula" tavrının devamı.)
+- **Tüm ingestion yollarında çalışır:** `migrateCardsToFSRS(state)` `main.js`'de 5 noktada (boot load + boot cloud-pull + connectSyncCode + manualSync + migrateAndSave) `migrateDecks`'ten hemen sonra çağrılır → v2 istemci yerel/uzak ne yüklerse normalize eder.
+- **State `version`:** `createInitialState` → `2`.
+
+### Bilinen risk (release-time, push değil)
+Çok-cihaz senaryosunda v2.0.0 FSRS state'ini buluta yazdığında, **henüz güncellenmemiş bir v1.x istemci** legacy alanlar sayesinde çökmez ama FSRS ilerlemesini "göremez" (kendi SM-2 alanlarını kullanır). Tam tutarlılık ancak tüm cihazlar v2.0.0 olunca sağlanır. Kırıcı şema değişiminin kaçınılmaz sonucu; legacy-alan koruması en kötü durumu (veri bozulması) engeller.
+
+### Sürüm/Release notu
+`main.js` APP_VERSION + `electron/package.json` + root `package.json` → `2.0.0`. **Main'e push kullanıcıya bir şey YAYINLAMAZ:** `.github/workflows/build-windows.yml` yalnızca `workflow_dispatch` (manuel) veya `v*` **tag** push'unda tetiklenir ve **draft** release üretir (manuel "Publish" gerekir).
 
 ## Standalone Test Module (Data Layer)
 
