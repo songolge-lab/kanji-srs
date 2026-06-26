@@ -108,6 +108,8 @@ export function migrateSettings(settings) {
     settings.learnSteps = [...CONFIG.learnSteps];
   }
   if (typeof settings.autoUseShield !== 'boolean') settings.autoUseShield = true;
+  if (typeof settings.geminiApiKey !== 'string') settings.geminiApiKey = '';
+  if (typeof settings.geminiModel !== 'string') settings.geminiModel = 'gemini-2.5-pro';
   return settings;
 }
 

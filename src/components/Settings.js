@@ -95,6 +95,44 @@ function renderSyncSection() {
   }
 }
 
+// ─── AI SETTINGS ─────────────────────────────────────────────────────
+const AI_MODELS = [
+  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+];
+
+function renderAiSection() {
+  const el = document.getElementById('ai-section');
+  if (!el) return;
+  const s = app.state.settings;
+  const key = s.geminiApiKey || '';
+  const model = s.geminiModel || AI_MODELS[0].id;
+  const modelOptions = AI_MODELS.map(m =>
+    `<option value="${m.id}" ${model === m.id ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
+  el.innerHTML = `
+    <p class="text-muted" style="margin-bottom:.8rem">${app.t('ai_section_desc')}</p>
+    <div class="form-group">
+      <label>${app.t('ai_api_key')}</label>
+      <input type="password" class="form-input" id="cfg-gemini-key" value="${key}" placeholder="${app.t('ai_api_key_placeholder')}" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>${app.t('ai_model')}</label>
+      <select class="form-input" id="cfg-gemini-model">${modelOptions}</select>
+    </div>
+    <button class="btn btn-primary btn-block tap" onclick="saveAiSettings()">${app.t('save_settings')}</button>
+  `;
+}
+
+export function saveAiSettings() {
+  const key = document.getElementById('cfg-gemini-key')?.value.trim() || '';
+  const model = document.getElementById('cfg-gemini-model')?.value || AI_MODELS[0].id;
+  app.state.settings.geminiApiKey = key;
+  app.state.settings.geminiModel = model;
+  app.save();
+  app.showToast(app.t('toast_settings_saved'));
+}
+
 // ─── SRS SETTINGS ────────────────────────────────────────────────────
 function getSettingInfo() {
   return {
@@ -128,6 +166,7 @@ function settingItemHTML(key, label, smallText, inputHTML) {
 export function renderSettings() {
   renderThemeSection();
   renderSyncSection();
+  renderAiSection();
   const s = app.state.settings;
   document.getElementById('settings-fields').innerHTML =
     settingItemHTML('steps', app.t('srs_steps'), app.t('srs_steps_hint'), `<input class="si-input" id="cfg-steps" value="${s.learnSteps.join(', ')}">`) +

@@ -622,6 +622,22 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .badge-soft  { background: var(--paper-2);  color: var(--ink-soft); }
 
 /* =====================================================================
+   COMMUNITY HUB (Market)
+   ===================================================================== */
+.community-hub-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .35rem; }
+.community-hub-sub { font-size: .85rem; color: var(--ink-soft); margin-bottom: 1rem; }
+.community-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+.community-card { margin-bottom: 0; display: flex; flex-direction: column; }
+.community-desc { font-size: .9rem; color: var(--ink); margin-top: .45rem; overflow-wrap: anywhere; }
+.community-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.community-card-foot { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .8rem; }
+.community-dl-count { display: inline-flex; align-items: center; gap: .3em; font-size: .82rem; white-space: nowrap; }
+.community-dl-count .ic { width: 15px; height: 15px; }
+.community-state { text-align: center; padding: 2.5rem 1rem; color: var(--ink-soft); line-height: 1.5; }
+@media (min-width: 768px) { .is-electron .community-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .is-electron .community-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* =====================================================================
    BUTTONS — all sized to --tap, stacked when tight rather than squeezed
    ===================================================================== */
 .btn {
@@ -1433,6 +1449,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <div id="test-results-content"></div>
   </div>
 
+  <!-- VIEW: COMMUNITY HUB (Market) -->
+  <div id="view-community" class="view">
+    <div id="community-content"></div>
+  </div>
+
   <!-- VIEW: ADD CARD -->
   <div id="view-add" class="view">
     <div class="section-hd" data-t="add_card_title">Add card</div>
@@ -1499,6 +1520,9 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     <div class="section-hd" data-t="settings_sync">Cross-device Sync</div>
     <div id="sync-section" class="card"></div>
 
+    <div class="section-hd" data-t="settings_ai">AI Teacher</div>
+    <div id="ai-section" class="card"></div>
+
     <div class="section-hd" data-t="settings_srs">SRS settings</div>
     <div id="settings-fields"></div>
 
@@ -1535,6 +1559,10 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <button class="nav-item tap" data-view="tests" id="nav-tests">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
     <span data-t="nav_tests">Exams</span>
+  </button>
+  <button class="nav-item tap" data-view="community" id="nav-community">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 17v-1.5a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3V17"/><circle cx="9.5" cy="7.5" r="3"/><path d="M16.5 11.2a3 3 0 0 0 0-5.9"/><path d="M21 17v-1.4a3 3 0 0 0-2.3-2.9"/></svg>
+    <span data-t="nav_community">Community</span>
   </button>
   <button class="nav-item tap" data-view="settings" id="nav-settings">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>

@@ -1,13 +1,11 @@
-import kanjiData from '../data/kanji_lite.json';
+import { lookup } from '../services/kanjiDictService.js';
 import { esc } from '../utils.js';
 
 let app;
 export function init(ctx) { app = ctx; }
 
-// Belirli bir kanji karakteri için detay modalını açar.
-// Anlam aktif uygulama diline (app.currentLang) göre seçilir; eksikse 'en'e döner.
 export function open(kanji) {
-  const entry = kanjiData[kanji];
+  const entry = lookup(kanji);
 
   if (!entry) {
     app.openModal(app.t('kanji_detail'), `
@@ -20,8 +18,7 @@ export function open(kanji) {
     return;
   }
 
-  const lang = app.currentLang;
-  const meaning = (entry.meanings && (entry.meanings[lang] || entry.meanings.en)) || '—';
+  const meaningLabel = entry.hasNativeMeaning ? app.t('meaning_label') : app.t('kanji_meaning_en');
 
   app.openModal(app.t('kanji_detail'), `
     <div style="text-align:center;margin-bottom:1.2rem">
@@ -37,8 +34,8 @@ export function open(kanji) {
         <span class="kanji-detail-value">${esc(entry.kunyomi) || '—'}</span>
       </div>
       <div class="kanji-detail-row">
-        <span class="text-muted kanji-detail-label">${app.t('meaning_label')}</span>
-        <span class="kanji-detail-value">${esc(meaning)}</span>
+        <span class="text-muted kanji-detail-label">${meaningLabel}</span>
+        <span class="kanji-detail-value">${esc(entry.meaning)}</span>
       </div>
     </div>
     <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>

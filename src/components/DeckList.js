@@ -120,6 +120,7 @@ export function renderDeckList() {
       <div class="btn-row" style="margin-top:.6rem">
         ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${app.t('no_cards_to_study')}</span>`}
         <button class="btn btn-ghost tap" onclick="openDeck('${deck.id}')">${app.t('detail')}</button>
+        <button class="btn btn-ghost tap" onclick="publishDeckModal('${deck.id}')" aria-label="${app.t('community_publish')}">${app.icon('publish')}${app.t('community_publish')}</button>
       </div>
       <div class="btn-row" style="margin-top:.5rem">
         ${s.newC ? `<span class="badge badge-sky">${app.t('badge_new', {count: s.newC})}</span>` : ''}
@@ -447,4 +448,39 @@ export function deleteCard(deckId, cardId) {
   deck.cards = deck.cards.filter(c => c.id !== cardId);
   app.save(); renderDeckDetail();
   app.showToast(app.t('toast_card_deleted'));
+}
+
+// ─── COMMUNITY PUBLISH ───────────────────────────────────────────────
+export function publishDeckModal(deckId) {
+  const deck = app.findDeck(deckId);
+  if (!deck) return;
+  const cardCount = app.getAllCardsForDeck(deckId).length;
+  app.openModal(app.t('community_publish_title', { name: esc(deck.name) }), `
+    <p class="text-muted" style="margin-bottom:.9rem">${app.t('community_publish_hint', { count: cardCount })}</p>
+    <div class="form-group"><label>${app.t('community_desc_label')}</label><textarea id="publish-desc" rows="3" placeholder="${app.t('community_desc_ph')}"></textarea></div>
+    <div class="form-group"><label>${app.t('community_tags_label')}</label><input id="publish-tags" placeholder="${app.t('community_tags_ph')}"><div class="form-hint">${app.t('community_tags_hint')}</div></div>
+    <div class="btn-row"><button class="btn btn-primary tap" id="publish-submit-btn" onclick="submitPublishDeck('${deckId}')">${app.icon('publish')}${app.t('community_publish_btn')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
+  `);
+}
+
+export async function submitPublishDeck(deckId) {
+  const deck = app.findDeck(deckId);
+  if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
+  const cards = app.getAllCardsForDeck(deckId);
+  if (!cards.length) { app.showToast(app.t('warn_community_no_cards')); return; }
+  const description = document.getElementById('publish-desc').value.trim();
+  const tagsRaw = document.getElementById('publish-tags').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8) : [];
+  const btn = document.getElementById('publish-submit-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  const author = app.getCommunityAuthor();
+  const deckData = { syncCode: author.code, authorName: author.name, cards };
+  try {
+    await app.publishDeckToCommunity(deckData, deck.name, description, tags);
+    app.closeModal();
+    app.showToast(app.t('toast_community_published'));
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    app.showToast(app.t('warn_community_publish', { msg: e.message }), 3500);
+  }
 }

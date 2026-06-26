@@ -19,7 +19,12 @@ src/
   main.js                 ← Orkestrasyon: i18n, sync, state, router, boot
   utils.js                ← Saf yardımcılar (esc, uid, today, tarih, shuffle)
   data/
-    kanji_lite.json       ← Offline kanji sözlüğü (onyomi, kunyomi, 4 dilde anlamlar)
+    locales/
+      kanji_base.json     ← Onyomi + kunyomi (statik import, her zaman yüklü)
+      kanji_en.json       ← İngilizce anlamlar (fallback, her zaman yüklü)
+      kanji_tr.json       ← Türkçe anlamlar (lazy-load)
+      kanji_ko.json       ← Korece anlamlar (lazy-load)
+      kanji_mn.json       ← Moğolca anlamlar (lazy-load)
   utils/
     kanjiUtils.js         ← Kanji tespit & wrapping (isJapaneseCard, wrapKanji)
     furiganaParser.js     ← Offline morfolojik analiz (kuromoji) → bağlama duyarlı okuma
@@ -33,6 +38,7 @@ src/
   services/
     supabaseClient.js     ← Supabase bağlantı ayarları + sbFetch
     dbService.js          ← Bulut sorguları (cloudPull/Push, sync)
+    kanjiDictService.js   ← Lazy-loading kanji sözlük servisi (dil paketi yönetimi)
   store/
     appState.js           ← CONFIG, storage layer, migrations
 public/
@@ -186,21 +192,32 @@ Her bileşen (`src/components/*.js`) `init(app)` ile paylaşılan context alır 
 
 ## Kanji Detail (Phase 1 — Data & Utils)
 
-- **`src/data/kanji_lite.json`:** Offline kanji sözlüğü. Her kanji için `onyomi`, `kunyomi` ve `meanings` (en zorunlu; 10 elle düzenlenmiş giriş ayrıca tr/ko/mn içerir). **~3.121 kanji** — KANJIDIC türevi `davidluzgouveia/kanji-data` setinden sınıflandırılmış (Jōyō/Jinmeiyō/JLPT/frekans) kanjiler tek seferlik bir Node script ile üretildi (script çalıştırıldıktan sonra silindi). 10 elle düzenlenmiş çok dilli giriş (日月火水木金土人大山) üzerine bindirildi. Dosya formatı: kanji başına tek satır.
+- **Kanji Sözlüğü — Language Pack Mimarisi:** Eski monolitik `src/data/kanji_lite.json` kaldırıldı. Veri artık `src/data/locales/` altında bölünmüş:
+  - `kanji_base.json` — onyomi + kunyomi (her zaman statik import ile yüklenir, ~185KB)
+  - `kanji_en.json` — İngilizce anlamlar (~114KB, her zaman yüklenir — fallback)
+  - `kanji_tr.json` / `kanji_ko.json` / `kanji_mn.json` — Diğer dil anlamları (~27KB, sadece aktif dilde lazy-load)
+  Her dosya `{ "kanji": "meaning_string" }` formatında. Boş string = henüz çeviri yok.
+- **`src/services/kanjiDictService.js`:** Lazy-loading sözlük servisi.
+  - `init(lang)` / `setLanguage(lang)` — Vite dynamic `import()` ile sadece gerekli dil paketini yükler. İngilizce daima fallback olarak yüklenir.
+  - `lookup(kanji)` — `{ onyomi, kunyomi, meaning, hasNativeMeaning }` döner. Aktif dilde anlam yoksa İngilizce'ye döner.
+  - `main.js`'de `boot()` sırasında `KanjiDict.init(currentLang)`, `setLang()` sırasında `KanjiDict.setLanguage(lang)` çağrılır.
+  - Vite build'de dil paketleri otomatik olarak ayrı chunk'lara bölünür (code-splitting).
+- **Yeni dil eklemek:** `src/data/locales/kanji_XX.json` dosyası oluştur, `kanjiDictService.js`'deki `loadPack` switch'ine case ekle.
+- **~3.121 kanji** — KANJIDIC türevi `davidluzgouveia/kanji-data` setinden. 10 elle düzenlenmiş çok dilli giriş (日月火水木金土人大山).
 - **`src/utils/kanjiUtils.js`:** Kanji tespit yardımcıları:
   - `isJapaneseCard(cardLanguage)` — `null`/`undefined`/`'ja'`/`'jp'` için `true` döner (deste/kart dil alanı olmadığından varsayılan Japonca)
   - `wrapKanji(text)` — CJK Unified Ideographs regex ile kanji karakterleri bulur, `<span class="kanji-clickable" data-kanji="X">X</span>` ile sarar (hiragana/katakana hariç)
 
 ## Kanji Detail (Phase 1 — Modal UI)
 
-- **`src/components/KanjiModal.js`:** Tıklanan kanji için detay modalı. `kanji_lite.json`'u statik `import` ile alır → tamamen offline (Vite build-time bundle, ağ yok).
+- **`src/components/KanjiModal.js`:** Tıklanan kanji için detay modalı. `kanjiDictService.lookup()` ile veri alır → tamamen offline.
   - `init(app)` ile context alır; `open(kanji)` modalı açar.
   - Kanji'yi sözlükte bulur, büyük karakter + Onyomi (katakana) + Kunyomi (hiragana) + anlamı gösterir.
-  - **Anlam dili:** `app.currentLang`'a göre seçilir, eksikse `en`'e döner.
+  - **Anlam dili:** `hasNativeMeaning` true ise `meaning_label` (ör. "Türkçe anlam"), false ise `kanji_meaning_en` (ör. "Anlam (En)") etiketi gösterilir.
   - Sözlükte olmayan kanji için `kanji_not_found` mesajı (~3.121 kanji kapsıyor; nadir/sınıflandırılmamış kanjiler kapsam dışı).
   - Mevcut paylaşılan modal altyapısını (`app.openModal`/`closeModal`) kullanır → dışarı tıklayınca kapanma (main.js'de bağlı) + "Close" butonu, tüm app modalleriyle tutarlı.
-- **Bağlantı:** `main.js`'de diğer bileşenler gibi `KanjiModal.init(app)` + cross-ref `app.openKanjiModal = KanjiModal.open`. `CardView.js`'deki global `.kanji-clickable` click listener'ı `app.openKanjiModal(kanji)` çağırır (önceki `console.log` kaldırıldı).
-- **i18n:** `close`, `kanji_detail`, `kanji_onyomi`, `kanji_kunyomi`, `kanji_not_found` anahtarları 4 dile eklendi; anlam etiketi için mevcut `meaning_label` yeniden kullanılır.
+- **Bağlantı:** `main.js`'de diğer bileşenler gibi `KanjiModal.init(app)` + cross-ref `app.openKanjiModal = KanjiModal.open`. `CardView.js`'deki global `.kanji-clickable` click listener'ı `app.openKanjiModal(kanji)` çağırır.
+- **i18n:** `close`, `kanji_detail`, `kanji_onyomi`, `kanji_kunyomi`, `kanji_not_found`, `kanji_meaning_en` anahtarları 4 dile eklendi.
 - **CSS:** `index.html`'de `.kanji-detail-rows` / `.kanji-detail-row` / `.kanji-detail-label` / `.kanji-detail-value` (label–değer satır düzeni).
 
 ## Kanji Detail (Phase 3 — Flashcard arka yüz & ruby iyileştirmeleri)
@@ -264,3 +281,35 @@ Blueprint, `updateStreak()`'in O(N) olduğunu iddia edip yerine "O(1) artımlı 
 - **CSS (`index.html`):** Hücre boyutu **sabit** (`--heat-cell:11px`) → kare garantisi; `.heatmap-scroll` dar ekranda yatay kaydırma. Renk tonları `color-mix(in srgb, var(--jade) X%, var(--paper-2))` ile **tema değişkenlerinden** türetilir → tüm temalarda (açık/koyu) otomatik uyum; eski motorlar için her seviyede önce GitHub yeşili düz `background` fallback'i.
 - **i18n:** `months_short`, `heatmap_title`, `heatmap_longest`, `heatmap_year_total`, `heatmap_tooltip`, `heatmap_none`, `heatmap_less`, `heatmap_more` — 4 dile eklendi.
 - **`CardView.js` değişmedi:** `gradeCard()` zaten `app.recordReview(wasNew)` çağırıyor → yeni katmana otomatik bağlanır. `app.renderHeatmap = Analytics.renderHeatmap` cross-ref olarak eklendi.
+
+## Community Hub (Market) — Deste Paylaşım & İndirme
+
+Kullanıcıların destelerini herkese açık paylaşıp başkalarınınkini indirdiği bulut tabanlı pazar. Saf Vanilla JS + CSS, mevcut bileşen mimarisini izler.
+
+### Şema (`supabase-schema.sql` → `community_decks`)
+- **Kimlik modeli — KASITLI SAPMA:** Spec `author_id UUID FK to auth.users` istedi; uygulanmadı. Bu app Supabase Auth kullanmıyor — kimlik 6 haneli `sync_code` string'i. Bu yüzden `author_id` yerine `author_sync_code TEXT` + görüntüleme için `author_name TEXT` kullanıldı. `auth.users`'a FK koymak işlevsiz olurdu.
+- **Sütunlar:** `id` (UUID, `gen_random_uuid()`), `author_sync_code`, `author_name`, `title`, `description`, `tags TEXT[]`, `deck_data JSONB`, `downloads INT`, `created_at`. İndeksler: `created_at DESC` + `author_sync_code`.
+- **RLS:** SELECT herkese açık (`USING true`); INSERT yalnızca boş olmayan `author_sync_code` ile (`WITH CHECK`). **UPDATE/DELETE politikası YOK** (kasıtlı — kimse satırları keyfi değiştiremesin).
+- **`increment_download_count(deck_id)` RPC — `SECURITY DEFINER` ZORUNLU:** RLS açık + UPDATE politikası olmadığından, `SECURITY INVOKER` (varsayılan) bir fonksiyonun içindeki UPDATE anon rolde RLS tarafından sessizce 0 satıra filtrelenir (RPC 204 döner ama sayaç artmaz — canlı testte yakalandı). `SECURITY DEFINER` fonksiyonu sahip olarak çalıştırıp bu tek dar işlem için RLS'i baypas eder. `SET search_path = public` definer fonksiyonunu sertleştirir. **Şema güncellendiğinde canlı DB'ye yeniden uygulanmalı** (eski INVOKER sürümü sayacı artırmaz).
+
+### Servis katmanı (`src/services/dbService.js`)
+- `publishDeckToCommunity(deckData, title, description, tags)` — `deckData.syncCode`/`authorName`/`cards` okur, `community_decks`'e INSERT eder. **Kart şeması yerel kartı birebir yansıtır** (`kanji`, `furigana`, `meaningTr`, `exampleJp`, `exampleTr`, `exampleFuriganaMap`) → indirince `makeCard()`'a 1:1 döner. **SRS state kasıtlı çıkarılır** (indiren sıfırdan başlar). NOT: Phase 2'deki ilk taslak yanlış alan adları (`front`/`back`/`example`) kullanıyordu — entegrasyonda gerçek kart alanlarıyla düzeltildi.
+- `fetchCommunityDecks(limit=50, offset=0)` — `created_at DESC` sıralı, sadece metadata (`deck_data` hariç — hafif liste).
+- `fetchCommunityDeck(deckId)` — tek deste, `deck_data` dahil (indirme için).
+- `incrementDownloadCount(deckId)` — RPC çağrısı. Hepsi try/catch + `console.error` + re-throw.
+
+### Bileşen (`src/components/CommunityHub.js`)
+- Pattern: `init(app)` + `render()` (router girişi, `#community-content`'e basar) + spec-isimli `renderCommunityHub(container)`. Modül-içi durum makinesi: `idle/loading/ready/error`.
+- `downloadDeck(deckId, btnEl)`: `fetchCommunityDeck` → `app.createDeck(title)` + `app.makeCard(...)` ile kartları yerel state'e enjekte → `app.save()`. Sayaç **best-effort** (`incrementDownloadCount(...).catch()`, await edilmez — "non-critical") + optimistik yerel +1 bump. NOT: indirmeden hemen sonra başka view'a geçmek await edilmemiş sayaç isteğini yarıştırabilir (sunucu sayacı o an kaydolmayabilir); UI optimistik bump ile tutarlı kalır.
+
+### Yayınlama UI (`src/components/DeckList.js`)
+- Her deste kartının ana btn-row'una "Publish" ghost butonu (`publishDeckModal(deckId)`).
+- `publishDeckModal`: açıklama (textarea) + etiketler (virgülle, max 8) modalı. `submitPublishDeck`: `getAllCardsForDeck` (alt desteler dahil) → `app.getCommunityAuthor()` ile kimlik → `app.publishDeckToCommunity`. Boş deste/ağ hatası toast'la korunur.
+
+### Kimlik & wiring (`src/main.js`)
+- **`getCommunityAuthor()`:** Aktif `syncCode` varsa onu kimlik olarak kullanır; yoksa `localStorage['kanji_srs_community_author']`'da kalıcı anonim id (`anon-xxxx`) üretir → sync kurulmadan da yayın çalışır. `name` = `User-` + son 4 hane (PII değil).
+- İkonlar: `community` (insanlar, nav), `publish` (yukarı ok). Nav'a 5. sekme `data-view="community"`. `showView` → `community` dalı `CommunityHub.render()`. Cross-ref: `app.publishDeckToCommunity`, `app.getCommunityAuthor`. Window global: `publishDeckModal`, `submitPublishDeck`, `communityDownload`, `communityRefresh`.
+- **i18n:** `nav_community` + ~22 `community_*`/`toast_community_*`/`warn_community_*` anahtarı 4 dile eklendi.
+
+### CSS (`src/index.html`)
+- `.community-grid` (mobil tek sütun; `.is-electron` 768px→2, 1024px→3 sütun), `.community-card`, `.community-desc`, `.community-tags`, `.community-card-foot`, `.community-dl-count`, `.community-state`, `.community-hub-head/sub`. Mevcut `.card`/`.btn`/`.badge-soft` sınıfları yeniden kullanıldı.
