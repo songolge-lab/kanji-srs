@@ -15,26 +15,44 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
 
+  // Renderer -> main: offline furigana sözlük dosyasını oku (dist/dict/<name>).
+  // Packaged app file:// üzerinden yüklendiğinden renderer fetch ile dict
+  // okuyamaz; bytes'ı main process Node fs ile okur ve döner.
+  readDict: (name) => ipcRenderer.invoke('furigana:read-dict', name),
+
   // Renderer -> main: güncellemeleri kontrol et / indir / kur
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   getPendingUpdate: () => ipcRenderer.invoke('update:get-pending'),
 
-  // main -> renderer: güncelleme olaylarını dinle
+  // main -> renderer: güncelleme olaylarını dinle.
+  // Her dinleyici bir TEARDOWN fonksiyonu döner: renderer çağrısı bunu saklayıp
+  // çağırarak listener'ı temizleyebilir. Aksi halde her yeniden bağlanışta yeni
+  // bir handler eklenir ve eskileri birikir (IPC memory leak).
   onUpdateAvailable: (callback) => {
-    ipcRenderer.on('update:available', (_event, info) => callback(info));
+    const handler = (_event, info) => callback(info);
+    ipcRenderer.on('update:available', handler);
+    return () => ipcRenderer.removeListener('update:available', handler);
   },
   onUpdateNotAvailable: (callback) => {
-    ipcRenderer.on('update:not-available', (_event, info) => callback(info));
+    const handler = (_event, info) => callback(info);
+    ipcRenderer.on('update:not-available', handler);
+    return () => ipcRenderer.removeListener('update:not-available', handler);
   },
   onUpdateError: (callback) => {
-    ipcRenderer.on('update:error', (_event, info) => callback(info));
+    const handler = (_event, info) => callback(info);
+    ipcRenderer.on('update:error', handler);
+    return () => ipcRenderer.removeListener('update:error', handler);
   },
   onDownloadProgress: (callback) => {
-    ipcRenderer.on('update:download-progress', (_event, info) => callback(info));
+    const handler = (_event, info) => callback(info);
+    ipcRenderer.on('update:download-progress', handler);
+    return () => ipcRenderer.removeListener('update:download-progress', handler);
   },
   onUpdateDownloaded: (callback) => {
-    ipcRenderer.on('update:downloaded', (_event, info) => callback(info));
+    const handler = (_event, info) => callback(info);
+    ipcRenderer.on('update:downloaded', handler);
+    return () => ipcRenderer.removeListener('update:downloaded', handler);
   },
 });

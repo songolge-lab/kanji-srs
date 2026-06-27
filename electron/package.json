@@ -1,12 +1,13 @@
 {
   "name": "kanji-srs-desktop",
-  "version": "1.2.1",
+  "version": "2.0.2",
   "description": "Kanji SRS — Kişisel Kanji Flashcard ve Aralıklı Tekrar Uygulaması",
   "main": "main.js",
   "author": "Harun",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64 --publish always",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:ci": "electron-builder --win --x64 --publish always",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
@@ -26,8 +27,11 @@
     "files": [
       "main.js",
       "preload.js",
-      "web/**/*",
-      "build/**/*"
+      "build/**/*",
+      { "from": "../dist", "to": "dist", "filter": ["**/*", "!dict/**"] }
+    ],
+    "extraResources": [
+      { "from": "../dist/dict", "to": "dict", "filter": ["*.dat.gz"] }
     ],
     "publish": [
       {
@@ -44,8 +48,10 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Stacks"

@@ -27,6 +27,9 @@ name: Windows EXE Derle
 
 on:
   workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -44,13 +47,19 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Bağımlılıkları yükle
+      - name: Root bağımlılıkları yükle (Vite)
+        run: npm install
+
+      - name: Vite build (dist/ oluştur)
+        run: npm run build
+
+      - name: Electron bağımlılıkları yükle
         working-directory: electron
         run: npm install
 
       - name: Windows .exe derle ve GitHub Release taslağı oluştur
         working-directory: electron
-        run: npm run build:win
+        run: npm run build:ci
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,9 +1,10 @@
 // ============================================================
 // KANJI SRS — ELECTRON MASAÜSTÜ UYGULAMASI (main process)
 // ============================================================
-// Bu dosya, web uygulamasını (web/index.html) bir masaüstü
+// Bu dosya, Vite build çıktısını (dist/index.html) bir masaüstü
 // penceresinde açan "kabuk"tur. İçindeki mantığa dokunmaz,
-// sadece bir pencere açıp web/index.html dosyasını yükler.
+// sadece bir pencere açıp dist/index.html dosyasını yükler.
+// Dev modda Vite dev server URL'ini (http://localhost:5173) yükler.
 //
 // Otomatik güncelleme: electron-updater, GitHub Releases'i
 // kontrol eder. Yeni bir sürüm bulunduğunda main process bunu
@@ -15,6 +16,7 @@
 
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
@@ -38,7 +40,12 @@ function createWindow() {
     title: 'Stacks',
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'web', 'index.html'));
+  const isDev = !app.isPackaged;
+  if (isDev) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
+  } else {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  }
 
   // Dış linkler (varsa) sistem tarayıcısında açılsın, uygulama içinde değil
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -129,12 +136,31 @@ function checkForUpdates() {
 
 // ─── RENDERER'DAN GELEN İSTEKLER (preload.js üzerinden) ────────────────
 ipcMain.handle('update:check', () => { checkForUpdates(); });
-ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate(); });
-ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(); });
+ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate().catch(console.error); });
+ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(true, true); });
 ipcMain.handle('update:get-pending', () => {
   if (updateDownloaded) return { state: 'downloaded', info: pendingUpdateInfo };
   if (pendingUpdateInfo) return { state: 'available', info: pendingUpdateInfo };
   return { state: 'none' };
+});
+
+// ─── OFFLINE FURIGANA SÖZLÜK OKUYUCU ───────────────────────────────────
+// Packaged app `file://` üzerinden yüklendiği için renderer dict dosyalarını
+// fetch edemez (Chromium file: şemasını desteklemez). Bytes'ı buradan,
+// extraResources/dict altından Node fs ile okuyup veririz. Güvenlik: yalnızca
+// beklenen `*.dat.gz` dosya adlarına izin verilir (path traversal engellenir).
+ipcMain.handle('furigana:read-dict', (_event, name) => {
+  if (typeof name !== 'string' || !/^[a-z0-9_]+\.dat\.gz$/i.test(name)) {
+    throw new Error('Invalid dict file: ' + name);
+  }
+  const dictDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'dict')
+    : path.join(__dirname, '..', 'dist', 'dict');
+  const filePath = path.join(dictDir, name);
+  if (!fs.existsSync(filePath)) {
+    throw new Error('Dict file not found: ' + filePath);
+  }
+  return fs.readFileSync(filePath);
 });
 
 app.whenReady().then(() => {
