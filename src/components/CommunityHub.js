@@ -62,9 +62,25 @@ function headerHTML() {
   return `
   <div class="community-hub-head">
     <div class="section-hd" style="margin:0">${app.t('community_title')}</div>
-    <button class="btn btn-ghost tap btn-sm" onclick="communityRefresh()">${app.icon('sync')}${app.t('community_refresh')}</button>
+    <div style="display:flex;gap:.4rem">
+      <button class="btn btn-primary tap btn-sm" onclick="communityPublishPicker()">${app.icon('publish')}${app.t('community_publish')}</button>
+      <button class="btn btn-ghost tap btn-sm" onclick="communityRefresh()">${app.icon('sync')}${app.t('community_refresh')}</button>
+    </div>
   </div>
   <div class="community-hub-sub">${app.t('community_subtitle')}</div>`;
+}
+
+export function showPublishPicker() {
+  const decks = app.getDecksInTreeOrder();
+  if (!decks.length) { app.showToast(app.t('no_decks').split('\n')[0]); return; }
+  const rows = decks.map(({ deck, depth }) => {
+    const indent = depth > 0 ? `padding-left:${depth * 1.2}rem;` : '';
+    const count = app.getAllCardsForDeck(deck.id).length;
+    return `<button class="btn btn-ghost tap" style="width:100%;text-align:left;justify-content:space-between;${indent}" onclick="publishDeckModal('${deck.id}')">
+      <span>${esc(deck.name)}</span><span class="text-muted" style="font-size:.8rem">${count} cards</span>
+    </button>`;
+  }).join('');
+  app.openModal(app.t('community_publish'), `<div style="display:flex;flex-direction:column;gap:.3rem">${rows}</div>`);
 }
 
 function cardHTML(d) {

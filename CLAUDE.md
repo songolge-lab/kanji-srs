@@ -250,9 +250,9 @@ Eski online sözlük API'si (`kanjiapi.dev`) tamamen kaldırıldı. Artık okuma
 - **`main.js`:** `ipcMain.handle('furigana:read-dict', …)` → `dist/dict/<name>`'i `fs.readFileSync` ile okur. Güvenlik: yalnızca `^[a-z0-9_]+\.dat\.gz$` adlarına izin (path traversal engeli).
 
 ### `DeckList.js` entegrasyonu
-- **`setupFuriganaAssist`:** Ana okuma alanı — kanji yazıldıkça (debounce 600ms) `generateFurigana` ile **sessizce otomatik doldurulur** (imza: `(kanjiInputId, furiganaInputId)` — 2 arg). Sadece alan boş ya da en son otomatik değer iken yazar (`dataset.autoFilled`) → manuel düzenlemeyi ezmez. **"Searching reading…" durum pili / öneri çipleri tamamen kaldırıldı:** `furigana-suggest` kutu elementleri (add/modal-add/edit) ve `.furigana-suggest`/`.furigana-chip` CSS'i silindi; `furigana_searching` i18n anahtarı artık kullanılmıyor (4 dilde zararsız olarak kaldı).
+- **`setupFuriganaAssist`:** Ana okuma alanı — kanji yazıldıkça (debounce 600ms) `generateFurigana` ile **sessizce otomatik doldurulur** (imza: `(kanjiInputId, furiganaInputId)` — 2 arg). Sadece alan boş ya da en son otomatik değer iken yazar (`dataset.autoFilled`) → manuel düzenlemeyi ezmez. **"Searching reading…" durum pili / öneri çipleri tamamen kaldırıldı:** `furigana-suggest` kutu elementleri (add/modal-add/edit) ve `.furigana-suggest`/`.furigana-chip` CSS'i silindi.
 - **`setupExampleFuriganaAssist`:** Örnek cümle yazıldıkça (debounce) tüm cümle parse edilir, `furiganaMap` otomatik üretilir ve ruby render edilir. Eski "kanji'ye tıkla → oku" akışı ve "Mark words" tetikleyicisi (`rowId`) kaldırıldı/gizlendi.
-- Kaldırılan kod: `KANJI_API_BASE`, `fetchKanjiReadings`, `fetchWordReadings`, `fetchReadingSuggestions`, eski `renderTokenEditor`/`onTokenClick`/`applyMark`. Kullanılmayan i18n anahtarları (`furigana_editor_hint`, `furigana_word_not_found`, `furigana_manual_label`, `furigana_not_found`, `furigana_searching`) zararsız olduğundan 4 dilde bırakıldı (artık hiçbiri render edilmiyor).
+- Kaldırılan kod: `KANJI_API_BASE`, `fetchKanjiReadings`, `fetchWordReadings`, `fetchReadingSuggestions`, eski `renderTokenEditor`/`onTokenClick`/`applyMark`. Eski kullanılmayan i18n anahtarları (`furigana_editor_hint`, `furigana_word_not_found`, `furigana_manual_label`, `furigana_not_found`, `furigana_searching`) 4 dilden de temizlendi.
 
 ## Uzun Metin Layout Sağlamlaştırma (v1.2.5)
 
@@ -313,3 +313,20 @@ Kullanıcıların destelerini herkese açık paylaşıp başkalarınınkini indi
 
 ### CSS (`src/index.html`)
 - `.community-grid` (mobil tek sütun; `.is-electron` 768px→2, 1024px→3 sütun), `.community-card`, `.community-desc`, `.community-tags`, `.community-card-foot`, `.community-dl-count`, `.community-state`, `.community-hub-head/sub`. Mevcut `.card`/`.btn`/`.badge-soft` sınıfları yeniden kullanıldı.
+
+## Smart AI Tutor (Milestone 2 — KanjiModal entegrasyonu)
+
+Gemini tabanlı mnemonik (hafıza hikâyesi) üreteci, kanji detay modalına eklendi. Altyapı (`src/services/aiService.js` → `generateMnemonic(kanji, meaning, reading, apiKey, model)`) ve ayar alanları (`migrateSettings` → `geminiApiKey`/`geminiModel`, Milestone 1) hazırdı; bu milestone yalnızca UI + tetikleme katmanı.
+
+### `src/components/KanjiModal.js`
+- **AI bölümü:** Sözlükte bulunan kanji için (entry varken) detay satırlarının altına `.ai-tutor-section` kapsayıcısı eklendi: "🧠 Generate AI Story" butonu (`#ai-story-btn`, `data-t="btn_ai_story"`) + boş çıktı div'i (`#ai-story-output`). Not-found dalında AI bölümü YOK (okuma/anlam olmadığından).
+- **Tetikleme (`wireAiTutor`):** `app.openModal` `innerHTML`'i **senkron** bastığından, butona dinleyici openModal'dan hemen sonra `getElementById` ile bağlanır (her açılışta taze buton → leak yok). Inline `onclick` + window global GEREKMEZ (close butonundan farklı olarak modül içinde kapalı kalır).
+- **Settings erişimi — BLUEPRINT'TEN SAPMA:** Görev `import appState from '../store/appState.js'` + `appState.settings.geminiApiKey` istedi; **uygulanmadı.** `appState.js` canlı `settings` taşıyan bir nesne export ETMEZ (yalnızca fonksiyonlar + `CONFIG`). Canlı ayarlar runtime `app.state.settings`'te yaşar (`Settings.js`'in `geminiApiKey`'i okuduğu yer). Bu yüzden anahtar/model **click anında** `app.state.settings`'ten okunur → modal açıldıktan sonra anahtar girilse bile güncel değer alınır.
+- **Akış:** anahtar yoksa `app.showToast(t('msg_ai_key_missing'))` + erken çıkış (buton dokunulmaz). Anahtar varsa: buton disable + metin `t('msg_ai_loading')` ("Thinking…") + çıktı temizlenir → `generateMnemonic(...)` → metin `#ai-story-output`'a (`textContent`, XSS-güvenli). Hata `try/catch`'te yakalanıp mevcut `t('warn_error', {msg})` anahtarıyla ("⚠ Error: …") gösterilir (yeni hata anahtarı eklenmedi). `finally`'de buton her durumda eski metnine + enable'a döner.
+- **Reading:** `[entry.onyomi, entry.kunyomi].filter(Boolean).join(' / ')` → AI'a hem on hem kun okuması verilir.
+
+### i18n — KASITLI YER DÜZELTMESİ
+Görev yeni anahtarları `src/data/locales/*.json`'a istedi; **oraya değil** `src/main.js`'deki `LANG` nesnesine eklendi. `src/data/locales/*.json` dosyaları kanji→anlam **sözlükleridir** (UI çevirisi değil); `t()` yalnızca `LANG`'dan okur → oraya eklemek hiçbir şey yapmazdı. 3 anahtar (`btn_ai_story`, `msg_ai_key_missing`, `msg_ai_loading`) 4 dilin de `kanji_meaning_en`'inden hemen sonra eklendi.
+
+### Doğrulama
+Vite preview'da canlı test edildi (`.kanji-clickable` enjekte → delegated listener gerçek yolu): (1) modal + AI bölümü render olur; (2) anahtarsız tık → toast + buton değişmez; (3) anahtar var + fetch stub → "Thinking…"/disabled → başarıda çıktı basılır, buton restore; (4) fetch hata → "⚠ Error: …" + buton restore. Test anahtarı localStorage'dan temizlendi.

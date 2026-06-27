@@ -5,9 +5,6 @@ let app;
 export function init(ctx) { app = ctx; }
 
 // ─── FURIGANA ASSIST (offline, bağlama duyarlı) ──────────────────────
-// Online sözlük API'sinin yerini `furiganaParser.js` (offline kuromoji)
-// aldı. Ana okuma alanı yazıldıkça SESSİZCE otomatik doldurulur — durum
-// çipleri/önerileri yok ("Searching reading…" pili kaldırıldı).
 function setupFuriganaAssist(kanjiInputId, furiganaInputId) {
   let kanjiInput = document.getElementById(kanjiInputId);
   const furiganaInput = document.getElementById(furiganaInputId);
@@ -48,9 +45,6 @@ function tokenizeSentence(sentence) {
   return tokens;
 }
 
-// Örnek cümle yazıldıkça (debounce) cümlenin tamamını offline parse eder,
-// furiganaMap'i otomatik üretir ve ruby olarak render eder. Eski "kanji'ye
-// tıkla → oku" akışı kaldırıldı; `btnId`/`rowId` (Mark words) artık gizli.
 function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   let input = document.getElementById(inputId);
   const row = document.getElementById(rowId);
@@ -92,6 +86,66 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   render(); // edit formunda önceden yüklü cümle/harita varsa hemen göster
 }
 
+// ─── CYCLE PREVENTION HELPER ─────────────────────────────────────────
+// Returns true if `checkId` is a descendant of `ancestorId`.
+function isDescendantOf(ancestorId, checkId) {
+  if (!checkId || !ancestorId) return false;
+  const descendants = app.getDescendantDecks(ancestorId);
+  return descendants.some(d => d.id === checkId);
+}
+
+// ─── MOVE DECK MODAL ────────────────────────────────────────────────
+export function showMoveDeckModal(deckId) {
+  const deck = app.findDeck(deckId);
+  if (!deck) return;
+  // Build list of valid targets: exclude self and all descendants
+  const descendantIds = new Set(app.getDescendantDecks(deckId).map(d => d.id));
+  descendantIds.add(deckId);
+  const tree = app.getDecksInTreeOrder();
+  const opts = tree
+    .filter(({ deck: d }) => !descendantIds.has(d.id))
+    .map(({ deck: d, depth }) => `<option value="${d.id}"${ (deck.parentId || null) === d.id ? ' selected' : ''}>${'\u3000'.repeat(depth)}${esc(d.name)}</option>`)
+    .join('');
+  const topSelected = !deck.parentId ? ' selected' : '';
+  app.openModal(app.t('move_deck'), `
+    <div class="form-group"><label>${app.t('move_to_label')}</label>
+    <select id="move-deck-target"><option value=""${topSelected}>${app.t('move_top_level')}</option>${opts}</select></div>
+    <div class="btn-row"><button class="btn btn-primary tap" onclick="moveDeck('${deckId}')">${app.icon('move')}${app.t('save')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
+  `);
+}
+
+export function moveDeck(deckId) {
+  const deck = app.findDeck(deckId);
+  if (!deck) return;
+  const sel = document.getElementById('move-deck-target');
+  const targetParentId = sel.value || null;
+  // Safety: cannot move into self
+  if (targetParentId === deckId) { app.showToast(app.t('warn_move_cycle')); return; }
+  // Safety: cannot move into own descendant
+  if (targetParentId && isDescendantOf(deckId, targetParentId)) { app.showToast(app.t('warn_move_cycle')); return; }
+  deck.parentId = targetParentId;
+  app.save();
+  app.closeModal();
+  renderDeckList();
+  app.renderGlobalStats();
+  app.showToast(app.t('toast_deck_moved'));
+}
+
+// Internal helper used by drag-drop — same validation, no modal
+function _moveDeckDirect(deckId, targetParentId) {
+  const deck = app.findDeck(deckId);
+  if (!deck) return false;
+  if (targetParentId === deckId) return false;
+  if (targetParentId && isDescendantOf(deckId, targetParentId)) return false;
+  if ((deck.parentId || null) === (targetParentId || null)) return false; // no-op
+  deck.parentId = targetParentId;
+  app.save();
+  renderDeckList();
+  app.renderGlobalStats();
+  app.showToast(app.t('toast_deck_moved'));
+  return true;
+}
+
 // ─── DECK LIST RENDER ────────────────────────────────────────────────
 export function renderDeckList() {
   const { state } = app;
@@ -108,7 +162,7 @@ export function renderDeckList() {
     const indent = depth * 1.2;
     const subInfo = hasChildren ? ` · ${app.t('sub_decks_count', {count: children.length})}` : '';
     return `
-    <div class="card" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
+    <div class="card deck-draggable" draggable="true" data-deck-id="${deck.id}" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
       <div class="card-row">
         <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
           <span>
@@ -116,11 +170,11 @@ export function renderDeckList() {
             <span class="deck-meta">${app.t('deck_meta', {total: s.total, mastered: s.mastered})}${subInfo}</span>
           </span>
         </button>
+        <button class="icon-btn tap deck-move-btn" onclick="event.stopPropagation();showMoveDeckModal('${deck.id}')" aria-label="${app.t('move_deck')}" title="${app.t('move_deck')}">${app.icon('move')}</button>
       </div>
       <div class="btn-row" style="margin-top:.6rem">
         ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${app.t('no_cards_to_study')}</span>`}
         <button class="btn btn-ghost tap" onclick="openDeck('${deck.id}')">${app.t('detail')}</button>
-        <button class="btn btn-ghost tap" onclick="publishDeckModal('${deck.id}')" aria-label="${app.t('community_publish')}">${app.icon('publish')}${app.t('community_publish')}</button>
       </div>
       <div class="btn-row" style="margin-top:.5rem">
         ${s.newC ? `<span class="badge badge-sky">${app.t('badge_new', {count: s.newC})}</span>` : ''}
@@ -129,7 +183,130 @@ export function renderDeckList() {
         ${s.mastered ? `<span class="badge badge-jade">${app.icon('star')}${s.mastered}</span>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `<div class="deck-drop-top-level" id="deck-drop-top-level">${app.icon('inbox')} ${app.t('move_top_level')}</div>`;
+
+  // ── Drag & Drop (desktop) ──────────────────────────────────────────
+  _attachDragAndDrop(container);
+  // ── Long-press (mobile) ────────────────────────────────────────────
+  _attachLongPress(container);
+}
+
+// ─── HTML5 DRAG & DROP ───────────────────────────────────────────────
+function _attachDragAndDrop(container) {
+  const cards = container.querySelectorAll('.deck-draggable');
+  const dropZone = document.getElementById('deck-drop-top-level');
+
+  cards.forEach(card => {
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', card.dataset.deckId);
+      e.dataTransfer.effectAllowed = 'move';
+      requestAnimationFrame(() => card.classList.add('dragging'));
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (dropZone) dropZone.classList.remove('drag-over');
+    });
+  });
+
+  // Delegate dragover/dragleave/drop on container for deck cards
+  if (!container._hasDndDelegation) {
+    container._hasDndDelegation = true;
+    container.addEventListener('dragover', e => {
+      const target = e.target.closest('.deck-draggable');
+      if (!target) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      // Only highlight if it's not the source
+      const srcId = e.dataTransfer.types.includes('text/plain') ? true : false;
+      if (srcId) {
+        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        target.classList.add('drag-over');
+      }
+    });
+
+    container.addEventListener('dragleave', e => {
+      const target = e.target.closest('.deck-draggable');
+      if (target) target.classList.remove('drag-over');
+    });
+
+    container.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetCard = e.target.closest('.deck-draggable');
+      container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (dropZone) dropZone.classList.remove('drag-over');
+      const srcId = e.dataTransfer.getData('text/plain');
+      if (!srcId || !targetCard) return;
+      const destId = targetCard.dataset.deckId;
+      if (srcId === destId) return;
+      if (!_moveDeckDirect(srcId, destId)) {
+        app.showToast(app.t('warn_move_cycle'));
+      }
+    });
+  }
+
+  // Drop-to-top-level zone
+  if (dropZone) {
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const srcId = e.dataTransfer.getData('text/plain');
+      if (!srcId) return;
+      _moveDeckDirect(srcId, null);
+    });
+  }
+}
+
+// ─── MOBILE LONG-PRESS (pointer events) ─────────────────────────────
+function _attachLongPress(container) {
+  if (container._hasLongPress) return;
+  container._hasLongPress = true;
+
+  const HOLD_MS = 500;
+  const MOVE_THRESHOLD = 10; // px — cancel if finger moves too far
+  let holdTimer = null;
+  let startX = 0, startY = 0;
+  let activeId = null;
+
+  function cancel() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    activeId = null;
+  }
+
+  container.addEventListener('pointerdown', e => {
+    // Only trigger on deck cards, ignore buttons/links inside
+    const card = e.target.closest('.deck-draggable');
+    if (!card) return;
+    // Don't interfere with buttons inside the card
+    if (e.target.closest('button') || e.target.closest('a')) return;
+    activeId = card.dataset.deckId;
+    startX = e.clientX;
+    startY = e.clientY;
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      if (activeId) {
+        showMoveDeckModal(activeId);
+        activeId = null;
+      }
+    }, HOLD_MS);
+  });
+
+  container.addEventListener('pointermove', e => {
+    if (!holdTimer) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) cancel();
+  });
+
+  container.addEventListener('pointerup', cancel);
+  container.addEventListener('pointercancel', cancel);
+
+  // Suppress context menu on deck cards (long-press on mobile triggers it)
+  container.addEventListener('contextmenu', e => {
+    if (e.target.closest('.deck-draggable')) e.preventDefault();
+  });
 }
 
 export function renderDeckDetail() {
@@ -254,7 +431,7 @@ export function saveCard() {
   const exTr = document.getElementById('add-example-tr').value.trim();
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
-  if (!kanji || !furigana || !meaning) { app.showToast(app.t('warn_required')); return; }
+  if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
   deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
@@ -282,9 +459,14 @@ export function bulkImport() {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const parts = trimmed.split('|').map(p => p.trim());
-    if (parts.length < 3) { skipped++; continue; }
-    const [kanji, furigana, meaning, exJp='', exTr=''] = parts;
-    if (!kanji || !furigana || !meaning) { skipped++; continue; }
+    if (parts.length < 2) { skipped++; continue; }
+    let kanji, furigana, meaning, exJp = '', exTr = '';
+    if (parts.length === 2) {
+      [kanji, meaning] = parts; furigana = '';
+    } else {
+      [kanji, furigana, meaning, exJp='', exTr=''] = parts;
+    }
+    if (!kanji || !meaning) { skipped++; continue; }
     deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr));
     added++;
   }
@@ -375,7 +557,7 @@ export function saveCardFromModal(deckId) {
   const exTr = document.getElementById('modal-add-example-tr').value.trim();
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
-  if (!kanji || !furigana || !meaning) { app.showToast(app.t('warn_required')); return; }
+  if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   app.save();
   app.showToast(app.t('toast_card_added', {kanji}));

@@ -1,6 +1,7 @@
 import { esc, nowMs, highlightKanji, shuffle } from '../utils.js';
 import { previewSRS, applySRS } from '../core/srsEngine.js';
 import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
+import { startSessionTimer, stopSessionTimer } from './Analytics.js';
 
 let app;
 let kanjiListenerAdded = false;
@@ -120,6 +121,7 @@ export function startStudy(deckId, masteredOnly) {
   studyCardIndex = 0;
   studyDoneToday = 0;
   studyShowingBack = false;
+  startSessionTimer();
   app.showView('study');
 }
 
@@ -127,6 +129,7 @@ export function renderStudy() {
   const screen = document.getElementById('study-screen');
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
+    stopSessionTimer();
     screen.innerHTML = `
       <div class="study-done">
         <div class="done-icon">${app.icon('done','ic-lg')}</div>

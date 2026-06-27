@@ -71,7 +71,7 @@ export function removePersistedSyncCode() {
 export function createInitialState() {
   return {
     version: 2,
-    settings: { ...CONFIG },
+    settings: { ...CONFIG, learnSteps: [...CONFIG.learnSteps] },
     stats: {
       reviewsByDate: {},
       streak: 0,
@@ -81,6 +81,7 @@ export function createInitialState() {
       lifetimeReviews: 0,
       shields: 1,
       lastShieldWeekStart: null,
+      dailyStats: {},
     },
     decks: [],
     customTests: [],
@@ -131,6 +132,7 @@ export function migrateStats(stats) {
   if (typeof s.currentStreak !== 'number') s.currentStreak = s.streak;
   if (typeof s.longestStreak !== 'number') s.longestStreak = s.streak;
   if (typeof s.lifetimeReviews !== 'number') s.lifetimeReviews = 0;
+  if (typeof s.dailyStats !== 'object' || !s.dailyStats) s.dailyStats = {};
   if (typeof s.lastStudyDate === 'undefined') {
     // En son GERÇEK çalışma gününü (count > 0, suffix'siz tarih) reviewsByDate'ten çıkar.
     // Kalkanla korunan günler count:0 ile düz anahtar oluşturduğundan onları eler.
@@ -164,6 +166,13 @@ export function pruneOldData(state) {
     // _new / _shielded yardımcı anahtarları yalnızca silinir.
     if (key.length === 10) s.lifetimeReviews += (s.reviewsByDate[key] || 0);
     delete s.reviewsByDate[key];
+  }
+  if (s.dailyStats && typeof s.dailyStats === 'object') {
+    for (const key of Object.keys(s.dailyStats)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+      const epochDay = Math.floor(new Date(key + 'T00:00:00Z').getTime() / 86400000);
+      if (!Number.isNaN(epochDay) && epochDay < cutoffEpoch) delete s.dailyStats[key];
+    }
   }
   return state;
 }

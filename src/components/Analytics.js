@@ -13,6 +13,9 @@ export function recordReview(isNew) {
     const k = td + '_new';
     state.stats.reviewsByDate[k] = (state.stats.reviewsByDate[k] || 0) + 1;
   }
+  if (!state.stats.dailyStats) state.stats.dailyStats = {};
+  if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0 };
+  state.stats.dailyStats[td].cardsStudied++;
   if (isFirstReviewToday) applyShieldsForMissedDays();
   updateStreak();
   awardWeeklyShieldIfEarned();
@@ -86,6 +89,42 @@ function awardWeeklyShieldIfEarned() {
   state.stats.lastShieldWeekStart = curWeekStart;
 }
 
+// ─── SESSION TIMER ───────────────────────────────────────────────────
+let _sessionTimerInterval = null;
+let _sessionLastTick = 0;
+
+export function startSessionTimer() {
+  stopSessionTimer();
+  _sessionLastTick = nowMs();
+  _sessionTimerInterval = setInterval(() => {
+    const now = nowMs();
+    const elapsed = now - _sessionLastTick;
+    _sessionLastTick = now;
+    const { state } = app;
+    const td = today();
+    if (!state.stats.dailyStats) state.stats.dailyStats = {};
+    if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0 };
+    state.stats.dailyStats[td].timeSpentMs += elapsed;
+  }, 1000);
+}
+
+export function stopSessionTimer() {
+  if (_sessionTimerInterval) {
+    clearInterval(_sessionTimerInterval);
+    _sessionTimerInterval = null;
+  }
+}
+
+function getDailyStats() {
+  const { state } = app;
+  const td = today();
+  const ds = state.stats.dailyStats && state.stats.dailyStats[td];
+  return {
+    cardsStudied: ds ? ds.cardsStudied : 0,
+    timeSpentMs: ds ? ds.timeSpentMs : 0,
+  };
+}
+
 // ─── GLOBAL STATS ────────────────────────────────────────────────────
 export function globalStats() {
   const { state } = app;
@@ -132,10 +171,14 @@ function flameLevel(streak) {
 // ─── RENDER ──────────────────────────────────────────────────────────
 export function renderGlobalStats() {
   const s = globalStats();
+  const ds = getDailyStats();
+  const mins = Math.floor(ds.timeSpentMs / 60000);
   document.getElementById('global-stats').innerHTML = `
     <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${app.t('total_cards')}</div></div>
     <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${app.t('mastered_label')}</div></div>
     <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">${app.t('today_label')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${ds.cardsStudied}</div><div class="stat-lbl">${app.t('daily_cards_studied')}</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${mins}</div><div class="stat-lbl">${app.t('daily_time_spent')}</div></div>
   `;
   renderStreakCard();
   renderHeatmap();

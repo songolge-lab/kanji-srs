@@ -149,6 +149,7 @@ export function computeSRS(card, grade, settings, now, preview) {
     // ── INTRADAY STEP PHASE (minutes) ──
     const relearning = srs.state === 'relearning';
     const stepState = relearning ? 'relearning' : 'learning';
+    srs.stepIndex = srs.stepIndex || 0;
 
     if (grade === 0) { // Again → restart steps
       srs.state = stepState;

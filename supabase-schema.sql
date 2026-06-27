@@ -1,7 +1,7 @@
 -- ─── APP STATE ────────────────────────────────────────────────────────
 -- Core sync table: one row per sync_code, stores full client state as JSONB.
 CREATE TABLE IF NOT EXISTS app_state (
-  sync_code   TEXT PRIMARY KEY,
+  code        TEXT PRIMARY KEY,
   state       JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -15,12 +15,12 @@ CREATE POLICY app_state_select
 
 CREATE POLICY app_state_insert
   ON app_state FOR INSERT
-  WITH CHECK (sync_code IS NOT NULL);
+  WITH CHECK (code IS NOT NULL);
 
 CREATE POLICY app_state_update
   ON app_state FOR UPDATE
   USING (true)
-  WITH CHECK (sync_code IS NOT NULL);
+  WITH CHECK (code IS NOT NULL);
 
 -- ─── AUTO-UPDATED_AT TRIGGER ─────────────────────────────────────────
 -- Sets updated_at = now() on every UPDATE. Shared by all tables with updated_at.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
@@ -262,8 +262,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 #app {
   max-width: 600px;
   margin: 0 auto;
-  min-height: 100vh;
-  padding: calc(var(--safe-t) + .25rem) 1rem calc(76px + var(--safe-b) + 1rem);
+  min-height: 100dvh;
+  padding: calc(var(--safe-t) + .25rem) 1rem calc(80px + var(--safe-b) + 1rem);
 }
 
 /* =====================================================================
@@ -675,6 +675,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap: .55rem;
   margin-bottom: 1.1rem;
+}
+#global-stats { grid-template-columns: repeat(5, minmax(0,1fr)); }
+@media (max-width: 420px) {
+  #global-stats {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
 }
 .stat-box {
   background: var(--card);
@@ -1181,6 +1187,71 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .empty p { margin-bottom: 1.2rem; }
 
 /* =====================================================================
+   DECK DRAG & DROP / MOVE
+   ===================================================================== */
+.deck-draggable {
+  touch-action: pan-y;        /* allow vertical scroll, prevent browser long-press actions */
+  -webkit-touch-callout: none; /* suppress iOS callout on long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity .2s, border-color .2s, box-shadow .2s;
+  cursor: grab;
+  position: relative;
+}
+.deck-draggable:active { cursor: grabbing; }
+
+/* ── Dragging source ─────────────────────────────────────────────── */
+.deck-draggable.dragging {
+  opacity: .4;
+  border: 2px dashed var(--ink-soft);
+  box-shadow: none;
+}
+
+/* ── Drop target highlight ───────────────────────────────────────── */
+.deck-draggable.drag-over {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px rgba(100, 160, 255, .35), var(--sh-sm);
+}
+
+/* ── Move button in deck card ────────────────────────────────────── */
+.deck-move-btn {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  opacity: .55;
+  transition: opacity .15s;
+}
+.deck-move-btn:hover, .deck-move-btn:focus-visible { opacity: 1; }
+.deck-move-btn .ic { width: 16px; height: 16px; }
+
+/* ── Drop-to-top-level zone ──────────────────────────────────────── */
+.deck-drop-top-level {
+  display: none;  /* hidden by default, shown only when dragging */
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 1rem;
+  margin-top: .5rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--r-lg);
+  color: var(--ink-soft);
+  font-size: .85rem;
+  text-align: center;
+  transition: border-color .2s, background .2s, color .2s;
+}
+.deck-drop-top-level .ic { width: 16px; height: 16px; }
+.deck-drop-top-level.drag-over {
+  border-color: var(--sky);
+  background: rgba(100, 160, 255, .08);
+  color: var(--sky);
+}
+/* Show the drop zone when any deck is being dragged */
+.deck-draggable.dragging ~ .deck-drop-top-level,
+#deck-list:has(.dragging) .deck-drop-top-level {
+  display: flex;
+}
+
+
+/* =====================================================================
    MISC
    ===================================================================== */
 .mt-1 { margin-top: .5rem; }
@@ -1468,7 +1539,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
           <input type="text" id="add-kanji" data-pt="kanji_placeholder" placeholder="e.g. 漢字">
         </div>
         <div class="form-group">
-          <label><span data-t="furigana_label">Furigana (reading)</span> <span class="required">*</span></label>
+          <label><span data-t="furigana_label">Furigana (reading)</span></label>
           <input type="text" id="add-furigana" data-pt="furigana_placeholder" placeholder="e.g. かんじ">
         </div>
         <div class="form-group">
