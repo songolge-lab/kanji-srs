@@ -88,16 +88,24 @@ class SmartDictionaryLoader extends DictionaryLoader {
 }
 
 let _tokenizerPromise = null;
+let _tokenizerInstance = null;
 
 export function getTokenizer() {
   if (_tokenizerPromise) return _tokenizerPromise;
   _tokenizerPromise = new Promise((resolve, reject) => {
     new SmartDictionaryLoader(DIC_PATH).load((err, dic) => {
       if (err) { _tokenizerPromise = null; reject(err); }
-      else resolve(new Tokenizer(dic));
+      else {
+        _tokenizerInstance = new Tokenizer(dic);
+        resolve(_tokenizerInstance);
+      }
     });
   });
   return _tokenizerPromise;
+}
+
+export function getTokenizerSync() {
+  return _tokenizerInstance;
 }
 
 // İsteğe bağlı: tokenizer'ı erkenden ısıtmak için (sonucu beklemeden çağır).

@@ -783,6 +783,73 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .deck-sub-badge { font-weight: 600; vertical-align: middle; }
 
 /* =====================================================================
+   SEARCH VIEW
+   ===================================================================== */
+#search-header-bar {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-input-wrap .ic-search {
+  position: absolute;
+  left: .8rem;
+  color: var(--ink-soft);
+  width: 18px; height: 18px;
+}
+#search-input {
+  width: 100%;
+  padding: .65rem 2.2rem .65rem 2.4rem;
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md);
+  font-size: .95rem;
+  color: var(--ink);
+  transition: border-color .2s;
+}
+#search-input:focus { outline: none; border-color: var(--hanko); }
+#search-clear-btn {
+  position: absolute;
+  right: .5rem;
+  width: 32px; height: 32px;
+  background: none; border: none;
+  color: var(--ink-soft);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+}
+#search-clear-btn:active { background: var(--line-soft); }
+#search-filter {
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md);
+  padding: 0 .6rem;
+  font-size: .85rem;
+  color: var(--ink);
+}
+.search-badge-row {
+  margin-bottom: .8rem;
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+.search-deck-badge {
+  background: var(--sky-bg);
+  color: var(--sky);
+  font-size: .7rem;
+  padding: .15rem .45rem;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  display: inline-block;
+  margin-top: .25rem;
+}
+
+/* =====================================================================
    STUDY SCREEN
    ===================================================================== */
 .study-header {
@@ -1241,6 +1308,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   overflow-y: auto;
   transform: translateY(30px);
   transition: transform .25s;
+  position: relative;
+  z-index: 1;
 }
 #modal-bg.show #modal { transform: translateY(0); }
 #modal h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; }
@@ -1543,6 +1612,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
     </div>
   </div>
 
+  <!-- VIEW: SEARCH -->
+  <div id="view-search" class="view">
+    <div id="search-content"></div>
+  </div>
+
   <!-- VIEW: DECK DETAIL -->
   <div id="view-deck" class="view">
     <div id="deck-detail-content"></div>
@@ -1625,6 +1699,11 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
         <button class="btn btn-block btn-primary tap" id="btn-save-card" data-t="save">Save</button>
     </div>
 
+    <div class="section-hd" data-t="modal_ai_deck_title">Generate AI Deck</div>
+    <div class="card">
+      <button class="btn btn-block btn-primary tap" id="btn-ai-deck" data-t="btn_ai_deck">✨ AI Deck</button>
+    </div>
+
     <div class="section-hd" data-t="bulk_import_title">Bulk import</div>
     <div class="card">
       <div class="form-group">
@@ -1638,11 +1717,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
         <div class="form-hint" data-t="bulk_format">Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)</div>
       </div>
       <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-t="import_btn">Import</button>
-    </div>
-
-    <div class="section-hd" data-t="modal_ai_deck_title">Generate AI Deck</div>
-    <div class="card">
-      <button class="btn btn-block btn-primary tap" id="btn-ai-deck" data-t="btn_ai_deck">✨ AI Deck</button>
     </div>
   </div>
 
@@ -1688,6 +1762,10 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <button class="nav-item active tap" data-view="decks" id="nav-decks">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
     <span data-t="nav_decks">Decks</span>
+  </button>
+  <button class="nav-item tap" data-view="search" id="nav-search">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <span data-t="nav_search">Search</span>
   </button>
   <button class="nav-item tap" data-view="add" id="nav-add">
     <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" style="width: 17px; height: 14px"/><path d="M12 9.3v5.4M9.3 12h5.4"/></svg>
