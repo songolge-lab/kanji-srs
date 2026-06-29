@@ -490,7 +490,7 @@ export function openDeck(deckId) { app.currentDeckId = deckId; app.showView('dec
 // ─── ADD FORM ────────────────────────────────────────────────────────
 export function renderAddForm() {
   populateDeckSelects();
-  setupFuriganaAssist('add-kanji', 'add-furigana');
+  warmupFurigana(); // furigana alanı kaldırıldı → kayıt anı oto-üretim için tokenizer'ı ısıt
   setupExampleFuriganaAssist('add-example-jp', 'add-example-mark-row', 'add-example-mark-btn', 'add-example-furigana-editor');
   app.attachPreviewListeners('add-', 'add-preview-wrap');
   app.updatePreview('add-', 'add-preview-wrap');
@@ -508,7 +508,7 @@ function populateDeckSelects() {
 export async function saveCard() {
   const deckId = document.getElementById('add-deck-select').value;
   const kanji = document.getElementById('add-kanji').value.trim();
-  let furigana = document.getElementById('add-furigana').value.trim();
+  let furigana = ''; // furigana alanı kaldırıldı → kayıt anında oto-üretilir
   const meaning = document.getElementById('add-meaning').value.trim();
   const exJpEl = document.getElementById('add-example-jp');
   const exJp = exJpEl.value.trim();
@@ -523,7 +523,6 @@ export async function saveCard() {
   app.save();
   app.showToast(app.t('toast_card_added', {kanji}));
   document.getElementById('add-kanji').value = '';
-  document.getElementById('add-furigana').value = '';
   document.getElementById('add-meaning').value = '';
   document.getElementById('add-example-jp').value = '';
   document.getElementById('add-example-jp').dataset.furiganaMap = '{}';
@@ -549,16 +548,16 @@ export async function bulkImport() {
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
+      // Yeni sadeleştirilmiş format (furigana oto-üretildiğinden kaldırıldı):
+      //   Kelime | Anlam | Örnek JP (ops) | Örnek TR (ops)
       const parts = trimmed.split('|').map(p => p.trim());
       if (parts.length < 2) { skipped++; continue; }
-      let kanji, furigana, meaning, exJp = '', exTr = '';
-      if (parts.length === 2) {
-        [kanji, meaning] = parts; furigana = '';
-      } else {
-        [kanji, furigana, meaning, exJp='', exTr=''] = parts;
-      }
+      const kanji = parts[0];
+      const meaning = parts[1];
+      const exJp = parts[2] || '';
+      const exTr = parts[3] || '';
       if (!kanji || !meaning) { skipped++; continue; }
-      furigana = await autoFurigana(furigana, kanji); // 2 alanlı satır / boş furigana → otomatik
+      const furigana = await autoFurigana('', kanji); // her zaman offline oto-üretim
       deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr));
       added++;
     }
@@ -627,15 +626,14 @@ export function showAddCardModal(deckId) {
   app.openModal(`${esc(deck.name)} — ${app.t('add_card')}`, `
     <div id="modal-add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="form-group"><label>${app.t('kanji_label')} <span class="required">*</span></label><input type="text" id="modal-add-kanji" placeholder="${app.t('kanji_placeholder')}"></div>
-    <div class="form-group"><label>${app.t('furigana_label')}</label><input type="text" id="modal-add-furigana" placeholder="${app.t('furigana_auto_placeholder')}"></div>
     <div class="form-group"><label>${app.t('meaning_label')} <span class="required">*</span></label><input type="text" id="modal-add-meaning" placeholder="${app.t('meaning_placeholder')}"></div>
     <div class="form-group"><label>${app.t('example_jp_label')}</label><input type="text" id="modal-add-example-jp" placeholder="${app.t('example_jp_placeholder')}"><div class="furigana-mark-row" id="modal-add-example-mark-row" style="display:none"><button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${app.icon('spark')} ${app.t('mark_words_btn')}</button></div><div id="modal-add-example-furigana-editor"></div></div>
     <div class="form-group"><label>${app.t('example_tr_label')}</label><input type="text" id="modal-add-example-tr" placeholder="${app.t('example_tr_placeholder')}"></div>
     <div class="btn-row"><button class="btn btn-primary tap" onclick="saveCardFromModal('${deckId}')">${app.t('save')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
   `);
-  setupFuriganaAssist('modal-add-kanji', 'modal-add-furigana');
+  warmupFurigana(); // furigana alanı kaldırıldı → kayıt anı oto-üretim için tokenizer'ı ısıt
   setupExampleFuriganaAssist('modal-add-example-jp', 'modal-add-example-mark-row', 'modal-add-example-mark-btn', 'modal-add-example-furigana-editor');
-  ['modal-add-kanji','modal-add-furigana','modal-add-meaning','modal-add-example-jp','modal-add-example-tr'].forEach(id => {
+  ['modal-add-kanji','modal-add-meaning','modal-add-example-jp','modal-add-example-tr'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') saveCardFromModal(deckId); });
   });
   app.attachPreviewListeners('modal-add-', 'modal-add-preview-wrap');
@@ -645,7 +643,7 @@ export async function saveCardFromModal(deckId) {
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
   const kanji = document.getElementById('modal-add-kanji').value.trim();
-  let furigana = document.getElementById('modal-add-furigana').value.trim();
+  let furigana = ''; // furigana alanı kaldırıldı → kayıt anında oto-üretilir
   const meaning = document.getElementById('modal-add-meaning').value.trim();
   const exJpEl = document.getElementById('modal-add-example-jp');
   const exJp = exJpEl.value.trim();
@@ -659,7 +657,6 @@ export async function saveCardFromModal(deckId) {
   app.showToast(app.t('toast_card_added', {kanji}));
   renderDeckDetail();
   document.getElementById('modal-add-kanji').value = '';
-  document.getElementById('modal-add-furigana').value = '';
   document.getElementById('modal-add-meaning').value = '';
   document.getElementById('modal-add-example-jp').value = '';
   document.getElementById('modal-add-example-jp').dataset.furiganaMap = '{}';

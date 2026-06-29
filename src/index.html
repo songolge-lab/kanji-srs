@@ -941,6 +941,12 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   padding: 1.6rem 1.2rem;
 }
 .card-preview-modal .fc-kanji { font-size: clamp(3rem, 16vw, 5rem); }
+/* Uzun metin (kanjiSizeClass → fc-kanji-sm/-xs) modalda dev kalmasın: base
+   `.card-preview-modal .fc-kanji` kuralıyla aynı özgüllükte (2 sınıf) olan
+   `.fc-kanji.fc-kanji-sm/-xs` kuralları kaynak sırasında geride kalıp eziliyordu;
+   modal kapsamlı (3 sınıf) override ile küçültme sınıfları geri kazandırılır. */
+.card-preview-modal .fc-kanji.fc-kanji-sm { font-size: clamp(1.5rem, 8vw, 2.6rem); }
+.card-preview-modal .fc-kanji.fc-kanji-xs { font-size: clamp(1rem, 5vw, 1.5rem); }
 /* Ön yüz kanji'si çalışma kartındaki gibi hanko vurgulu (tıklanamaz). */
 .card-preview-modal .fc-preview-front .fc-kanji { color: var(--hanko); }
 
@@ -1504,7 +1510,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <!-- VIEW: DECK LIST -->
   <div id="view-decks" class="view active">
     <div class="stats-grid" id="global-stats"></div>
-    <div class="card" id="forecast-chart-container"></div>
     <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
     <div class="section-hd" data-t="my_decks">My Decks</div>
     <div id="deck-list"></div>
@@ -1575,10 +1580,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
           <input type="text" id="add-kanji" data-pt="kanji_placeholder" placeholder="e.g. 漢字">
         </div>
         <div class="form-group">
-          <label><span data-t="furigana_label">Furigana (reading)</span></label>
-          <input type="text" id="add-furigana" data-pt="furigana_auto_placeholder" placeholder="Leave blank for auto-generation">
-        </div>
-        <div class="form-group">
           <label><span data-t="meaning_label">Meaning</span> <span class="required">*</span></label>
           <input type="text" id="add-meaning" data-pt="meaning_placeholder" placeholder="e.g. kanji, Chinese character">
         </div>
@@ -1609,7 +1610,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
       <div class="form-group">
         <label data-t="card_list">Card list</label>
         <textarea id="bulk-input" rows="7"
-          placeholder="漢字 | かんじ | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | みず | water | 水を飲みます。&#10;食べる | たべる | to eat | パンを食べる。"></textarea>
+          placeholder="漢字 | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | water | 水を飲みます。&#10;食べる | to eat"></textarea>
         <div class="form-hint" data-t="bulk_format">Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)</div>
       </div>
       <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-t="import_btn">Import</button>

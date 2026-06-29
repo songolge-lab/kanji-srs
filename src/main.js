@@ -19,7 +19,7 @@ import { generateFuriganaMap } from './utils/furiganaParser.js';
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = '2.1.1';
+const APP_VERSION = '2.1.2';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {

@@ -182,7 +182,6 @@ export function renderGlobalStats() {
     <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${ds.cardsStudied}</div><div class="stat-lbl">${app.t('daily_cards_studied')}</div></div>
   `;
   renderStreakCard();
-  renderForecastChart();
 }
 
 // ─── 7-DAY REVIEW FORECAST ───────────────────────────────────────────
@@ -304,8 +303,10 @@ export function renderStreakScreen() {
       <div class="shield-text"><span class="shield-count">${shields}</span> ${app.t('shield_text')}</div>
     </div>
     <div class="card" id="cal-container"></div>
+    <div class="card" id="forecast-chart-container"></div>
   `;
   renderCalendarGrid();
+  renderForecastChart();
 }
 
 export function changeCalendarMonth(delta) {

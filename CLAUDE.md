@@ -305,7 +305,7 @@ Vite preview'da canlı test edildi (örnek desteden 2 kart gradelendi → takvim
 
 ## 7 Günlük Tekrar Tahmini (Forecast Bar Chart) — Saf CSS/DOM
 
-Deck dashboard'una (`view-decks`), `#global-stats` ile streak kartı arasına FSRS `srs.due` zaman damgalarından türetilen 7 günlük "vadesi gelecek kart" çubuk grafiği eklendi. **Harici grafik kütüphanesi yok** (Chart.js vb.) — saf Vanilla JS + CSS Flexbox.
+FSRS `srs.due` zaman damgalarından türetilen 7 günlük "vadesi gelecek kart" çubuk grafiği. **Harici grafik kütüphanesi yok** (Chart.js vb.) — saf Vanilla JS + CSS Flexbox. **Konum (UI cila, bkz. aşağıdaki "UI Cila" bölümü):** Eskiden deck dashboard'unda (`view-decks`, `#global-stats` ↔ streak kartı arası) statik dururdu; dashboard'u sadeleştirmek için **Çalışma Takvimi ekranına (`view-streak`) takvim grid'inin hemen altına** taşındı.
 
 ### Veri (`Analytics.js → getForecastData(days = 7)`)
 - Tüm destelerin tüm kartlarını dolaşır, `card.srs.due` (ms zaman damgası) okur. **UTC gün kovalama:** tüm tarih sistemi (`today()`/`dateStrToEpochDay`) UTC sınırı kullandığından due ms'i `Math.floor(due / 86400000)` ile UTC epoch gününe çevrilir → `todayEpoch` ile farkı index verir.
@@ -314,9 +314,9 @@ Deck dashboard'una (`view-decks`), `#global-stats` ile streak kartı arasına FS
 - Dönüş: `[{ dateStr, count, label }]`. `label` `weekdays_short` (Pzt=0) dizisinden `((epoch % 7) + 10) % 7` indeksiyle alınır → dile duyarlı (setLang ile değişir).
 
 ### Render (`Analytics.js → renderForecastChart()`)
-- `#forecast-chart-container` (index.html'de statik `.card`) içine basar. `maxCount = max(count)`; çubuk yüksekliği `(count / maxCount) * 100%` — **`maxCount === 0` güvenli** (tüm yükseklikler `0%`).
+- `#forecast-chart-container` (`renderStreakScreen()` HTML'inde `#cal-container`'dan hemen sonra basılan `.card`) içine basar. `maxCount = max(count)`; çubuk yüksekliği `(count / maxCount) * 100%` — **`maxCount === 0` güvenli** (tüm yükseklikler `0%`).
 - Her sütun: üstte sayı (`.forecast-count`), ortada çubuk (`.forecast-bar`, boş günde `.is-empty` soluk), altta gün etiketi (`.forecast-label`, bugün `.is-today` → `--hanko` vurgu).
-- **Wiring:** `renderGlobalStats()` sonunda `renderStreakCard()`'tan hemen sonra çağrılır → dashboard her render olduğunda (boot, `showView('decks')`, `setLang`, deck CRUD, grade sonrası `app.renderGlobalStats`) otomatik tazelenir. Ayrı window global / cross-ref GEREKMEZ (inline onclick yok).
+- **Wiring (UI cila sonrası):** `renderStreakScreen()` sonunda `renderCalendarGrid()`'ten hemen sonra çağrılır → Çalışma Takvimi ekranı her açıldığında (`showView('streak')`) tazelenir. `renderGlobalStats()`'tan **kaldırıldı** (artık dashboard'da değil). Ayrı window global / cross-ref GEREKMEZ. NOT: `renderCalendarGrid()` yalnızca `#cal-container`'ı yeniden çizer; forecast `renderStreakScreen` HTML'inde ayrı kart olduğundan ay değişimi/gün seçiminde silinmez.
 
 ### CSS (`index.html`)
 - `.forecast-chart` flex satırı (`align-items:flex-end`); `.forecast-bar-track` **sabit 130px** + `padding-top:1.15rem` (yüksek çubuğun üstündeki sayı için tepe boşluğu, `box-sizing:border-box`). Çubuk `background-color:var(--jade)`, `border-radius:4px 4px 0 0`, `transition:height .3s`, `min-height:3px`. `flex:1 1 0` + `min-width:0` ile mobilde 7 sütun yatay taşmadan sığar (canlı: `overflowX:none`).
@@ -446,9 +446,34 @@ Kullanıcı Furigana alanını **tamamen yok sayıp** Save'e basabilir; sistem k
 ### Kayıt/Edit/Import yakalama (`src/components/DeckList.js`)
 - **`autoFurigana(furigana, word)` yardımcısı (modül-içi, async):** `furigana` doluysa dokunmaz; boşsa `await generateFurigana(word)` (try/catch → hata/parser-hazır-değil durumunda `''`, kayıt **asla** engellenmez).
 - **`saveCard` / `saveCardFromModal` / `saveEditCard` → `async`:** Validasyon + `findDeck`'ten **sonra**, `makeCard`/atamadan **hemen önce** `furigana = await autoFurigana(...)`. `furigana` `const`→`let`. Bu, debounce'lu `setupFuriganaAssist` (600ms) henüz çalışmadan kullanıcı hızla Save'e basarsa devreye giren **garanti fallback**'tir.
-- **`bulkImport` → `async`:** Zaten `for...of` döngüsü; her satırda `furigana = await autoFurigana(furigana, kanji)` (2-alanlı `Word | Meaning` satırları veya boş furigana otomatik doldurulur). Sıralı işlenir (crash yok). Buton `try/finally` ile kilitlenir + `ai_generating` ("Generating…") gösterir (çift gönderim engeli), sonunda eski etikete döner.
+- **`bulkImport` → `async`:** `for...of` döngüsü; her satırda `furigana` her zaman offline oto-üretilir. **Pipe formatı UI cila ile sadeleştirildi (bkz. "UI Cila" bölümü):** eski `Word | Furigana | Meaning | …` yerine artık `Word | Meaning | Example JP (ops) | Example TR (ops)` (`parts[0]=kanji, [1]=meaning, [2]=exJp, [3]=exTr`; `furigana = await autoFurigana('', kanji)`). Sıralı işlenir (crash yok). Buton `try/finally` ile kilitlenir + `ai_generating` ("Generating…") gösterir (çift gönderim engeli), sonunda eski etikete döner.
 - **Async wiring güvenli:** Tüm bu fonksiyonlar inline `onclick` / `addEventListener` ile çağrılır (fire-and-forget); async dönüş promise'i sorun çıkarmaz.
 
 ### UI Polish
-- **Placeholder:** Yeni i18n anahtarı `furigana_auto_placeholder` 4 dile (`furigana_placeholder`'dan hemen sonra): en "Leave blank for auto-generation" / tr "Otomatik oluşturmak için boş bırakın" / ko "자동 생성하려면 비워 두세요" / mn "Автоматаар үүсгэхийн тулд хоосон үлдээнэ үү". `index.html` `#add-furigana` `data-pt` → `furigana_auto_placeholder`; modal `#modal-add-furigana` + `#edit-furigana` placeholder'ları da bu anahtarı kullanır.
+- **Placeholder:** Yeni i18n anahtarı `furigana_auto_placeholder` 4 dile (`furigana_placeholder`'dan hemen sonra): en "Leave blank for auto-generation" / tr "Otomatik oluşturmak için boş bırakın" / ko "자동 생성하려면 비워 두세요" / mn "Автоматаар үүсгэхийн тулд хоосон үлдээнэ үү". **NOT (UI cila):** `#add-furigana` ve `#modal-add-furigana` alanları sonradan **tamamen kaldırıldı** (bkz. "UI Cila" bölümü); placeholder anahtarı yalnızca `#edit-furigana`'da kalan manuel override alanı için kullanılır.
 - **`*` kaldırıldı:** Add-card modalindeki Furigana label'ından yanıltıcı `<span class="required">*</span>` çıkarıldı (alan artık opsiyonel/oto — add-form view'ı zaten `*`'sizdi).
+
+## UI Cila — Forecast Taşıma, Önizleme Boyut Düzeltmesi, Add-Card Furigana Kaldırma
+
+Furigana artık %100 oto-üretildiğinden ve dashboard sadeleştirilmek istendiğinden 3 UI cila değişikliği. Çekirdek FSRS motoru ve sync akışlarına dokunulmadı. Vite preview'da canlı doğrulandı (eval + screenshot).
+
+### 1. Forecast grafiği Çalışma Takvimine taşındı
+- **`index.html`:** `view-decks`'teki statik `<div class="card" id="forecast-chart-container">` **kaldırıldı** (artık dashboard'da değil).
+- **`Analytics.js`:** `renderGlobalStats()` içindeki `renderForecastChart()` çağrısı **silindi**. `renderStreakScreen()` HTML'ine `#cal-container`'dan hemen sonra `<div class="card" id="forecast-chart-container">` eklendi; `renderCalendarGrid()`'ten hemen sonra `renderForecastChart()` çağrılır. (Ayrıntı + neden: yukarıdaki "7 Günlük Tekrar Tahmini" bölümü güncellendi.)
+- **Doğrulama:** dashboard'da forecast yok; `showView('streak')` → takvim grid'inin altında "7-Day Review Forecast" + 7 sütun (bugün/Mon `--hanko` vurgulu). Konsol hatası yok.
+
+### 2. Kart Önizleme Modalı dev-font bugı (CSS özgüllük çakışması)
+- **Kök neden:** `showCardPreviewModal()` zaten `kanjiSizeClass(card.kanji)` ile `.fc-kanji-sm/-xs` sınıfını uyguluyordu (JS doğruydu). Ama `index.html`'de `.card-preview-modal .fc-kanji { font-size: clamp(3rem,16vw,5rem) }` (2 sınıf özgüllüğü) ile küçültücü `.fc-kanji.fc-kanji-sm/-xs` kuralları (yine 2 sınıf) **eşit özgüllükte** olduğundan, kaynak sırasında geride kalan küçültücüler eziliyordu → uzun metin modalda devasa kalıyordu.
+- **Düzeltme (`index.html`, sadece CSS):** Modal kapsamlı (3 sınıf özgüllüklü) override eklendi: `.card-preview-modal .fc-kanji.fc-kanji-sm { clamp(1.5rem,8vw,2.6rem) }` + `.fc-kanji-xs { clamp(1rem,5vw,1.5rem) }`. `overflow-wrap:anywhere; word-wrap:break-word` zaten base `.fc-kanji`'de mevcut (miras alınır).
+- **Doğrulama (computed font-size):** base 80px, sm 41.6px, xs 24px (kademeli küçülme); `overflowWrap:anywhere`. Düzeltme öncesi üçü de 80px olurdu.
+
+### 3. Furigana alanı Add-Card akışlarından kaldırıldı (yalnız Edit'te kalır)
+- **`index.html`:** `view-add` ADD CARD bölümündeki Furigana `<input id="add-furigana">` form-group'u silindi. Bulk import textarea placeholder'ı yeni formata güncellendi (`漢字 | kanji | 例文 | translation`).
+- **`DeckList.js`:**
+  - `showAddCardModal`: `#modal-add-furigana` form-group'u + `setupFuriganaAssist('modal-add-kanji','modal-add-furigana')` çağrısı + keydown forEach'teki `'modal-add-furigana'` kaldırıldı.
+  - `renderAddForm` + `showAddCardModal`: kaldırılan `setupFuriganaAssist` çağrısının yaptığı **tokenizer ön-ısıtma** kaybolmasın diye yerine doğrudan `warmupFurigana()` eklendi.
+  - `saveCard` / `saveCardFromModal`: kaldırılan alanı okuyan satırlar `let furigana = ''` ile değiştirildi (kayıt anında `autoFurigana` zaten oto-üretir); ilgili `.value = ''` reset satırları silindi (null-ref crash önlendi).
+  - `bulkImport`: yeni 4-alanlı parse (madde 1'deki format), `furigana = await autoFurigana('', kanji)`.
+- **`main.js`:** Add-form Enter-key forEach dizisinden `'add-furigana'` çıkarıldı (opsiyonel-zincir zaten güvenliydi, temizlik). `bulk_format` i18n anahtarı 4 dilde sadeleştirildi: "Format: Word | Meaning | Example JP (opt) | Example TR (opt)".
+- **Edit modalı korundu:** `showEditModal` → `#edit-furigana` (manuel override fallback) + `setupFuriganaAssist('edit-kanji','edit-furigana')` dokunulmadı.
+- **Doğrulama:** add-form/add-modal'da furigana input yok (kanji+meaning var, açılış crash yok); edit-modal'da furigana var (auto placeholder'lı); bulk hint yeni formatı gösterir.
