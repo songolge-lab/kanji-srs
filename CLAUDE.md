@@ -359,30 +359,39 @@ Kullanıcıların destelerini herkese açık paylaşıp başkalarınınkini indi
 ### CSS (`src/index.html`)
 - `.community-grid` (mobil tek sütun; `.is-electron` 768px→2, 1024px→3 sütun), `.community-card`, `.community-desc`, `.community-tags`, `.community-card-foot`, `.community-dl-count`, `.community-state`, `.community-hub-head/sub`. Mevcut `.card`/`.btn`/`.badge-soft` sınıfları yeniden kullanıldı.
 
-## Smart AI Tutor (Milestone 2 — KanjiModal entegrasyonu)
+## Jukugo Smart Word Modal (eski AI Mnemonik'in yerini aldı)
 
-Gemini tabanlı mnemonik (hafıza hikâyesi) üreteci, kanji detay modalına eklendi. Altyapı (`src/services/aiService.js` → `generateMnemonic(kanji, meaning, reading, apiKey, model, targetLang)`) ve ayar alanları (`migrateSettings` → `geminiApiKey`/`geminiModel`, Milestone 1) hazırdı; bu milestone yalnızca UI + tetikleme katmanı.
+Kullanıcı arka yüzdeki bir **kelime bloğunu** tıklayınca, bileşik kelimeyi (jukugo) **bağlama duyarlı** olarak Gemini ile tanımlayan yeni "Word Modal" açılır + tekil kanji'lere drill-down çipleri sunar. **Eski "Generate AI Story" (mnemonik) özelliği TAMAMEN KALDIRILDI** (kullanıcı gereksiz buldu).
 
-### `src/components/KanjiModal.js`
-- **AI bölümü:** Sözlükte bulunan kanji için (entry varken) detay satırlarının altına `.ai-tutor-section` kapsayıcısı eklendi: "🧠 Generate AI Story" butonu (`#ai-story-btn`, `data-t="btn_ai_story"`) + boş çıktı div'i (`#ai-story-output`). Not-found dalında AI bölümü YOK (okuma/anlam olmadığından).
-- **Tetikleme (`wireAiTutor`):** `app.openModal` `innerHTML`'i **senkron** bastığından, butona dinleyici openModal'dan hemen sonra `getElementById` ile bağlanır (her açılışta taze buton → leak yok). Inline `onclick` + window global GEREKMEZ (close butonundan farklı olarak modül içinde kapalı kalır).
-- **Settings erişimi — BLUEPRINT'TEN SAPMA:** Görev `import appState from '../store/appState.js'` + `appState.settings.geminiApiKey` istedi; **uygulanmadı.** `appState.js` canlı `settings` taşıyan bir nesne export ETMEZ (yalnızca fonksiyonlar + `CONFIG`). Canlı ayarlar runtime `app.state.settings`'te yaşar (`Settings.js`'in `geminiApiKey`'i okuduğu yer). Bu yüzden anahtar/model **click anında** `app.state.settings`'ten okunur → modal açıldıktan sonra anahtar girilse bile güncel değer alınır.
-- **Akış:** anahtar yoksa `app.showToast(t('msg_ai_key_missing'))` + erken çıkış (buton dokunulmaz). Anahtar varsa: buton disable + metin `t('msg_ai_loading')` ("Thinking…") + çıktı temizlenir → `generateMnemonic(...)` → metin `#ai-story-output`'a (`textContent`, XSS-güvenli). Hata `try/catch`'te yakalanıp mevcut `t('warn_error', {msg})` anahtarıyla ("⚠ Error: …") gösterilir (yeni hata anahtarı eklenmedi). `finally`'de buton her durumda eski metnine + enable'a döner.
-- **Reading:** `[entry.onyomi, entry.kunyomi].filter(Boolean).join(' / ')` → AI'a hem on hem kun okuması verilir.
+### Servis (`src/services/aiService.js`)
+- **`generateMnemonic` + `mnemonicSystemPrompt` SİLİNDİ** (mnemonik deprecated).
+- **Yeni `defineWordContextually(word, sentence, targetLang, apiKey, model)`:** `${word}`'ün `${sentence}` içindeki kullanımına göre **özlü, sözlük tarzı** çeviri/tanım (≤2 cümle) döndürür, tamamen `${targetLang}` (en/tr/ko/mn → `LANG_NAMES`) dilinde. `responseMimeType` YOK (düz metin); `WORD_SYSTEM_PROMPT` markdown/fence yasaklar; defansif olarak yine de ```` ``` ```` regex ile soyulur. `temperature: 0.4`, `maxOutputTokens: 200` (açık, cutoff önler). Boş yanıt → `'Generation failed, try again'`. Model `model || 'gemini-2.5-pro'`.
+- **`LANG_NAMES` korundu:** artık `defineWordContextually` + `generateDeck` paylaşır (eski yorumdaki "mnemonik" referansı güncellendi).
 
-### i18n — KASITLI YER DÜZELTMESİ
-Görev yeni anahtarları `src/data/locales/*.json`'a istedi; **oraya değil** `src/main.js`'deki `LANG` nesnesine eklendi. `src/data/locales/*.json` dosyaları kanji→anlam **sözlükleridir** (UI çevirisi değil); `t()` yalnızca `LANG`'dan okur → oraya eklemek hiçbir şey yapmazdı. 3 anahtar (`btn_ai_story`, `msg_ai_key_missing`, `msg_ai_loading`) 4 dilin de `kanji_meaning_en`'inden hemen sonra eklendi.
+### `src/components/WordModal.js` (YENİ bileşen)
+- `KanjiModal.js` desenini izler: `init(app)` + `open(word, sentence)`. Paylaşılan `app.openModal` altyapısını kullanır.
+- **Layout:** (1) başlık = tam `word` (`.word-detail-head`); (2) AI bölümü "🧠 Contextual Meaning" (`word_ai_meaning`) → açılışta **otomatik fetch** (`#word-ai-output` önce `msg_ai_loading` "Thinking…", sonra sonuç); (3) Kanji breakdown (`word_kanji_breakdown`) → `word` içindeki `/[一-龯]/` eşleşen her karakter için bir `<button class="kanji-chip" data-char>` çipi.
+- **Settings erişimi:** Anahtar/model **click/açılış anında** `app.state.settings`'ten okunur (KanjiModal'daki eski desenle aynı; `appState.js` canlı settings export ETMEZ). Anahtar yoksa AI çıktısı **toast değil**, satıriçi `msg_ai_key_missing` mesajı gösterir (graceful). Hata → `warn_error`.
+- **Çip wiring:** `openModal` senkron bastığından çipler hemen `#modal .kanji-chip` ile bağlanır (taze → leak yok); tık → `app.openKanjiModal(char)` (Word Modal'ı KanjiModal ile değiştirir). Inline onclick/window global GEREKMEZ.
+- **i18n reuse:** loading/key-missing için mevcut `msg_ai_loading`/`msg_ai_key_missing` yeniden kullanıldı (yeni anahtar değil).
+
+### Kart & Ruby render değişikliği (`CardView.js` + `kanjiUtils.js`)
+- **`smartRuby(surface, reading, sentence)` — 3. arg eklendi:** Arka yüzde artık **tekil kanji `.kanji-clickable` yerine** kanji İÇEREN tüm kelime bloğu tek bir `.word-clickable` ile sarılır (`data-word`=surface, `data-sentence`=örnek cümle). İç ruby (`buildRubyInner` yardımcısına ayrıldı) kanji'yi **düz metin** basar; tıklanabilirlik artık kelime düzeyinde. Saf kana / Japonca olmayan kart → sarmalanmaz. Call-site'lar `card.exampleJp`'i sentence olarak geçer (yoksa smartRuby surface'e düşer); `updatePreview` `exJp` geçer; `DeckList.showCardPreviewModal` de güncellendi.
+- **`kanjiUtils.wrapWord(contentHtml, word, sentence)` (YENİ):** `wrapKanji` yanına; verili render edilmiş HTML'i (ruby) `.word-clickable` span'e sarar, `data-*`'ları `esc`'ler. `esc` `../utils.js`'den import edilir → utils↔kanjiUtils döngüsü ama her ikisi de hoisted fonksiyon + yalnız runtime'da çağrıldığından canlı binding güvenli.
+- **Click listener (`CardView.init`):** document-level delegated listener'a `.word-clickable` dalı eklendi (önce kontrol edilir): `stopPropagation` + `app.openWordModal(word, sentence)`. `.kanji-clickable` dalı korundu (örnek cümledeki tekil kanji'ler hâlâ KanjiModal açar — `highlightKanji` değişmedi). Ön yüz (`.fc-flip-front/.fc-preview-front`) hâlâ hariç.
+
+### `KanjiModal.js` — mnemonik temizliği
+- `generateMnemonic` import'u, `.ai-tutor-section` HTML bloğu (buton + çıktı), `wireAiTutor` fonksiyonu ve çağrısı **tümüyle silindi**. (Buton `index.html`'de statik değil, KanjiModal.js'de dinamik üretiliyordu → ayrı index.html temizliği gerekmedi.) Modal artık yalnız sözlük satırları + Close.
+
+### Wiring & i18n (`src/main.js`)
+- `import * as WordModal`, `WordModal.init(app)`, cross-ref `app.openWordModal = WordModal.open`.
+- **i18n:** `btn_ai_story` 4 dilden **silindi** (mnemonik kaldırıldı). 3 yeni anahtar 4 dile (`msg_ai_loading`'den hemen sonra): `word_detail_title`, `word_ai_meaning` ("🧠 Contextual Meaning"), `word_kanji_breakdown`. `msg_ai_key_missing`/`msg_ai_loading` korundu (WordModal + AI Deck hâlâ kullanır).
+
+### CSS (`index.html`)
+- `.word-clickable` (pointer + `--hanko` renk + dashed alt çizgi + bold; `rt` ink-soft/normal), `.word-detail-head`, `.word-section-label`, `.word-ai-section`, `.word-ai-output`, `.kanji-chip-row`, `.kanji-chip` (yuvarlak, `--paper-2`/`--line`, hover/active). Paylaşılan `#modal` altyapısı kullanıldığından ayrı `#modal-word-detail` template'i GEREKMEDİ.
 
 ### Doğrulama
-Vite preview'da canlı test edildi (`.kanji-clickable` enjekte → delegated listener gerçek yolu): (1) modal + AI bölümü render olur; (2) anahtarsız tık → toast + buton değişmez; (3) anahtar var + fetch stub → "Thinking…"/disabled → başarıda çıktı basılır, buton restore; (4) fetch hata → "⚠ Error: …" + buton restore. Test anahtarı localStorage'dan temizlendi.
-
-### Prompt Sertleştirme (hallucination + dil zorlama düzeltmesi)
-`generateMnemonic` üç sık görülen hata için sertleştirildi: (a) yanlış radikali hedefleme, (b) cümle ortasında kesilme (cutoff), (c) kullanıcının UI dilini yok sayma.
-- **`targetLang` parametresi eklendi (imza sonuna):** `KanjiModal.wireAiTutor` çağrısı `app.currentLang`'ı geçirir. Servis `LANG_NAMES` (en/tr/ko/mn → tam ad) ile tam dil adına çevirir; bilinmeyen kod → `'English'` fallback.
-- **`LANG_NAMES` paylaşıldı:** Eski `DECK_LANG_NAMES` kaldırılıp tek `LANG_NAMES` sabiti hem `generateMnemonic` hem `generateDeck` tarafından kullanılıyor (kopya yok).
-- **Dinamik sistem promptu (`mnemonicSystemPrompt(langName, targetLang)`):** Eski statik `SYSTEM_PROMPT` sabitinin yerini aldı (dil çalışma zamanında enjekte edildiğinden sabit olamaz). 3 kritik kural: (1) hikâye **tamamen** `${langName}` (`language code: ${targetLang}`) dilinde yazılır — İngilizce/başka dile geçiş yok; (2) **tam kanji** karaktere odaklan, izole radikal/benzer kanji'ye değil; (3) **tam, mantıksal olarak bitmiş** 2–3 cümle, kesik/yarım düşünce yok, noktayla biter.
-- **`maxOutputTokens: 250` (açık):** API'nin düşük varsayılana düşüp cümleyi kesmesini önlemek için 256→250 açıkça gönderilir.
-- **Defansif boş yanıt:** Dönen metin boş ya da yalnızca boşluk ise `Error('Generation failed, try again')` fırlatılır (eski `'Empty response from AI model'` yerine) → UI `warn_error` ile "tekrar dene" mesajı gösterir. (Servis hata stringleri İngilizce literal kalır — mevcut desenle tutarlı, yeni i18n anahtarı eklenmedi.)
+Vite preview canlı (örnek kart 漢字/かんじ, örnek 毎日漢字を勉強します。): (1) ruby satırı `.word-clickable` (`data-word="漢字"`, `data-sentence="毎日漢字を勉強します。"`, ruby korunur); örnek cümle hâlâ 6 tekil `.kanji-clickable`; (2) kelime tık → Word Modal (başlık "Word Detail", header 漢字, "🧠 Contextual Meaning", breakdown çipleri 漢/字); (3) anahtarsız → satıriçi `msg_ai_key_missing` (graceful); (4) çip 漢 tık → KanjiModal (onyomi かん), **AI Story butonu YOK**; (5) stub fetch happy-path → doğru URL (`gemini-2.5-flash:generateContent?key=…`), prompt word+sentence içerir, `maxOutputTokens:200`, fence soyulur, çıktı basılır; (6) `.word-clickable` stilleri (pointer/hanko/dashed/700) doğrulandı; konsol hatası yok. Test anahtarı localStorage'dan temizlendi. **Build temiz** (`vite build` ✓).
 
 ## AI Thematic Deck Generator (Gemini)
 

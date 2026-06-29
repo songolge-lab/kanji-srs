@@ -1,42 +1,36 @@
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-// Shared: UI language code → full language name. Used by both the mnemonic
-// tutor and the thematic deck generator to force output in the learner's
-// language regardless of which kanji/topic is requested.
+// Shared: UI language code → full language name. Used by both the contextual
+// word definer and the thematic deck generator to force output in the learner's
+// language regardless of which word/topic is requested.
 const LANG_NAMES = { en: 'English', tr: 'Turkish', ko: 'Korean', mn: 'Mongolian' };
 
-// Builds the mnemonic system prompt. `langName`/`targetLang` are injected so the
-// model is hard-constrained to (1) answer in the learner's UI language, (2) focus
-// on the WHOLE kanji rather than a stray radical, and (3) return a fully finished
-// 2–3 sentence story (no cut-off / trailing thoughts).
-function mnemonicSystemPrompt(langName, targetLang) {
-  return `Act as a creative memory coach for Japanese language learners. You craft vivid, strange, memorable mnemonic stories that fuse a Kanji's visual shape, its reading (pronunciation), and its meaning so the learner never forgets it.
+// ─── CONTEXTUAL WORD DEFINER (Jukugo Smart Word Modal) ───────────────
+const WORD_SYSTEM_PROMPT = `You are a precise bilingual Japanese dictionary. You explain how a Japanese word is used in a specific sentence, writing the explanation in the learner's language. Reply with PLAIN TEXT only — never markdown, code fences, headings, or bullet points.`;
 
-CRITICAL RULES — obey every one:
-1. LANGUAGE: You MUST write the final mnemonic story entirely in ${langName} (language code: ${targetLang}). Narrate only in ${langName} — do not switch to English or any other language. (You may quote the Japanese reading/characters themselves, but every explanatory sentence must be in ${langName}.)
-2. TARGET: Focus strictly on the EXACT Kanji character provided, treating it as a single whole. Do NOT build the story around just one isolated radical, and do NOT substitute a different or look-alike kanji.
-3. LENGTH & COMPLETION: Write a complete, logically finished story in exactly 2 or 3 sentences. Do not leave trailing sentences or unfinished thoughts — end on a full stop.`;
-}
-
-// `targetLang` is the learner's UI language code (en/tr/ko/mn); the mnemonic
-// story is written in that language.
-export async function generateMnemonic(kanji, meaning, reading, apiKey, model, targetLang) {
+// Returns a concise, dictionary-style definition of `word` as it is used in
+// `sentence`, written entirely in the learner's UI language (`targetLang`:
+// en/tr/ko/mn). Used by the Word Modal opened from the back of a flashcard.
+export async function defineWordContextually(word, sentence, targetLang, apiKey, model) {
   if (!apiKey) throw new Error('API key is required');
+  if (!word) throw new Error('Word is required');
 
   const langName = LANG_NAMES[targetLang] || 'English';
-  const systemPrompt = mnemonicSystemPrompt(langName, targetLang || 'en');
-  const userPrompt = `Kanji: ${kanji}\nMeaning: ${meaning}\nReading: ${reading}\n\nWrite the mnemonic story for this exact kanji, entirely in ${langName}.`;
+  const userPrompt = `Japanese word: ${word}
+Sentence it appears in: ${sentence || word}
 
-  const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
+Give a concise, highly accurate dictionary-style translation/definition of "${word}" exactly as it is used in the sentence above. Write it entirely in ${langName} (language code: ${targetLang || 'en'}). Use at most 2 sentences. Output ONLY the definition text — no markdown, no code fences, no extra commentary.`;
+
+  const url = `${GEMINI_API_BASE}/${model || 'gemini-2.5-pro'}:generateContent?key=${apiKey}`;
 
   const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
+    system_instruction: { parts: [{ text: WORD_SYSTEM_PROMPT }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: {
-      temperature: 0.9,
-      // Explicit safe ceiling so the API never falls back to a tiny default
-      // that would truncate the story mid-sentence.
-      maxOutputTokens: 250,
+      temperature: 0.4,
+      // Explicit ceiling so the API never falls back to a tiny default that
+      // would truncate the definition mid-sentence.
+      maxOutputTokens: 200,
     },
   };
 
@@ -53,10 +47,14 @@ export async function generateMnemonic(kanji, meaning, reading, apiKey, model, t
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   // Defensive fallback: empty or whitespace-only response → retryable error.
   if (!text || !text.trim()) throw new Error('Generation failed, try again');
-  return text.trim();
+  // Strip stray markdown fences if the model ignores instructions.
+  return text.trim()
+    .replace(/^```(?:\w+)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
 }
 
 // ─── AI THEMATIC DECK GENERATOR ──────────────────────────────────────

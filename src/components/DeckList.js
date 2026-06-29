@@ -9,6 +9,8 @@ export function init(ctx) { app = ctx; }
 
 // İç içe destelerde toggle ile gizlenen üst destelerin id'leri (collapse durumu).
 const collapsedDecks = new Set();
+let _savingModal = false;
+let _savingEdit = false;
 
 // ─── OTOMATİK FURIGANA (kayıt anında) ────────────────────────────────
 // Kullanıcı Furigana alanını boş bıraktıysa, kart oluşturulmadan/güncellenmeden
@@ -467,7 +469,7 @@ export function showCardPreviewModal(card) {
       </div>
       <div class="flashcard cpm-face">
         <div class="fc-back">
-          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana)}</div>
+          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
           <div class="fc-meaning">${esc(card.meaningTr)}</div>
           ${card.exampleJp ? `
           <hr class="fc-divider">
@@ -506,6 +508,8 @@ function populateDeckSelects() {
 }
 
 export async function saveCard() {
+  const btn = document.getElementById('btn-save-card');
+  if (btn?.disabled) return;
   const deckId = document.getElementById('add-deck-select').value;
   const kanji = document.getElementById('add-kanji').value.trim();
   let furigana = ''; // furigana alanı kaldırıldı → kayıt anında oto-üretilir
@@ -518,18 +522,24 @@ export async function saveCard() {
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
-  furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
-  deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
-  app.save();
-  app.showToast(app.t('toast_card_added', {kanji}));
-  document.getElementById('add-kanji').value = '';
-  document.getElementById('add-meaning').value = '';
-  document.getElementById('add-example-jp').value = '';
-  document.getElementById('add-example-jp').dataset.furiganaMap = '{}';
-  document.getElementById('add-example-tr').value = '';
-  document.getElementById('add-example-furigana-editor').innerHTML = '';
-  document.getElementById('add-example-mark-row').style.display = 'none';
-  app.updatePreview('add-', 'add-preview-wrap');
+  const prevLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
+    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
+    app.save();
+    app.showToast(app.t('toast_card_added', {kanji}));
+    document.getElementById('add-kanji').value = '';
+    document.getElementById('add-meaning').value = '';
+    document.getElementById('add-example-jp').value = '';
+    document.getElementById('add-example-jp').dataset.furiganaMap = '{}';
+    document.getElementById('add-example-tr').value = '';
+    document.getElementById('add-example-furigana-editor').innerHTML = '';
+    document.getElementById('add-example-mark-row').style.display = 'none';
+    app.updatePreview('add-', 'add-preview-wrap');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
+  }
 }
 
 export async function bulkImport() {
@@ -640,6 +650,7 @@ export function showAddCardModal(deckId) {
 }
 
 export async function saveCardFromModal(deckId) {
+  if (_savingModal) return;
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
   const kanji = document.getElementById('modal-add-kanji').value.trim();
@@ -651,20 +662,29 @@ export async function saveCardFromModal(deckId) {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
-  furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
-  deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
-  app.save();
-  app.showToast(app.t('toast_card_added', {kanji}));
-  renderDeckDetail();
-  document.getElementById('modal-add-kanji').value = '';
-  document.getElementById('modal-add-meaning').value = '';
-  document.getElementById('modal-add-example-jp').value = '';
-  document.getElementById('modal-add-example-jp').dataset.furiganaMap = '{}';
-  document.getElementById('modal-add-example-tr').value = '';
-  document.getElementById('modal-add-example-furigana-editor').innerHTML = '';
-  document.getElementById('modal-add-example-mark-row').style.display = 'none';
-  app.updatePreview('modal-add-', 'modal-add-preview-wrap');
-  document.getElementById('modal-add-kanji').focus();
+  _savingModal = true;
+  const btn = document.querySelector('#modal-body .btn-primary');
+  const prevLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
+    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
+    app.save();
+    app.showToast(app.t('toast_card_added', {kanji}));
+    renderDeckDetail();
+    document.getElementById('modal-add-kanji').value = '';
+    document.getElementById('modal-add-meaning').value = '';
+    document.getElementById('modal-add-example-jp').value = '';
+    document.getElementById('modal-add-example-jp').dataset.furiganaMap = '{}';
+    document.getElementById('modal-add-example-tr').value = '';
+    document.getElementById('modal-add-example-furigana-editor').innerHTML = '';
+    document.getElementById('modal-add-example-mark-row').style.display = 'none';
+    app.updatePreview('modal-add-', 'modal-add-preview-wrap');
+    document.getElementById('modal-add-kanji').focus();
+  } finally {
+    _savingModal = false;
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
+  }
 }
 
 export function showEditModal(deckId, cardId) {
@@ -685,18 +705,28 @@ export function showEditModal(deckId, cardId) {
 }
 
 export async function saveEditCard(deckId, cardId) {
+  if (_savingEdit) return;
   const deck = app.findDeck(deckId);
   const card = deck?.cards.find(c => c.id === cardId);
   if (!card) return;
-  const exJpEl = document.getElementById('edit-example-jp');
-  card.kanji = document.getElementById('edit-kanji').value.trim();
-  card.furigana = await autoFurigana(document.getElementById('edit-furigana').value.trim(), card.kanji); // boşsa offline üret
-  card.meaningTr = document.getElementById('edit-meaning').value.trim();
-  card.exampleJp = exJpEl.value.trim();
-  card.exampleTr = document.getElementById('edit-example-tr').value.trim();
-  try { card.exampleFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch { card.exampleFuriganaMap = {}; }
-  app.save(); app.closeModal(); renderDeckDetail();
-  app.showToast(app.t('toast_card_updated'));
+  _savingEdit = true;
+  const btn = document.querySelector('#modal-body .btn-primary');
+  const prevLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    const exJpEl = document.getElementById('edit-example-jp');
+    card.kanji = document.getElementById('edit-kanji').value.trim();
+    card.furigana = await autoFurigana(document.getElementById('edit-furigana').value.trim(), card.kanji); // boşsa offline üret
+    card.meaningTr = document.getElementById('edit-meaning').value.trim();
+    card.exampleJp = exJpEl.value.trim();
+    card.exampleTr = document.getElementById('edit-example-tr').value.trim();
+    try { card.exampleFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch { card.exampleFuriganaMap = {}; }
+    app.save(); app.closeModal(); renderDeckDetail();
+    app.showToast(app.t('toast_card_updated'));
+  } finally {
+    _savingEdit = false;
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
+  }
 }
 
 export function deleteDeck(deckId) {
@@ -710,6 +740,7 @@ export function deleteDeck(deckId) {
   if (!confirm(msg)) return;
   const idsToDelete = new Set([deckId, ...descendants.map(d => d.id)]);
   app.state.decks = app.state.decks.filter(d => !idsToDelete.has(d.id));
+  idsToDelete.forEach(id => collapsedDecks.delete(id));
   app.save();
   if (deck.parentId) { app.currentDeckId = deck.parentId; app.showView('deck'); }
   else app.showView('decks');
