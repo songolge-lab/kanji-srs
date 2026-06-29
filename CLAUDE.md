@@ -282,6 +282,51 @@ Blueprint, `updateStreak()`'in O(N) olduğunu iddia edip yerine "O(1) artımlı 
 - **i18n:** `months_short`, `heatmap_title`, `heatmap_longest`, `heatmap_year_total`, `heatmap_tooltip`, `heatmap_none`, `heatmap_less`, `heatmap_more` — 4 dile eklendi.
 - **`CardView.js` değişmedi:** `gradeCard()` zaten `app.recordReview(wasNew)` çağırıyor → yeni katmana otomatik bağlanır. `app.renderHeatmap = Analytics.renderHeatmap` cross-ref olarak eklendi.
 
+## İnteraktif Takvim — Günlük Detay & Deste İzleme
+
+Çalışma takviminde (streak ekranı) bir güne tıklayınca o günün kart sayısı, harcanan süre ve **hangi destelerin** çalışıldığı bir detay panelinde gösterilir. Saf Vanilla JS, mevcut takvim altyapısının (`renderCalendarGrid`) üzerine eklendi.
+
+### Veri modeli (`src/store/appState.js` + `Analytics.js → recordReview`)
+- **`dailyStats[date]` artık `decksStudied: []`:** `recordReview(isNew, deckTitle)` imzası genişledi — gradelenen kartın aktif çalışma destesinin **adı** (`deck.name`) ikinci argümanla geçirilir ve `decksStudied`'a (varsa atlanır, `includes()` ile tekilleştirilir) eklenir. `startSessionTimer` ve `recordReview` günlük girişi oluştururken `decksStudied: []` ile başlatır; her yazımdan önce `Array.isArray` guard'ı eski/migre edilmemiş günleri korur.
+- **Migrasyon (`migrateStats`):** Mevcut `dailyStats` girişlerinden `decksStudied` eksik olanlara boş dizi eklenir (geriye dönük uyum). Render tarafı yine de defansif okur (yoksa `[]`).
+- **`CardView.gradeCard()`:** `app.findDeck(app.currentDeckId)` ile aktif deste bulunur, `app.recordReview(wasNew, deck?.name)` çağrılır. **BLUEPRINT SAPMASI:** Görev `deck.title` istedi; bu projede deste alanı `name` (title yok) → `name` kullanıldı.
+
+### Takvim UI (`Analytics.js → renderCalendarGrid` + `selectCalendarDay`)
+- **Tıklanabilir günler:** Yalnızca **veri olan** günler (`active || shielded`) `is-clickable` sınıfı + `onclick="selectCalendarDay('YYYY-MM-DD')"` + `role="button"` alır. Veri olmayan günler tıklanamaz.
+- **`selectCalendarDay(dateStr)`:** Modül-içi `selectedCalDay` state'ini **toggle** eder (aynı güne tekrar tıklayınca kapanır) → `renderCalendarGrid()` yeniden çizer. `changeCalendarMonth` ay değişiminde `selectedCalDay = null` yapar. `main.js` window global'lerine `selectCalendarDay: Analytics.selectCalendarDay` eklendi (inline onclick için).
+- **Detay paneli (`#calendar-day-details`):** Grid + legend'in altına basılır. Seçili gün yoksa boş string (görünmez). `renderDayDetails()`: `dailyStats[date]`'ten kart/süre/desteler okur; yoksa `reviewsByDate` sayısına düşer; hiç veri yoksa `cal_no_activity` mesajı. `formatCalDate` çevrili ay adıyla "29 June 2026" üretir. **Deste adları kullanıcı girdisi → `esc()` edilir** (`t()` ham `{decks}` interpolasyonu yapar, kaçış yapmaz).
+- **Seçili gün vurgusu (`index.html` CSS):** `.cal-day.is-selected` → `inset 0 0 0 2px var(--gold)` halka; `.is-selected.is-today` kombinasyonu altın iç + ink dış halka. `.cal-day-details` paneli `--paper-2`/`--line`/`--r-md` ile tema uyumlu.
+
+### i18n (`src/main.js → LANG`)
+4 yeni anahtar 4 dile (en/tr/ko/mn), `daily_time_spent`'ten hemen sonra: `cal_cards_studied` (`{count}`), `cal_time_spent` (`{count}`), `cal_decks_studied` (`{decks}`), `cal_no_activity`.
+
+### Doğrulama
+Vite preview'da canlı test edildi (örnek desteden 2 kart gradelendi → takvim): (1) çalışılan gün tıklanabilir oldu; (2) tık → detay paneli "28 June 2026 / Cards studied: 2 / Time spent: 0 min / Decks studied: JLPT N3 Kanji (Sample)" gösterdi; (3) seçili hücre `is-selected` halkası aldı; (4) `setLang('tr')` ile etiketler Türkçeye çevrildi ("28 Haziran 2026 / Çalışılan kart: 2 / …"); konsol hatası yok.
+
+## 7 Günlük Tekrar Tahmini (Forecast Bar Chart) — Saf CSS/DOM
+
+FSRS `srs.due` zaman damgalarından türetilen 7 günlük "vadesi gelecek kart" çubuk grafiği. **Harici grafik kütüphanesi yok** (Chart.js vb.) — saf Vanilla JS + CSS Flexbox. **Konum (UI cila, bkz. aşağıdaki "UI Cila" bölümü):** Eskiden deck dashboard'unda (`view-decks`, `#global-stats` ↔ streak kartı arası) statik dururdu; dashboard'u sadeleştirmek için **Çalışma Takvimi ekranına (`view-streak`) takvim grid'inin hemen altına** taşındı.
+
+### Veri (`Analytics.js → getForecastData(days = 7)`)
+- Tüm destelerin tüm kartlarını dolaşır, `card.srs.due` (ms zaman damgası) okur. **UTC gün kovalama:** tüm tarih sistemi (`today()`/`dateStrToEpochDay`) UTC sınırı kullandığından due ms'i `Math.floor(due / 86400000)` ile UTC epoch gününe çevrilir → `todayEpoch` ile farkı index verir.
+- **Gecikmiş (due < bugün) → bugüne (index 0)** sayılır; pencere dışı (`idx >= days`) yok sayılır.
+- **`'new'` durumdaki kartlar KASITLI dışlanır:** yeni kartların `due` değeri `0` (programlanmamış) → literal sayım hepsini bugüne yığıp grafiği şişirirdi. `deckStats`'taki "due" tanımıyla (`state !== 'new'`) tutarlı. (Memory: harici/literal spec kod denetiminde doğrulanmalı — task "tüm kartları say" diyordu, ama yeni kart dışlaması anlamlı/gerekli olduğu canlı testte 8 kartlık örnek deste [6 new + 2 learning] üzerinde doğrulandı → bugün = 2, 8 değil.)
+- Dönüş: `[{ dateStr, count, label }]`. `label` `weekdays_short` (Pzt=0) dizisinden `((epoch % 7) + 10) % 7` indeksiyle alınır → dile duyarlı (setLang ile değişir).
+
+### Render (`Analytics.js → renderForecastChart()`)
+- `#forecast-chart-container` (`renderStreakScreen()` HTML'inde `#cal-container`'dan hemen sonra basılan `.card`) içine basar. `maxCount = max(count)`; çubuk yüksekliği `(count / maxCount) * 100%` — **`maxCount === 0` güvenli** (tüm yükseklikler `0%`).
+- Her sütun: üstte sayı (`.forecast-count`), ortada çubuk (`.forecast-bar`, boş günde `.is-empty` soluk), altta gün etiketi (`.forecast-label`, bugün `.is-today` → `--hanko` vurgu).
+- **Wiring (UI cila sonrası):** `renderStreakScreen()` sonunda `renderCalendarGrid()`'ten hemen sonra çağrılır → Çalışma Takvimi ekranı her açıldığında (`showView('streak')`) tazelenir. `renderGlobalStats()`'tan **kaldırıldı** (artık dashboard'da değil). Ayrı window global / cross-ref GEREKMEZ. NOT: `renderCalendarGrid()` yalnızca `#cal-container`'ı yeniden çizer; forecast `renderStreakScreen` HTML'inde ayrı kart olduğundan ay değişimi/gün seçiminde silinmez.
+
+### CSS (`index.html`)
+- `.forecast-chart` flex satırı (`align-items:flex-end`); `.forecast-bar-track` **sabit 130px** + `padding-top:1.15rem` (yüksek çubuğun üstündeki sayı için tepe boşluğu, `box-sizing:border-box`). Çubuk `background-color:var(--jade)`, `border-radius:4px 4px 0 0`, `transition:height .3s`, `min-height:3px`. `flex:1 1 0` + `min-width:0` ile mobilde 7 sütun yatay taşmadan sığar (canlı: `overflowX:none`).
+
+### Doğrulama
+Vite preview canlı: (1) başlık + 7 sütun render (bugün=Sun vurgulu, 2 kart bugün → çubuk %100 [96px], diğerleri 0% [2px min]); (2) yeni kart dışlaması (8 kart → bugün 2); (3) `setLang('tr')` → başlık "7 Günlük Tekrar Tahmini" + etiketler "Paz,Pzt,…"; (4) Settings'e geçip dashboard'a dönünce yeniden render; (5) sayfa yatay taşması yok, konsol hatası yok.
+
+### i18n (`src/main.js → LANG`)
+1 yeni anahtar 4 dile (en/tr/ko/mn), `heatmap_more`'dan hemen sonra: `forecast_title` ("7-Day Review Forecast" / "7 Günlük Tekrar Tahmini" / "7일 복습 예측" / "7 хоногийн давталтын урьдчилсан таамаг").
+
 ## Community Hub (Market) — Deste Paylaşım & İndirme
 
 Kullanıcıların destelerini herkese açık paylaşıp başkalarınınkini indirdiği bulut tabanlı pazar. Saf Vanilla JS + CSS, mevcut bileşen mimarisini izler.
@@ -314,19 +359,130 @@ Kullanıcıların destelerini herkese açık paylaşıp başkalarınınkini indi
 ### CSS (`src/index.html`)
 - `.community-grid` (mobil tek sütun; `.is-electron` 768px→2, 1024px→3 sütun), `.community-card`, `.community-desc`, `.community-tags`, `.community-card-foot`, `.community-dl-count`, `.community-state`, `.community-hub-head/sub`. Mevcut `.card`/`.btn`/`.badge-soft` sınıfları yeniden kullanıldı.
 
-## Smart AI Tutor (Milestone 2 — KanjiModal entegrasyonu)
+## Jukugo Smart Word Modal (eski AI Mnemonik'in yerini aldı)
 
-Gemini tabanlı mnemonik (hafıza hikâyesi) üreteci, kanji detay modalına eklendi. Altyapı (`src/services/aiService.js` → `generateMnemonic(kanji, meaning, reading, apiKey, model)`) ve ayar alanları (`migrateSettings` → `geminiApiKey`/`geminiModel`, Milestone 1) hazırdı; bu milestone yalnızca UI + tetikleme katmanı.
+Kullanıcı arka yüzdeki bir **kelime bloğunu** tıklayınca, bileşik kelimeyi (jukugo) **bağlama duyarlı** olarak Gemini ile tanımlayan yeni "Word Modal" açılır + tekil kanji'lere drill-down çipleri sunar. **Eski "Generate AI Story" (mnemonik) özelliği TAMAMEN KALDIRILDI** (kullanıcı gereksiz buldu).
 
-### `src/components/KanjiModal.js`
-- **AI bölümü:** Sözlükte bulunan kanji için (entry varken) detay satırlarının altına `.ai-tutor-section` kapsayıcısı eklendi: "🧠 Generate AI Story" butonu (`#ai-story-btn`, `data-t="btn_ai_story"`) + boş çıktı div'i (`#ai-story-output`). Not-found dalında AI bölümü YOK (okuma/anlam olmadığından).
-- **Tetikleme (`wireAiTutor`):** `app.openModal` `innerHTML`'i **senkron** bastığından, butona dinleyici openModal'dan hemen sonra `getElementById` ile bağlanır (her açılışta taze buton → leak yok). Inline `onclick` + window global GEREKMEZ (close butonundan farklı olarak modül içinde kapalı kalır).
-- **Settings erişimi — BLUEPRINT'TEN SAPMA:** Görev `import appState from '../store/appState.js'` + `appState.settings.geminiApiKey` istedi; **uygulanmadı.** `appState.js` canlı `settings` taşıyan bir nesne export ETMEZ (yalnızca fonksiyonlar + `CONFIG`). Canlı ayarlar runtime `app.state.settings`'te yaşar (`Settings.js`'in `geminiApiKey`'i okuduğu yer). Bu yüzden anahtar/model **click anında** `app.state.settings`'ten okunur → modal açıldıktan sonra anahtar girilse bile güncel değer alınır.
-- **Akış:** anahtar yoksa `app.showToast(t('msg_ai_key_missing'))` + erken çıkış (buton dokunulmaz). Anahtar varsa: buton disable + metin `t('msg_ai_loading')` ("Thinking…") + çıktı temizlenir → `generateMnemonic(...)` → metin `#ai-story-output`'a (`textContent`, XSS-güvenli). Hata `try/catch`'te yakalanıp mevcut `t('warn_error', {msg})` anahtarıyla ("⚠ Error: …") gösterilir (yeni hata anahtarı eklenmedi). `finally`'de buton her durumda eski metnine + enable'a döner.
-- **Reading:** `[entry.onyomi, entry.kunyomi].filter(Boolean).join(' / ')` → AI'a hem on hem kun okuması verilir.
+### Servis (`src/services/aiService.js`)
+- **`generateMnemonic` + `mnemonicSystemPrompt` SİLİNDİ** (mnemonik deprecated).
+- **Yeni `defineWordContextually(word, sentence, targetLang, apiKey, model)`:** `${word}`'ün `${sentence}` içindeki kullanımına göre **özlü, sözlük tarzı** çeviri/tanım (≤2 cümle) döndürür, tamamen `${targetLang}` (en/tr/ko/mn → `LANG_NAMES`) dilinde. `responseMimeType` YOK (düz metin); `WORD_SYSTEM_PROMPT` markdown/fence yasaklar; defansif olarak yine de ```` ``` ```` regex ile soyulur. `temperature: 0.4`, `maxOutputTokens: 200` (açık, cutoff önler). Boş yanıt → `'Generation failed, try again'`. Model `model || 'gemini-2.5-pro'`.
+- **`LANG_NAMES` korundu:** artık `defineWordContextually` + `generateDeck` paylaşır (eski yorumdaki "mnemonik" referansı güncellendi).
 
-### i18n — KASITLI YER DÜZELTMESİ
-Görev yeni anahtarları `src/data/locales/*.json`'a istedi; **oraya değil** `src/main.js`'deki `LANG` nesnesine eklendi. `src/data/locales/*.json` dosyaları kanji→anlam **sözlükleridir** (UI çevirisi değil); `t()` yalnızca `LANG`'dan okur → oraya eklemek hiçbir şey yapmazdı. 3 anahtar (`btn_ai_story`, `msg_ai_key_missing`, `msg_ai_loading`) 4 dilin de `kanji_meaning_en`'inden hemen sonra eklendi.
+### `src/components/WordModal.js` (YENİ bileşen)
+- `KanjiModal.js` desenini izler: `init(app)` + `open(word, sentence)`. Paylaşılan `app.openModal` altyapısını kullanır.
+- **Layout:** (1) başlık = tam `word` (`.word-detail-head`); (2) AI bölümü "🧠 Contextual Meaning" (`word_ai_meaning`) → açılışta **otomatik fetch** (`#word-ai-output` önce `msg_ai_loading` "Thinking…", sonra sonuç); (3) Kanji breakdown (`word_kanji_breakdown`) → `word` içindeki `/[一-龯]/` eşleşen her karakter için bir `<button class="kanji-chip" data-char>` çipi.
+- **Settings erişimi:** Anahtar/model **click/açılış anında** `app.state.settings`'ten okunur (KanjiModal'daki eski desenle aynı; `appState.js` canlı settings export ETMEZ). Anahtar yoksa AI çıktısı **toast değil**, satıriçi `msg_ai_key_missing` mesajı gösterir (graceful). Hata → `warn_error`.
+- **Çip wiring:** `openModal` senkron bastığından çipler hemen `#modal .kanji-chip` ile bağlanır (taze → leak yok); tık → `app.openKanjiModal(char)` (Word Modal'ı KanjiModal ile değiştirir). Inline onclick/window global GEREKMEZ.
+- **i18n reuse:** loading/key-missing için mevcut `msg_ai_loading`/`msg_ai_key_missing` yeniden kullanıldı (yeni anahtar değil).
+
+### Kart & Ruby render değişikliği (`CardView.js` + `kanjiUtils.js`)
+- **`smartRuby(surface, reading, sentence)` — 3. arg eklendi:** Arka yüzde artık **tekil kanji `.kanji-clickable` yerine** kanji İÇEREN tüm kelime bloğu tek bir `.word-clickable` ile sarılır (`data-word`=surface, `data-sentence`=örnek cümle). İç ruby (`buildRubyInner` yardımcısına ayrıldı) kanji'yi **düz metin** basar; tıklanabilirlik artık kelime düzeyinde. Saf kana / Japonca olmayan kart → sarmalanmaz. Call-site'lar `card.exampleJp`'i sentence olarak geçer (yoksa smartRuby surface'e düşer); `updatePreview` `exJp` geçer; `DeckList.showCardPreviewModal` de güncellendi.
+- **`kanjiUtils.wrapWord(contentHtml, word, sentence)` (YENİ):** `wrapKanji` yanına; verili render edilmiş HTML'i (ruby) `.word-clickable` span'e sarar, `data-*`'ları `esc`'ler. `esc` `../utils.js`'den import edilir → utils↔kanjiUtils döngüsü ama her ikisi de hoisted fonksiyon + yalnız runtime'da çağrıldığından canlı binding güvenli.
+- **Click listener (`CardView.init`):** document-level delegated listener'a `.word-clickable` dalı eklendi (önce kontrol edilir): `stopPropagation` + `app.openWordModal(word, sentence)`. `.kanji-clickable` dalı korundu (örnek cümledeki tekil kanji'ler hâlâ KanjiModal açar — `highlightKanji` değişmedi). Ön yüz (`.fc-flip-front/.fc-preview-front`) hâlâ hariç.
+
+### `KanjiModal.js` — mnemonik temizliği
+- `generateMnemonic` import'u, `.ai-tutor-section` HTML bloğu (buton + çıktı), `wireAiTutor` fonksiyonu ve çağrısı **tümüyle silindi**. (Buton `index.html`'de statik değil, KanjiModal.js'de dinamik üretiliyordu → ayrı index.html temizliği gerekmedi.) Modal artık yalnız sözlük satırları + Close.
+
+### Wiring & i18n (`src/main.js`)
+- `import * as WordModal`, `WordModal.init(app)`, cross-ref `app.openWordModal = WordModal.open`.
+- **i18n:** `btn_ai_story` 4 dilden **silindi** (mnemonik kaldırıldı). 3 yeni anahtar 4 dile (`msg_ai_loading`'den hemen sonra): `word_detail_title`, `word_ai_meaning` ("🧠 Contextual Meaning"), `word_kanji_breakdown`. `msg_ai_key_missing`/`msg_ai_loading` korundu (WordModal + AI Deck hâlâ kullanır).
+
+### CSS (`index.html`)
+- `.word-clickable` (pointer + `--hanko` renk + dashed alt çizgi + bold; `rt` ink-soft/normal), `.word-detail-head`, `.word-section-label`, `.word-ai-section`, `.word-ai-output`, `.kanji-chip-row`, `.kanji-chip` (yuvarlak, `--paper-2`/`--line`, hover/active). Paylaşılan `#modal` altyapısı kullanıldığından ayrı `#modal-word-detail` template'i GEREKMEDİ.
 
 ### Doğrulama
-Vite preview'da canlı test edildi (`.kanji-clickable` enjekte → delegated listener gerçek yolu): (1) modal + AI bölümü render olur; (2) anahtarsız tık → toast + buton değişmez; (3) anahtar var + fetch stub → "Thinking…"/disabled → başarıda çıktı basılır, buton restore; (4) fetch hata → "⚠ Error: …" + buton restore. Test anahtarı localStorage'dan temizlendi.
+Vite preview canlı (örnek kart 漢字/かんじ, örnek 毎日漢字を勉強します。): (1) ruby satırı `.word-clickable` (`data-word="漢字"`, `data-sentence="毎日漢字を勉強します。"`, ruby korunur); örnek cümle hâlâ 6 tekil `.kanji-clickable`; (2) kelime tık → Word Modal (başlık "Word Detail", header 漢字, "🧠 Contextual Meaning", breakdown çipleri 漢/字); (3) anahtarsız → satıriçi `msg_ai_key_missing` (graceful); (4) çip 漢 tık → KanjiModal (onyomi かん), **AI Story butonu YOK**; (5) stub fetch happy-path → doğru URL (`gemini-2.5-flash:generateContent?key=…`), prompt word+sentence içerir, `maxOutputTokens:200`, fence soyulur, çıktı basılır; (6) `.word-clickable` stilleri (pointer/hanko/dashed/700) doğrulandı; konsol hatası yok. Test anahtarı localStorage'dan temizlendi. **Build temiz** (`vite build` ✓).
+
+## AI Thematic Deck Generator (Gemini)
+
+Kullanıcının bir konu (topic) yazıp **10 kartlık** komple bir desteyi tek tıkla AI ile ürettiği özellik. Mevcut Gemini entegrasyonunu (`geminiApiKey`/`geminiModel` ayarları) ve `app.createDeck`/`app.makeCard` boru hattını yeniden kullanır. Çekirdek FSRS motoru ve sync akışları **dokunulmadı**.
+
+### `src/services/aiService.js` → `generateDeck(topic, targetLang, apiKey, model)`
+- **Parse'i serviste yapar, dizi döner:** `[{ word, furigana, meaning, exampleJp, exampleTranslation }]` (10 nesne). UI sadece tüketir.
+- Prompt Gemini'ye **yalnızca ham JSON dizisi** döndürmesini söyler; `meaning`/`exampleTranslation` `targetLang` (UI dili: en/tr/ko/mn → `DECK_LANG_NAMES`) dilinde yazılır.
+- **Markdown güvenliği (çift savunma):** (1) `generationConfig.responseMimeType: 'application/json'` modeli JSON'a zorlar; (2) yine de ```` ```json ```` sarması gelirse regex ile temizlenir (`^```(json)?` + `\s*```$`); (3) `JSON.parse` patlarsa son çare `text.match(/\[[\s\S]*\]/)` ile ilk `[...]` bloğu kurtarılır. Hepsi başarısızsa `'AI returned malformed JSON'` fırlatır.
+- Model fallback: `model || 'gemini-2.5-pro'` (migrate default ile aynı). `maxOutputTokens: 2048` (10 kart sığsın).
+
+### `src/components/DeckList.js` → `showAiDeckModal()` + `submitAiDeck()`
+- Tetikleyici: Add Card view'ında **Bulk Import altında** yeni "Generate AI Deck" bölümü (`#btn-ai-deck`, `data-t="btn_ai_deck"` → "✨ AI Deck"). `main.js`'de `addEventListener` ile bağlı (btn-bulk-import gibi). Modal submit butonu `onclick="submitAiDeck()"` → window global.
+- `showAiDeckModal`: tek input (topic) + submit/cancel. Enter ile submit. `#ai-deck-topic` autofocus.
+- `submitAiDeck` (async): boş topic → `warn_required`; anahtar yoksa → `msg_ai_key_missing` (KanjiModal ile aynı erişim: **click anında** `app.state.settings.geminiApiKey`). Üretim sırasında buton disable + `ai_generating` ("Generating..."). Başarıda: `app.createDeck(topic + " (AI)")` → kartlar `app.makeCard(word, furigana, meaning, exampleJp, exampleTranslation, {})` ile desteye push → `app.save()` → `renderDeckList()` + `renderGlobalStats()` + `toast_ai_deck_success`.
+- **BLUEPRINT SAPMASI (doğrulandı):** Görev `const deckId = app.createDeck(...)` yazdı; ama `createDeck` **deste nesnesi** döner (id değil) ve içinde zaten `save()` çağırır. Kod deste nesnesini kullanıp `deck.cards.push(...)` yapar. (Memory: harici blueprint'ler kod denetiminde doğrulanmalı.)
+- **Hata dayanıklılığı:** Tüm üretim `try/catch` içinde; `JSON.parse` hatası veya ağ kopması → `warn_error` toast + buton eski metnine/enable'a geri döner, modal açık kalır (kullanıcı tekrar deneyebilir). Boş/word'süz satırlar atlanır; hiç kullanılabilir kart yoksa hata fırlatılır.
+
+### i18n (`src/main.js` → `LANG`)
+5 yeni anahtar 4 dile (en/tr/ko/mn), `msg_ai_loading`'den hemen sonra: `btn_ai_deck`, `modal_ai_deck_title`, `ai_deck_placeholder`, `ai_generating`, `toast_ai_deck_success` ({count} interpolasyonu). Mevcut `warn_required`/`warn_error`/`msg_ai_key_missing` yeniden kullanıldı.
+
+### Doğrulama
+Vite preview'da canlı test edildi (stub `fetch` + geçici test anahtarı): (1) buton + bölüm render olur, modal açılır (başlık/placeholder/butonlar doğru); (2) happy path — ```` ```json ```` sarmalı yanıt → fence temizlenir, doğru URL (model+key), deste "X (AI)" + 2 kart `makeCard` alanlarına 1:1 maplenir, modal kapanır, success toast; (3) malformed JSON → `warn_error` toast + buton restore + deste değişmez; (4) boş topic → `warn_required`. Test desteleri + enjekte edilen test anahtarı localStorage'dan temizlendi (key boş stringe geri alındı).
+
+## Katlanabilir Alt Desteler + Kart Önizleme Modalı (`DeckList.js`)
+
+Deste listesi UX iyileştirmesi: (1) iç içe alt desteleri chevron ile gizle/göster, (2) kart listesinde satıra tıklayınca statik flashcard önizlemesi. Saf Vanilla JS.
+
+### Katlanabilir desteler (collapse/expand)
+- **`main.js` ICONS:** `chevron_down` (`M6 9l6 6 6-6`) + `chevron_right` (`M9 6l6 6-6 6`) eklendi (mevcut `chevL`/`chevR`'den ayrı — bunlar dikey/yatay açılım için).
+- **`DeckList.js` modül-içi `const collapsedDecks = new Set()`:** Collapse edilen üst destelerin id'lerini tutar. **Kalıcı değil** (oturum-içi UI durumu, state'e/localStorage'a yazılmaz; reload sıfırlar). Silinen destenin stale id'si Set'te kalabilir → zararsız (eşleşen deste yok).
+- **`hasCollapsedAncestor(deck)`:** `parentId` zincirini yukarı yürür; herhangi bir ata `collapsedDecks`'te ise `true` → o deste **ve tüm alt ağacı** render'da atlanır (`continue`). `findDeck` `undefined` dönerse döngü kırılır (güvenli).
+- **`renderDeckList()` `.map` → `for` döngüsüne çevrildi** (`continue` ile atlama için). Çocuğu olan destelere: chevron toggle butonu (`.deck-collapse-btn`, collapsed → `chevron_right`, expanded → `chevron_down`) + başlık yanında `.badge-soft .deck-sub-badge` ("N sub-decks", mevcut `sub_decks_count` anahtarı). `subInfo` deck-meta metninden kaldırıldı (artık badge).
+- **`toggleDeckCollapse(deckId)` (export + window global):** `collapsedDecks.has(id) ? delete : add` → `renderDeckList()`. Inline `onclick="event.stopPropagation();toggleDeckCollapse(...)"` (deck-row openDeck'i tetiklemesin). Drag&drop/long-press `.deck-draggable`'a bağlı; gizli çocuklar render edilmediğinden etkilenmez.
+
+### Kart önizleme modalı
+- **`cardListItemHTML`:** `.card-list-item`'a `clickable-row` sınıfı + `onclick="showCardPreview(deckId,cardId)"` + `role="button"`/`tabindex=0`. Edit/Delete butonlarına `event.stopPropagation();` eklendi (önizlemeyi tetiklemesin). Mastered liste satırları da tıklanabilir oldu (tutarlı).
+- **`showCardPreview(deckId, cardId)` (export + window global):** kartı bulup `showCardPreviewModal(card)` çağırır.
+- **`showCardPreviewModal(card)` (export):** `app.openModal` ile **statik iki yüzlü** önizleme — grade/"Show answer" butonu YOK. Çalışma ekranıyla aynı sınıflar (`.flashcard`/`.fc-kanji`/`.fc-back`/`.fc-ruby`/`.fc-meaning`/`.fc-example`/`.fc-exampletr`). Ön yüz: `wrapKanji(esc(kanji))` (Japonca) + `fc-preview-front` sınıfı → hanko renkli, tıklanamaz (document listener `.fc-preview-front`'u dışlar + CSS `pointer-events:none`). Arka yüz: `smartRuby(kanji, furigana)` + `highlightKanji(exampleJp, kanji, exampleFuriganaMap)` → arka kanji'ler `.kanji-clickable` (KanjiModal açar, çalışma görünümüyle aynı). Kapat butonu (`close` anahtarı).
+- **Reuse:** `smartRuby` + `kanjiSizeClass` artık `CardView.js`'den **export** edilir; `DeckList.js` bunları + `highlightKanji` (utils) + `wrapKanji`/`isJapaneseCard` (kanjiUtils) import eder. Döngüsel import yok (CardView, DeckList'i import etmez).
+
+### CSS (`index.html`)
+- `.card-list-item.clickable-row` (cursor/hover `--paper-2`/active scale); `.deck-collapse-btn` (30px, soluk); `.deck-sub-badge`.
+- `.card-preview-modal` (flex column, gap) + scoped `.flashcard`/`.fc-preview-front` override (`min-height:140px`, `max-height:none`, kompakt padding); `.card-preview-modal .fc-kanji` font küçültme + ön yüz `--hanko` rengi.
+
+### i18n (`src/main.js` → `LANG`)
+3 yeni anahtar 4 dile (en/tr/ko/mn), `sub_decks_count`'tan hemen sonra: `collapse_decks`, `expand_decks`, `card_preview_title`. Mevcut `sub_decks_count`/`close` yeniden kullanıldı.
+
+### Doğrulama
+Vite preview'da canlı test edildi (3 katmanlı test ağacı eval ile kuruldu): (1) chevron + folder + "N sub-decks" badge render; (2) alt deste collapse → torun gizlenir + chevron `chevron_right`'a döner; (3) kök collapse → tüm alt ağaç gizlenir; (4) kök expand → çocuklar döner ama torun gizli kalır (collapse durumu deste-bazında korunur); (5) kart satırına tık → 2 yüzlü önizleme (ön hanko kanji, arka ruby/anlam/örnek+çeviri, 8 tıklanabilir arka kanji, grade butonu YOK, sadece Close); (6) Edit butonu → "Edit card" modalı (önizleme açılmaz — stopPropagation); (7) `setLang('tr')` → "2 alt deste"/"Alt desteleri gizle"/"Kart Önizleme"/"Kapat". Konsol hatası yok. Test desteleri localStorage'dan temizlendi.
+
+## %100 Otomatik Arka Plan Furigana Üretimi
+
+Kullanıcı Furigana alanını **tamamen yok sayıp** Save'e basabilir; sistem kayıt/import anında offline kuromoji parser ile sessizce üretir → Ruby yine de doğru render olur. (Karmaşık/uzun, Romaji+Katakana+Kanji+Hiragana karışık dizelerde elle Furigana yazma zahmetini kaldırır.)
+
+### `generateFurigana` karışık dize sertleştirmesi (`src/utils/furiganaParser.js`)
+- **Sorun:** Eski `tokens.map((tk) => tokenReading(tk) || tk.surface_form)` her token'ın okumasını `kataToHira` ile hiragana'ya çeviriyordu → **katakana token'lar da** hiragana'ya dönüyordu (セキュリティ → せきゅりてぃ). `smartRuby` (CardView) katakana koşusunu kana (type `h`) sayıp okumadan `indexOf` ile eşler; okuma katakana içermezse hizalama **bozulur** (sonraki kanji yanlış okuma alır).
+- **Düzeltme (tek satır):** `tokens.map((tk) => hasKanji(tk.surface_form) ? (tokenReading(tk) || tk.surface_form) : tk.surface_form)`. **Yalnızca kanji içeren token** hiragana okumaya çevrilir; katakana, hiragana, latin harfler ve semboller **olduğu gibi** korunur. Pür-kana/katakana/latin kelimeler için `generateFurigana` zaten erken `''` döner (`!hasKanji(input)` guard'ı, tokenizer yüklenmez).
+- **Canlı doğrulama (eval):** `http→セキュリティ機能が付加された版` → `http→セキュリティきのうがふかされたばん`; `iPhone版を購入` → `iPhoneばんをこうにゅう`; `コーヒー` → `''`; `勉強` → `べんきょう`. `smartRuby` çıktısı: 版→ばん, 購入→こうにゅう (rt), `iPhone`/`を` düz metin.
+
+### Kayıt/Edit/Import yakalama (`src/components/DeckList.js`)
+- **`autoFurigana(furigana, word)` yardımcısı (modül-içi, async):** `furigana` doluysa dokunmaz; boşsa `await generateFurigana(word)` (try/catch → hata/parser-hazır-değil durumunda `''`, kayıt **asla** engellenmez).
+- **`saveCard` / `saveCardFromModal` / `saveEditCard` → `async`:** Validasyon + `findDeck`'ten **sonra**, `makeCard`/atamadan **hemen önce** `furigana = await autoFurigana(...)`. `furigana` `const`→`let`. Bu, debounce'lu `setupFuriganaAssist` (600ms) henüz çalışmadan kullanıcı hızla Save'e basarsa devreye giren **garanti fallback**'tir.
+- **`bulkImport` → `async`:** `for...of` döngüsü; her satırda `furigana` her zaman offline oto-üretilir. **Pipe formatı UI cila ile sadeleştirildi (bkz. "UI Cila" bölümü):** eski `Word | Furigana | Meaning | …` yerine artık `Word | Meaning | Example JP (ops) | Example TR (ops)` (`parts[0]=kanji, [1]=meaning, [2]=exJp, [3]=exTr`; `furigana = await autoFurigana('', kanji)`). Sıralı işlenir (crash yok). Buton `try/finally` ile kilitlenir + `ai_generating` ("Generating…") gösterir (çift gönderim engeli), sonunda eski etikete döner.
+- **Async wiring güvenli:** Tüm bu fonksiyonlar inline `onclick` / `addEventListener` ile çağrılır (fire-and-forget); async dönüş promise'i sorun çıkarmaz.
+
+### UI Polish
+- **Placeholder:** Yeni i18n anahtarı `furigana_auto_placeholder` 4 dile (`furigana_placeholder`'dan hemen sonra): en "Leave blank for auto-generation" / tr "Otomatik oluşturmak için boş bırakın" / ko "자동 생성하려면 비워 두세요" / mn "Автоматаар үүсгэхийн тулд хоосон үлдээнэ үү". **NOT (UI cila):** `#add-furigana` ve `#modal-add-furigana` alanları sonradan **tamamen kaldırıldı** (bkz. "UI Cila" bölümü); placeholder anahtarı yalnızca `#edit-furigana`'da kalan manuel override alanı için kullanılır.
+- **`*` kaldırıldı:** Add-card modalindeki Furigana label'ından yanıltıcı `<span class="required">*</span>` çıkarıldı (alan artık opsiyonel/oto — add-form view'ı zaten `*`'sizdi).
+
+## UI Cila — Forecast Taşıma, Önizleme Boyut Düzeltmesi, Add-Card Furigana Kaldırma
+
+Furigana artık %100 oto-üretildiğinden ve dashboard sadeleştirilmek istendiğinden 3 UI cila değişikliği. Çekirdek FSRS motoru ve sync akışlarına dokunulmadı. Vite preview'da canlı doğrulandı (eval + screenshot).
+
+### 1. Forecast grafiği Çalışma Takvimine taşındı
+- **`index.html`:** `view-decks`'teki statik `<div class="card" id="forecast-chart-container">` **kaldırıldı** (artık dashboard'da değil).
+- **`Analytics.js`:** `renderGlobalStats()` içindeki `renderForecastChart()` çağrısı **silindi**. `renderStreakScreen()` HTML'ine `#cal-container`'dan hemen sonra `<div class="card" id="forecast-chart-container">` eklendi; `renderCalendarGrid()`'ten hemen sonra `renderForecastChart()` çağrılır. (Ayrıntı + neden: yukarıdaki "7 Günlük Tekrar Tahmini" bölümü güncellendi.)
+- **Doğrulama:** dashboard'da forecast yok; `showView('streak')` → takvim grid'inin altında "7-Day Review Forecast" + 7 sütun (bugün/Mon `--hanko` vurgulu). Konsol hatası yok.
+
+### 2. Kart Önizleme Modalı dev-font bugı (CSS özgüllük çakışması)
+- **Kök neden:** `showCardPreviewModal()` zaten `kanjiSizeClass(card.kanji)` ile `.fc-kanji-sm/-xs` sınıfını uyguluyordu (JS doğruydu). Ama `index.html`'de `.card-preview-modal .fc-kanji { font-size: clamp(3rem,16vw,5rem) }` (2 sınıf özgüllüğü) ile küçültücü `.fc-kanji.fc-kanji-sm/-xs` kuralları (yine 2 sınıf) **eşit özgüllükte** olduğundan, kaynak sırasında geride kalan küçültücüler eziliyordu → uzun metin modalda devasa kalıyordu.
+- **Düzeltme (`index.html`, sadece CSS):** Modal kapsamlı (3 sınıf özgüllüklü) override eklendi: `.card-preview-modal .fc-kanji.fc-kanji-sm { clamp(1.5rem,8vw,2.6rem) }` + `.fc-kanji-xs { clamp(1rem,5vw,1.5rem) }`. `overflow-wrap:anywhere; word-wrap:break-word` zaten base `.fc-kanji`'de mevcut (miras alınır).
+- **Doğrulama (computed font-size):** base 80px, sm 41.6px, xs 24px (kademeli küçülme); `overflowWrap:anywhere`. Düzeltme öncesi üçü de 80px olurdu.
+
+### 3. Furigana alanı Add-Card akışlarından kaldırıldı (yalnız Edit'te kalır)
+- **`index.html`:** `view-add` ADD CARD bölümündeki Furigana `<input id="add-furigana">` form-group'u silindi. Bulk import textarea placeholder'ı yeni formata güncellendi (`漢字 | kanji | 例文 | translation`).
+- **`DeckList.js`:**
+  - `showAddCardModal`: `#modal-add-furigana` form-group'u + `setupFuriganaAssist('modal-add-kanji','modal-add-furigana')` çağrısı + keydown forEach'teki `'modal-add-furigana'` kaldırıldı.
+  - `renderAddForm` + `showAddCardModal`: kaldırılan `setupFuriganaAssist` çağrısının yaptığı **tokenizer ön-ısıtma** kaybolmasın diye yerine doğrudan `warmupFurigana()` eklendi.
+  - `saveCard` / `saveCardFromModal`: kaldırılan alanı okuyan satırlar `let furigana = ''` ile değiştirildi (kayıt anında `autoFurigana` zaten oto-üretir); ilgili `.value = ''` reset satırları silindi (null-ref crash önlendi).
+  - `bulkImport`: yeni 4-alanlı parse (madde 1'deki format), `furigana = await autoFurigana('', kanji)`.
+- **`main.js`:** Add-form Enter-key forEach dizisinden `'add-furigana'` çıkarıldı (opsiyonel-zincir zaten güvenliydi, temizlik). `bulk_format` i18n anahtarı 4 dilde sadeleştirildi: "Format: Word | Meaning | Example JP (opt) | Example TR (opt)".
+- **Edit modalı korundu:** `showEditModal` → `#edit-furigana` (manuel override fallback) + `setupFuriganaAssist('edit-kanji','edit-furigana')` dokunulmadı.
+- **Doğrulama:** add-form/add-modal'da furigana input yok (kanji+meaning var, açılış crash yok); edit-modal'da furigana var (auto placeholder'lı); bulk hint yeni formatı gösterir.

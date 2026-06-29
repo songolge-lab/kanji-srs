@@ -163,8 +163,12 @@ export async function generateFurigana(text) {
   if (!input || !hasKanji(input)) return '';
   const tokenizer = await getTokenizer();
   const tokens = tokenizer.tokenize(input);
+  // YALNIZCA kanji içeren token'lar hiragana okumaya çevrilir. Katakana,
+  // hiragana, latin harfler ve semboller (ör. "http→セキュリティ機能") olduğu
+  // gibi korunur — aksi halde kuromoji okuması katakana'yı da hiragana'ya
+  // çevirir (セキュリティ → せきゅりてぃ) ve smartRuby hizalaması bozulur.
   return tokens
-    .map((tk) => tokenReading(tk) || tk.surface_form)
+    .map((tk) => hasKanji(tk.surface_form) ? (tokenReading(tk) || tk.surface_form) : tk.surface_form)
     .join('');
 }
 

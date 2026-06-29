@@ -457,65 +457,16 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .cal-legend { display: flex; gap: 1rem; margin-top: .8rem; font-size: .76rem; color: var(--ink-soft); }
 .cal-legend-item { display: flex; align-items: center; gap: .35rem; }
 .cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
+/* Tıklanabilir gün hücreleri + seçili gün halkası + detay paneli */
+.cal-day.is-clickable { cursor: pointer; transition: filter .12s ease; }
+.cal-day.is-clickable:hover { filter: brightness(1.1); }
+.cal-day.is-selected { box-shadow: inset 0 0 0 2px var(--gold); }
+.cal-day.is-selected.is-today { box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 2px var(--ink-soft); }
+.cal-day-details { margin-top: .9rem; padding: .85rem 1rem; background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.cal-detail-date { font-weight: 700; font-size: .9rem; margin-bottom: .5rem; color: var(--ink); }
+.cal-detail-row { font-size: .82rem; color: var(--ink-soft); padding: .15rem 0; }
+.cal-detail-empty { font-size: .82rem; color: var(--ink-soft); font-style: italic; }
 
-/* ─── GITHUB-STYLE KATKI HEATMAP ──────────────────────────────────────
-   Hücre boyutu sabit (kare garantisi) + dar ekranda yatay scroll. Renk
-   tonları color-mix ile tema değişkenlerinden türetilir → tüm temalarda
-   (açık/koyu) otomatik uyum; eski motorlar için GitHub yeşili fallback. */
-.heatmap-card {
-  --heat-cell: 11px; --heat-gap: 3px;
-  padding: .8rem .9rem; margin-bottom: 1rem;
-}
-.heatmap-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: .6rem; margin-bottom: .6rem;
-}
-.heatmap-title { font-weight: 700; font-size: .92rem; }
-.heatmap-sub { font-size: .72rem; color: var(--ink-soft); }
-.heatmap-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem; }
-.heatmap-inner { display: inline-block; min-width: min-content; }
-.heatmap-months {
-  display: grid; grid-auto-flow: column; grid-auto-columns: var(--heat-cell);
-  gap: var(--heat-gap); margin-left: calc(1.9em + var(--heat-gap)); margin-bottom: 3px;
-}
-.heatmap-month {
-  font-size: .58rem; color: var(--ink-soft); line-height: 1;
-  white-space: nowrap; overflow: visible;
-}
-.heatmap-body { display: flex; gap: var(--heat-gap); }
-.heatmap-weekdays {
-  display: grid; grid-template-rows: repeat(7, var(--heat-cell));
-  gap: var(--heat-gap); width: 1.9em; flex-shrink: 0;
-}
-.heatmap-wd {
-  font-size: .55rem; color: var(--ink-soft); line-height: var(--heat-cell);
-  text-align: right; padding-right: .25rem;
-}
-.heatmap-grid {
-  display: grid; grid-template-rows: repeat(7, var(--heat-cell));
-  grid-auto-flow: column; grid-auto-columns: var(--heat-cell);
-  gap: var(--heat-gap);
-}
-.heat-cell {
-  width: var(--heat-cell); height: var(--heat-cell); border-radius: 2px;
-  background: var(--paper-2);
-}
-.heat-empty { background: transparent; }
-.heat-0 { background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--line-soft); }
-.heat-1 { background: #9be9a8; background: color-mix(in srgb, var(--jade) 30%, var(--paper-2)); }
-.heat-2 { background: #40c463; background: color-mix(in srgb, var(--jade) 55%, var(--paper-2)); }
-.heat-3 { background: #30a14e; background: color-mix(in srgb, var(--jade) 78%, var(--paper-2)); }
-.heat-4 { background: #216e39; background: var(--jade); }
-.heat-shielded { background: var(--sky); background: color-mix(in srgb, var(--sky) 50%, var(--paper-2)); }
-.heat-cell.is-today { box-shadow: inset 0 0 0 1.5px var(--ink); }
-.heatmap-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: .8rem; margin-top: .7rem; font-size: .72rem; color: var(--ink-soft);
-  flex-wrap: wrap;
-}
-.heatmap-legend { display: flex; align-items: center; gap: .25rem; }
-.heatmap-legend .heat-cell { display: inline-block; }
-.heatmap-legend-lbl { font-size: .68rem; color: var(--ink-soft); }
 
 /* =====================================================================
    TEST MANAGER & EDITOR
@@ -676,7 +627,7 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   gap: .55rem;
   margin-bottom: 1.1rem;
 }
-#global-stats { grid-template-columns: repeat(5, minmax(0,1fr)); }
+#global-stats { grid-template-columns: repeat(4, minmax(0,1fr)); }
 @media (max-width: 420px) {
   #global-stats {
     grid-template-columns: repeat(3, minmax(0,1fr));
@@ -692,6 +643,68 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 .stat-num { font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
 .stat-lbl { font-size: .68rem; color: var(--ink-soft); margin-top: .15rem; }
+
+/* =====================================================================
+   7-DAY REVIEW FORECAST (pure CSS bar chart)
+   ===================================================================== */
+.forecast-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: .9rem;
+}
+.forecast-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.forecast-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.forecast-bar-track {
+  width: 100%;
+  height: 130px;
+  box-sizing: border-box;
+  padding-top: 1.15rem; /* tepe boşluğu: yüksek çubukların üstündeki sayı kırpılmasın */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+.forecast-count {
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.forecast-bar {
+  width: 70%;
+  max-width: 30px;
+  min-height: 3px;
+  background-color: var(--jade);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+.forecast-bar.is-empty {
+  background-color: var(--line);
+  min-height: 2px;
+}
+.forecast-label {
+  font-size: .68rem;
+  color: var(--ink-soft);
+  margin-top: .45rem;
+  white-space: nowrap;
+}
+.forecast-label.is-today {
+  color: var(--hanko);
+  font-weight: 700;
+}
 
 /* =====================================================================
    SECTION HEADER
@@ -761,6 +774,13 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .cli-info .cli-meaning { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cli-actions { display: flex; gap: .25rem; flex-shrink: 0; }
 .cli-actions .icon-btn { width: 40px; height: 40px; font-size: 1rem; box-shadow: none; }
+/* Kart satırına tıklanınca önizleme modalı açılır — tıklanabilir görünüm. */
+.card-list-item.clickable-row { cursor: pointer; transition: background .15s, border-color .15s; }
+.card-list-item.clickable-row:hover { background: var(--paper-2); border-color: var(--line); }
+.card-list-item.clickable-row:active { transform: scale(.995); }
+/* Deste collapse (chevron) toggle butonu: küçük, soluk, sade. */
+.deck-collapse-btn { width: 30px; height: 30px; box-shadow: none; flex-shrink: 0; color: var(--ink-soft); }
+.deck-sub-badge { font-weight: 600; vertical-align: middle; }
 
 /* =====================================================================
    STUDY SCREEN
@@ -906,7 +926,53 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .kanji-detail-row:last-child { border-bottom: none; }
 .kanji-detail-label { font-size: .8rem; flex-shrink: 0; }
 .kanji-detail-value { font-weight: 600; text-align: right; }
+/* ─── JUKUGO SMART WORD MODAL ─────────────────────────────────────────
+   Arka yüzde kanji içeren tüm kelime bloğu tek tıklanabilir birim olur
+   (bağlamsal Word Modal açar). Kesik çizgi + hanko vurgusu ile belli edilir. */
+.word-clickable {
+  cursor: pointer;
+  color: var(--hanko);
+  font-weight: 700;
+  border-bottom: 1px dashed var(--hanko);
+}
+.word-clickable rt { color: var(--ink-soft); font-weight: 400; }
+.word-detail-head { font-size: 2.6rem; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.word-section-label { font-size: .8rem; color: var(--ink-soft); font-weight: 600; margin: 0 0 .5rem; }
+.word-ai-section { margin-bottom: 1.2rem; }
+.word-ai-output { font-style: italic; line-height: 1.55; min-height: 1.4em; }
+.kanji-chip-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.kanji-chip {
+  font-size: 1.45rem; font-weight: 700; line-height: 1;
+  padding: .45rem .7rem; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--paper-2);
+  color: var(--ink); cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.kanji-chip:hover { background: var(--paper); }
+.kanji-chip:active { transform: scale(.94); }
 .fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
+
+/* ─── KART ÖNİZLEME MODALI (deste kart listesi → satıra tık) ───────────
+   Çalışma kartının statik iki yüzlü temsili: üst yüz (kanji) + alt yüz
+   (okuma/anlam/örnek). Grade butonu YOK. .flashcard sınıfını yeniden
+   kullanır; modal içinde daha kompakt olsun diye min-height düşürülür. */
+.card-preview-modal { display: flex; flex-direction: column; gap: .9rem; }
+.card-preview-modal .flashcard,
+.card-preview-modal .fc-preview-front {
+  min-height: 140px;
+  max-height: none;
+  margin-bottom: 0;
+  padding: 1.6rem 1.2rem;
+}
+.card-preview-modal .fc-kanji { font-size: clamp(3rem, 16vw, 5rem); }
+/* Uzun metin (kanjiSizeClass → fc-kanji-sm/-xs) modalda dev kalmasın: base
+   `.card-preview-modal .fc-kanji` kuralıyla aynı özgüllükte (2 sınıf) olan
+   `.fc-kanji.fc-kanji-sm/-xs` kuralları kaynak sırasında geride kalıp eziliyordu;
+   modal kapsamlı (3 sınıf) override ile küçültme sınıfları geri kazandırılır. */
+.card-preview-modal .fc-kanji.fc-kanji-sm { font-size: clamp(1.5rem, 8vw, 2.6rem); }
+.card-preview-modal .fc-kanji.fc-kanji-xs { font-size: clamp(1rem, 5vw, 1.5rem); }
+/* Ön yüz kanji'si çalışma kartındaki gibi hanko vurgulu (tıklanamaz). */
+.card-preview-modal .fc-preview-front .fc-kanji { color: var(--hanko); }
 
 /* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
 .fc-preview-wrap {
@@ -1469,7 +1535,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   <div id="view-decks" class="view active">
     <div class="stats-grid" id="global-stats"></div>
     <div class="card streak-card tap" id="streak-card" onclick="showView('streak')"></div>
-    <div class="card heatmap-card" id="heatmap-card"></div>
     <div class="section-hd" data-t="my_decks">My Decks</div>
     <div id="deck-list"></div>
     <div id="deck-list-empty" class="empty" style="display:none">
@@ -1539,10 +1604,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
           <input type="text" id="add-kanji" data-pt="kanji_placeholder" placeholder="e.g. 漢字">
         </div>
         <div class="form-group">
-          <label><span data-t="furigana_label">Furigana (reading)</span></label>
-          <input type="text" id="add-furigana" data-pt="furigana_placeholder" placeholder="e.g. かんじ">
-        </div>
-        <div class="form-group">
           <label><span data-t="meaning_label">Meaning</span> <span class="required">*</span></label>
           <input type="text" id="add-meaning" data-pt="meaning_placeholder" placeholder="e.g. kanji, Chinese character">
         </div>
@@ -1573,10 +1634,15 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
       <div class="form-group">
         <label data-t="card_list">Card list</label>
         <textarea id="bulk-input" rows="7"
-          placeholder="漢字 | かんじ | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | みず | water | 水を飲みます。&#10;食べる | たべる | to eat | パンを食べる。"></textarea>
+          placeholder="漢字 | kanji | 毎日漢字を勉強します。 | I study kanji every day.&#10;水 | water | 水を飲みます。&#10;食べる | to eat"></textarea>
         <div class="form-hint" data-t="bulk_format">Format: Kanji | Furigana | Meaning | Example JP (opt) | Example TR (opt)</div>
       </div>
       <button class="btn btn-block btn-primary tap" id="btn-bulk-import" data-t="import_btn">Import</button>
+    </div>
+
+    <div class="section-hd" data-t="modal_ai_deck_title">Generate AI Deck</div>
+    <div class="card">
+      <button class="btn btn-block btn-primary tap" id="btn-ai-deck" data-t="btn_ai_deck">✨ AI Deck</button>
     </div>
   </div>
 
