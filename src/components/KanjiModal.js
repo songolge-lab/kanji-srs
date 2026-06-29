@@ -77,7 +77,7 @@ function wireAiTutor(kanji, entry) {
     out.textContent = '';
 
     try {
-      const story = await generateMnemonic(kanji, entry.meaning, reading, apiKey, settings.geminiModel);
+      const story = await generateMnemonic(kanji, entry.meaning, reading, apiKey, settings.geminiModel, app.currentLang);
       out.textContent = story;
     } catch (e) {
       out.textContent = app.t('warn_error', { msg: e?.message || 'Unknown error' });

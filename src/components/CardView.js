@@ -24,7 +24,7 @@ function kanjiText(text) {
 
 // Uzun cümlelerde dev font'un kartı taşırmaması için: metin uzadıkça
 // daha küçük bir font-size sınıfı uygular (CSS .fc-kanji-sm / .fc-kanji-xs).
-function kanjiSizeClass(text) {
+export function kanjiSizeClass(text) {
   const len = (text || '').trim().length;
   if (len > 15) return ' fc-kanji-xs';
   if (len > 8) return ' fc-kanji-sm';
@@ -37,7 +37,7 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // hiragana/katakana parçalar (を, します gibi) düz metin kalır — okuma
 // yüzeyle aynıysa hiç ruby üretilmez. Japonca kartlarda kanji koşuları
 // `.kanji-clickable` ile sarılır (tıklanabilir + arka yüzde vurgulanır).
-function smartRuby(surface, reading) {
+export function smartRuby(surface, reading) {
   surface = (surface || '').toString();
   reading = (reading || '').toString();
   const jp = isJapaneseCard();
@@ -210,7 +210,10 @@ export function gradeCard(grade) {
   const wasNew = card.srs.state === 'new';
   const wasMastered = card.srs.mastered;
   applySRS(card, grade, app.cfg(), nowMs());
-  app.recordReview(wasNew);
+  // Aktif çalışma destesinin adını da geçir → günlük istatistikte hangi destelerin
+  // çalışıldığı izlenir. (Deste alanı `name`; blueprint'teki `title` bu projede yok.)
+  const studyDeck = app.findDeck(app.currentDeckId);
+  app.recordReview(wasNew, studyDeck ? studyDeck.name : '');
   if (card.srs.mastered && !wasMastered) {
     app.showToast(app.t('toast_mastered', {kanji: card.kanji}), 2200);
   }

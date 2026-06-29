@@ -4,7 +4,7 @@ let app;
 export function init(ctx) { app = ctx; }
 
 // ─── STATS HELPERS ────────────────────────────────────────────────────
-export function recordReview(isNew) {
+export function recordReview(isNew, deckTitle) {
   const { state } = app;
   const td = today();
   const isFirstReviewToday = !state.stats.reviewsByDate[td];
@@ -14,8 +14,11 @@ export function recordReview(isNew) {
     state.stats.reviewsByDate[k] = (state.stats.reviewsByDate[k] || 0) + 1;
   }
   if (!state.stats.dailyStats) state.stats.dailyStats = {};
-  if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0 };
-  state.stats.dailyStats[td].cardsStudied++;
+  if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0, decksStudied: [] };
+  const day = state.stats.dailyStats[td];
+  if (!Array.isArray(day.decksStudied)) day.decksStudied = []; // eski/migre edilmemiş gün koruması
+  day.cardsStudied++;
+  if (deckTitle && !day.decksStudied.includes(deckTitle)) day.decksStudied.push(deckTitle);
   if (isFirstReviewToday) applyShieldsForMissedDays();
   updateStreak();
   awardWeeklyShieldIfEarned();
@@ -103,7 +106,7 @@ export function startSessionTimer() {
     const { state } = app;
     const td = today();
     if (!state.stats.dailyStats) state.stats.dailyStats = {};
-    if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0 };
+    if (!state.stats.dailyStats[td]) state.stats.dailyStats[td] = { cardsStudied: 0, timeSpentMs: 0, decksStudied: [] };
     state.stats.dailyStats[td].timeSpentMs += elapsed;
   }, 1000);
 }
@@ -172,16 +175,71 @@ function flameLevel(streak) {
 export function renderGlobalStats() {
   const s = globalStats();
   const ds = getDailyStats();
-  const mins = Math.floor(ds.timeSpentMs / 60000);
   document.getElementById('global-stats').innerHTML = `
     <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">${app.t('total_cards')}</div></div>
     <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${app.t('mastered_label')}</div></div>
     <div class="stat-box"><div class="stat-num" style="color:var(--hanko)">${s.todayCount}</div><div class="stat-lbl">${app.t('today_label')}</div></div>
     <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${ds.cardsStudied}</div><div class="stat-lbl">${app.t('daily_cards_studied')}</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${mins}</div><div class="stat-lbl">${app.t('daily_time_spent')}</div></div>
   `;
   renderStreakCard();
-  renderHeatmap();
+  renderForecastChart();
+}
+
+// ─── 7-DAY REVIEW FORECAST ───────────────────────────────────────────
+// FSRS motorunun `srs.due` zaman damgalarını okuyup önümüzdeki `days` günde
+// vadesi gelen kart sayısını gün gün gruplar. Tüm tarih sistemi (today/
+// dateStrToEpochDay) UTC gün sınırını kullandığından, due ms'i de UTC epoch
+// gününe çevrilir (Math.floor(due/86400000)) → tutarlı kovalama.
+// - 'new' kartlar dışlanır: henüz programlanmadıklarından (due=0) hepsi bugüne
+//   düşüp grafiği şişirirdi; deckStats'taki "due" tanımıyla (state !== 'new') uyumlu.
+// - Gecikmiş kart (due bugünden önce) bugüne (index 0) sayılır.
+// - Pencere dışına (>= days) düşen kartlar yok sayılır.
+export function getForecastData(days = 7) {
+  const { state } = app;
+  const labels = app.t('weekdays_short').split(','); // Mon=0 .. Sun=6
+  const todayEpoch = dateStrToEpochDay(today());
+  const data = [];
+  for (let i = 0; i < days; i++) {
+    const epoch = todayEpoch + i;
+    const dow = ((epoch % 7) + 10) % 7; // epoch-gün → Pzt=0 indeks
+    data.push({ dateStr: epochDayToDateStr(epoch), count: 0, label: labels[dow] || '' });
+  }
+  for (const deck of state.decks) {
+    for (const card of deck.cards) {
+      const srs = card.srs;
+      if (!srs || srs.state === 'new' || !srs.due) continue; // programlanmamış kartları atla
+      let idx = Math.floor(srs.due / 86400000) - todayEpoch;
+      if (idx < 0) idx = 0;          // gecikmiş → bugün
+      if (idx >= days) continue;     // pencere dışı → yok say
+      data[idx].count++;
+    }
+  }
+  return data;
+}
+
+// #forecast-chart-container içine 7 dikey çubuk basar. Çubuk yüksekliği
+// (count / maxCount) * 100% — maxCount === 0 iken güvenli (tüm yükseklikler 0).
+export function renderForecastChart() {
+  const container = document.getElementById('forecast-chart-container');
+  if (!container) return;
+  const td = today();
+  const data = getForecastData(7);
+  const maxCount = data.reduce((m, d) => Math.max(m, d.count), 0);
+  const barsHTML = data.map(d => {
+    const heightPct = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
+    const isToday = d.dateStr === td;
+    return `<div class="forecast-col">
+      <div class="forecast-bar-track">
+        <div class="forecast-count">${d.count}</div>
+        <div class="forecast-bar${d.count === 0 ? ' is-empty' : ''}" style="height:${heightPct}%" title="${esc(d.dateStr)}"></div>
+      </div>
+      <div class="forecast-label${isToday ? ' is-today' : ''}">${esc(d.label)}</div>
+    </div>`;
+  }).join('');
+  container.innerHTML = `
+    <div class="forecast-title">${app.t('forecast_title')}</div>
+    <div class="forecast-chart">${barsHTML}</div>
+  `;
 }
 
 export function renderStreakCard() {
@@ -217,88 +275,9 @@ export function renderStreakCard() {
   `;
 }
 
-// ─── GITHUB-STYLE CONTRIBUTION HEATMAP ───────────────────────────────
-// Saf Vanilla JS + CSS Grid (harici kütüphane yok). 53 hafta × 7 gün penceresi.
-// grid-auto-flow:column ile hücreler üstten-alta, sonra sola-sağa akar.
-function heatLevel(count) {
-  if (count <= 0) return 0;
-  if (count <= 10) return 1;
-  if (count <= 20) return 2;
-  if (count <= 40) return 3;
-  return 4;
-}
-
-export function renderHeatmap() {
-  const host = document.getElementById('heatmap-card');
-  if (!host) return; // sadece deck dashboard'unda var
-  const { state } = app;
-  const rbd = state.stats.reviewsByDate || {};
-  const td = today();
-  const thisWeekMonday = weekStartOf(td);
-  const startMonday = addDaysToDateStr(thisWeekMonday, -7 * 52); // 53 sütunluk pencere
-  const monthAbbr = app.t('months_short').split(',');
-  const wkLabels = app.t('weekdays_short').split(',');
-
-  let yearTotal = 0;
-  let cellsHTML = '';
-  let monthsHTML = '';
-  let lastMonthShown = -1;
-
-  for (let w = 0; w < 53; w++) {
-    const weekMonday = addDaysToDateStr(startMonday, w * 7);
-    const mNum = Number(weekMonday.slice(5, 7));
-    // Ay etiketi: ayın değiştiği ilk haftada göster (son sütunlar taşmasın diye w<50).
-    if (mNum !== lastMonthShown && w < 50) {
-      monthsHTML += `<span class="heatmap-month">${esc(monthAbbr[mNum - 1] || '')}</span>`;
-      lastMonthShown = mNum;
-    } else {
-      monthsHTML += `<span class="heatmap-month"></span>`;
-    }
-    for (let d = 0; d < 7; d++) {
-      const date = addDaysToDateStr(weekMonday, d);
-      if (dateStrDiffDays(date, td) > 0) { cellsHTML += `<span class="heat-cell heat-empty"></span>`; continue; }
-      const count = rbd[date] || 0;
-      const shielded = count === 0 && !!rbd[date + '_shielded'];
-      if (count > 0) yearTotal += count;
-      const cls = ['heat-cell', `heat-${heatLevel(count)}`];
-      if (shielded) cls.push('heat-shielded');
-      if (date === td) cls.push('is-today');
-      const title = count > 0 ? app.t('heatmap_tooltip', { count, date }) : app.t('heatmap_none', { date });
-      cellsHTML += `<span class="${cls.join(' ')}" title="${esc(title)}"></span>`;
-    }
-  }
-
-  const longest = state.stats.longestStreak || 0;
-  const legendSwatches = [0, 1, 2, 3, 4].map(l => `<span class="heat-cell heat-${l}"></span>`).join('');
-  const weekdayColHTML = wkLabels.map((lbl, i) => `<span class="heatmap-wd">${i % 2 === 0 ? esc(lbl) : ''}</span>`).join('');
-
-  host.innerHTML = `
-    <div class="heatmap-head">
-      <span class="heatmap-title">${app.t('heatmap_title')}</span>
-      <span class="heatmap-sub">${esc(app.t('heatmap_longest', { count: longest }))}</span>
-    </div>
-    <div class="heatmap-scroll">
-      <div class="heatmap-inner">
-        <div class="heatmap-months">${monthsHTML}</div>
-        <div class="heatmap-body">
-          <div class="heatmap-weekdays">${weekdayColHTML}</div>
-          <div class="heatmap-grid">${cellsHTML}</div>
-        </div>
-      </div>
-    </div>
-    <div class="heatmap-foot">
-      <span class="heatmap-year-total">${esc(app.t('heatmap_year_total', { count: yearTotal }))}</span>
-      <span class="heatmap-legend">
-        <span class="heatmap-legend-lbl">${app.t('heatmap_less')}</span>
-        ${legendSwatches}
-        <span class="heatmap-legend-lbl">${app.t('heatmap_more')}</span>
-      </span>
-    </div>
-  `;
-}
-
 // ─── STREAK SCREEN + CALENDAR ────────────────────────────────────────
 let calendarViewMonth = null;
+let selectedCalDay = null; // takvimde tıklanan gün (YYYY-MM-DD) → detay paneli
 
 export function renderStreakScreen() {
   if (!calendarViewMonth) calendarViewMonth = today().slice(0, 7);
@@ -333,7 +312,50 @@ export function changeCalendarMonth(delta) {
   const [y, m] = calendarViewMonth.split('-').map(Number);
   const d = new Date(Date.UTC(y, m - 1 + delta, 1));
   calendarViewMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  selectedCalDay = null; // ay değişince seçili gün detayını kapat
   renderCalendarGrid();
+}
+
+// Tıklanan günü seç/seçimi kaldır (aynı güne tekrar tıklayınca toggle kapanır).
+export function selectCalendarDay(dateStr) {
+  selectedCalDay = (selectedCalDay === dateStr) ? null : dateStr;
+  renderCalendarGrid();
+}
+
+// Seçili gün için "29 June 2026" biçiminde okunabilir tarih (çevrili ay adı).
+function formatCalDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const monthNames = app.t('months').split(',');
+  return `${d} ${monthNames[m - 1] || ''} ${y}`;
+}
+
+// Seçili güne ait kart/süre/deste özetini (#calendar-day-details içeriği) üretir.
+// dailyStats yoksa (eski/senkron gün) reviewsByDate sayısına düşer; hiç veri yoksa
+// "etkinlik yok" mesajı gösterir. Deste adları kullanıcı girdisi → esc edilir.
+function renderDayDetails() {
+  if (!selectedCalDay) return '';
+  const { state } = app;
+  const dateStr = selectedCalDay;
+  const ds = state.stats.dailyStats && state.stats.dailyStats[dateStr];
+  const reviewCount = state.stats.reviewsByDate[dateStr] || 0;
+  const cards = ds ? ds.cardsStudied : reviewCount;
+  const mins = ds ? Math.floor((ds.timeSpentMs || 0) / 60000) : 0;
+  const decks = ds && Array.isArray(ds.decksStudied) ? ds.decksStudied : [];
+  let body;
+  if (!cards && !mins && !decks.length) {
+    body = `<div class="cal-detail-empty">${app.t('cal_no_activity')}</div>`;
+  } else {
+    const decksStr = decks.length ? esc(decks.join(', ')) : '—';
+    body = `
+      <div class="cal-detail-row">${app.t('cal_cards_studied', { count: cards })}</div>
+      <div class="cal-detail-row">${app.t('cal_time_spent', { count: mins })}</div>
+      <div class="cal-detail-row">${app.t('cal_decks_studied', { decks: decksStr })}</div>
+    `;
+  }
+  return `<div class="cal-day-details">
+    <div class="cal-detail-date">${esc(formatCalDate(dateStr))}</div>
+    ${body}
+  </div>`;
 }
 
 function renderCalendarGrid() {
@@ -353,11 +375,15 @@ function renderCalendarGrid() {
     const active = !!state.stats.reviewsByDate[dateStr];
     const shielded = !active && !!state.stats.reviewsByDate[dateStr + '_shielded'];
     const isToday = dateStr === td;
+    const hasData = active || shielded; // yalnızca veri olan günler tıklanabilir
     const cls = ['cal-day'];
     if (active) cls.push('is-active');
     else if (shielded) cls.push('is-shielded');
     if (isToday) cls.push('is-today');
-    cellsHTML += `<div class="${cls.join(' ')}">${day}</div>`;
+    if (hasData) cls.push('is-clickable');
+    if (dateStr === selectedCalDay) cls.push('is-selected');
+    const attrs = hasData ? ` onclick="selectCalendarDay('${dateStr}')" role="button" tabindex="0"` : '';
+    cellsHTML += `<div class="${cls.join(' ')}"${attrs}>${day}</div>`;
   }
   container.innerHTML = `
     <div class="cal-nav">
@@ -373,5 +399,6 @@ function renderCalendarGrid() {
       <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--hanko)"></span>${app.t('legend_studied')}</span>
       <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--sky)"></span>${app.t('legend_shielded')}</span>
     </div>
+    <div id="calendar-day-details">${renderDayDetails()}</div>
   `;
 }

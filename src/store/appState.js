@@ -133,6 +133,12 @@ export function migrateStats(stats) {
   if (typeof s.longestStreak !== 'number') s.longestStreak = s.streak;
   if (typeof s.lifetimeReviews !== 'number') s.lifetimeReviews = 0;
   if (typeof s.dailyStats !== 'object' || !s.dailyStats) s.dailyStats = {};
+  // Eski günlük kayıtlarda decksStudied dizisi yoktu — geriye dönük uyum için
+  // eksik olan her güne boş dizi eklenir (render tarafı yine de defansif okur).
+  for (const day in s.dailyStats) {
+    const d = s.dailyStats[day];
+    if (d && typeof d === 'object' && !Array.isArray(d.decksStudied)) d.decksStudied = [];
+  }
   if (typeof s.lastStudyDate === 'undefined') {
     // En son GERÇEK çalışma gününü (count > 0, suffix'siz tarih) reviewsByDate'ten çıkar.
     // Kalkanla korunan günler count:0 ile düz anahtar oluşturduğundan onları eler.

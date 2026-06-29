@@ -1,8 +1,28 @@
-import { esc, debounce, buildRuby } from '../utils.js';
+import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
 import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
+import { generateDeck } from '../services/aiService.js';
+import { smartRuby, kanjiSizeClass } from './CardView.js';
+import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
 
 let app;
 export function init(ctx) { app = ctx; }
+
+// İç içe destelerde toggle ile gizlenen üst destelerin id'leri (collapse durumu).
+const collapsedDecks = new Set();
+
+// ─── OTOMATİK FURIGANA (kayıt anında) ────────────────────────────────
+// Kullanıcı Furigana alanını boş bıraktıysa, kart oluşturulmadan/güncellenmeden
+// HEMEN ÖNCE offline kuromoji parser ile sessizce üret → kullanıcı alanı
+// tamamen yok sayıp Save'e basabilir, Ruby yine de doğru render olur.
+//   • furigana doluysa dokunulmaz (kullanıcı/assist değerini ezme).
+//   • word'de kanji yoksa generateFurigana zaten anında '' döner (tokenizer
+//     yüklenmez) → katakana/latin kelimeler düz metin kalır.
+//   • parser hazır değilse/başarısızsa '' döner → kayıt asla engellenmez.
+async function autoFurigana(furigana, word) {
+  if (furigana) return furigana;
+  try { return (await generateFurigana(word)) || ''; }
+  catch { return ''; }
+}
 
 // ─── FURIGANA ASSIST (offline, bağlama duyarlı) ──────────────────────
 function setupFuriganaAssist(kanjiInputId, furiganaInputId) {
@@ -146,6 +166,25 @@ function _moveDeckDirect(deckId, targetParentId) {
   return true;
 }
 
+// Bir destenin atalarından herhangi biri collapse edilmişse true döner →
+// ağaçta o deste (ve tüm alt ağacı) gizlenir.
+function hasCollapsedAncestor(deck) {
+  let pid = deck.parentId;
+  while (pid) {
+    if (collapsedDecks.has(pid)) return true;
+    const parent = app.findDeck(pid);
+    if (!parent) break;
+    pid = parent.parentId;
+  }
+  return false;
+}
+
+// Toggle butonu: deste collapse durumunu değiştir + listeyi yeniden çiz.
+export function toggleDeckCollapse(deckId) {
+  collapsedDecks.has(deckId) ? collapsedDecks.delete(deckId) : collapsedDecks.add(deckId);
+  renderDeckList();
+}
+
 // ─── DECK LIST RENDER ────────────────────────────────────────────────
 export function renderDeckList() {
   const { state } = app;
@@ -154,20 +193,28 @@ export function renderDeckList() {
   if (!state.decks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const tree = app.getDecksInTreeOrder();
-  container.innerHTML = tree.map(({ deck, depth }) => {
+  const rows = [];
+  for (const { deck, depth } of tree) {
+    // Atalarından biri collapse edilmişse bu deste ve alt ağacı gizlenir.
+    if (hasCollapsedAncestor(deck)) continue;
     const children = app.getChildDecks(deck.id);
     const hasChildren = children.length > 0;
+    const isCollapsed = collapsedDecks.has(deck.id);
     const s = hasChildren ? app.aggregateDeckStats(deck.id) : app.deckStats(deck);
     const qLen = hasChildren ? app._buildQueue(app.getAllCardsForDeck(deck.id)).length : app.buildQueue(deck).length;
     const indent = depth * 1.2;
-    const subInfo = hasChildren ? ` · ${app.t('sub_decks_count', {count: children.length})}` : '';
-    return `
+    const collapseBtn = hasChildren
+      ? `<button class="icon-btn tap deck-collapse-btn" onclick="event.stopPropagation();toggleDeckCollapse('${deck.id}')" aria-label="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}" title="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}">${app.icon(isCollapsed ? 'chevron_right' : 'chevron_down')}</button>`
+      : '';
+    const subBadge = hasChildren ? ` <span class="badge badge-soft deck-sub-badge">${app.t('sub_decks_count', {count: children.length})}</span>` : '';
+    rows.push(`
     <div class="card deck-draggable" draggable="true" data-deck-id="${deck.id}" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
       <div class="card-row">
+        ${collapseBtn}
         <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
           <span>
-            <span class="card-title" style="display:block">${hasChildren ? app.icon('folder') + ' ' : ''}${esc(deck.name)}</span>
-            <span class="deck-meta">${app.t('deck_meta', {total: s.total, mastered: s.mastered})}${subInfo}</span>
+            <span class="card-title" style="display:block">${hasChildren ? app.icon('folder') + ' ' : ''}${esc(deck.name)}${subBadge}</span>
+            <span class="deck-meta">${app.t('deck_meta', {total: s.total, mastered: s.mastered})}</span>
           </span>
         </button>
         <button class="icon-btn tap deck-move-btn" onclick="event.stopPropagation();showMoveDeckModal('${deck.id}')" aria-label="${app.t('move_deck')}" title="${app.t('move_deck')}">${app.icon('move')}</button>
@@ -182,8 +229,9 @@ export function renderDeckList() {
         ${s.due ? `<span class="badge badge-hanko">${app.t('badge_review', {count: s.due})}</span>` : ''}
         ${s.mastered ? `<span class="badge badge-jade">${app.icon('star')}${s.mastered}</span>` : ''}
       </div>
-    </div>`;
-  }).join('') + `<div class="deck-drop-top-level" id="deck-drop-top-level">${app.icon('inbox')} ${app.t('move_top_level')}</div>`;
+    </div>`);
+  }
+  container.innerHTML = rows.join('') + `<div class="deck-drop-top-level" id="deck-drop-top-level">${app.icon('inbox')} ${app.t('move_top_level')}</div>`;
 
   // ── Drag & Drop (desktop) ──────────────────────────────────────────
   _attachDragAndDrop(container);
@@ -385,15 +433,51 @@ function cardListItemHTML(c, deckId) {
   const sl = {new:app.t('state_new'), learning:app.t('state_learning'), review:app.t('state_review')}[c.srs.state] || '';
   const badgeCls = {new:'badge-sky', learning:'badge-gold', review:'badge-hanko'}[c.srs.state] || 'badge-soft';
   return `
-  <div class="card-list-item">
+  <div class="card-list-item clickable-row" onclick="showCardPreview('${deckId}','${c.id}')" role="button" tabindex="0">
     <div class="cli-kanji">${esc(c.kanji)}</div>
     <div class="cli-info"><div class="cli-furi">${esc(c.furigana)}</div><div class="cli-meaning">${esc(c.meaningTr)}</div></div>
     ${c.srs.mastered ? `<span class="badge badge-jade" style="padding:.28rem .5rem">${app.icon('star')}</span>` : `<span class="badge ${badgeCls}">${sl}</span>`}
     <div class="cli-actions">
-      <button class="icon-btn tap" onclick="showEditModal('${deckId}','${c.id}')" aria-label="${app.t('edit_label')}">${app.icon('edit')}</button>
-      <button class="icon-btn tap" onclick="deleteCard('${deckId}','${c.id}')" aria-label="${app.t('delete_btn')}">${app.icon('trash')}</button>
+      <button class="icon-btn tap" onclick="event.stopPropagation();showEditModal('${deckId}','${c.id}')" aria-label="${app.t('edit_label')}">${app.icon('edit')}</button>
+      <button class="icon-btn tap" onclick="event.stopPropagation();deleteCard('${deckId}','${c.id}')" aria-label="${app.t('delete_btn')}">${app.icon('trash')}</button>
     </div>
   </div>`;
+}
+
+// ─── CARD PREVIEW MODAL ──────────────────────────────────────────────
+// Kart listesinde bir satıra tıklayınca çalışan sarmalayıcı (inline onclick).
+export function showCardPreview(deckId, cardId) {
+  const deck = app.findDeck(deckId);
+  const card = deck?.cards.find(c => c.id === cardId);
+  if (!card) return;
+  showCardPreviewModal(card);
+}
+
+// Çalışma kartının statik iki yüzlü (ön + arka) görsel temsilini modalda
+// gösterir — "Show answer" / grade butonları YOK. Çalışma ekranıyla aynı
+// CSS sınıfları (.flashcard / .fc-kanji / .fc-back) ve smartRuby kullanılır.
+export function showCardPreviewModal(card) {
+  const sizeCls = kanjiSizeClass(card.kanji);
+  const frontText = isJapaneseCard() ? wrapKanji(esc(card.kanji)) : esc(card.kanji);
+  const exHighlight = card.exampleJp ? highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap) : '';
+  app.openModal(app.t('card_preview_title'), `
+    <div class="card-preview-modal">
+      <div class="flashcard fc-preview-front cpm-face">
+        <div class="fc-kanji${sizeCls}">${frontText || '&nbsp;'}</div>
+      </div>
+      <div class="flashcard cpm-face">
+        <div class="fc-back">
+          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana)}</div>
+          <div class="fc-meaning">${esc(card.meaningTr)}</div>
+          ${card.exampleJp ? `
+          <hr class="fc-divider">
+          <div class="fc-example">${exHighlight}</div>
+          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost tap btn-block" onclick="closeModal()">${app.t('close')}</button></div>
+    </div>
+  `);
 }
 
 export function toggleMasteredList() {
@@ -421,10 +505,10 @@ function populateDeckSelects() {
   document.getElementById('bulk-deck-select').innerHTML = placeholder + opts;
 }
 
-export function saveCard() {
+export async function saveCard() {
   const deckId = document.getElementById('add-deck-select').value;
   const kanji = document.getElementById('add-kanji').value.trim();
-  const furigana = document.getElementById('add-furigana').value.trim();
+  let furigana = document.getElementById('add-furigana').value.trim();
   const meaning = document.getElementById('add-meaning').value.trim();
   const exJpEl = document.getElementById('add-example-jp');
   const exJp = exJpEl.value.trim();
@@ -434,6 +518,7 @@ export function saveCard() {
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
+  furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
   deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   app.save();
   app.showToast(app.t('toast_card_added', {kanji}));
@@ -448,31 +533,41 @@ export function saveCard() {
   app.updatePreview('add-', 'add-preview-wrap');
 }
 
-export function bulkImport() {
+export async function bulkImport() {
   const deckId = document.getElementById('bulk-deck-select').value;
   const raw = document.getElementById('bulk-input').value;
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
-  const lines = raw.split('\n');
-  let added = 0, skipped = 0;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const parts = trimmed.split('|').map(p => p.trim());
-    if (parts.length < 2) { skipped++; continue; }
-    let kanji, furigana, meaning, exJp = '', exTr = '';
-    if (parts.length === 2) {
-      [kanji, meaning] = parts; furigana = '';
-    } else {
-      [kanji, furigana, meaning, exJp='', exTr=''] = parts;
+  // Çok sayıda kart sıralı işlenip her boş satır için offline furigana
+  // üretebilir → butonu kilitle ve "Generating…" göster (çift gönderim engeli).
+  const btn = document.getElementById('btn-bulk-import');
+  const prevLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = app.t('ai_generating'); }
+  try {
+    const lines = raw.split('\n');
+    let added = 0, skipped = 0;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split('|').map(p => p.trim());
+      if (parts.length < 2) { skipped++; continue; }
+      let kanji, furigana, meaning, exJp = '', exTr = '';
+      if (parts.length === 2) {
+        [kanji, meaning] = parts; furigana = '';
+      } else {
+        [kanji, furigana, meaning, exJp='', exTr=''] = parts;
+      }
+      if (!kanji || !meaning) { skipped++; continue; }
+      furigana = await autoFurigana(furigana, kanji); // 2 alanlı satır / boş furigana → otomatik
+      deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr));
+      added++;
     }
-    if (!kanji || !meaning) { skipped++; continue; }
-    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr));
-    added++;
+    app.save();
+    document.getElementById('bulk-input').value = '';
+    app.showToast(app.t('toast_cards_imported', {added, skipped: skipped ? app.t('toast_skipped', {count: skipped}) : ''}), 3000);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
   }
-  app.save();
-  document.getElementById('bulk-input').value = '';
-  app.showToast(app.t('toast_cards_imported', {added, skipped: skipped ? app.t('toast_skipped', {count: skipped}) : ''}), 3000);
 }
 
 // ─── DECK / CARD MODALS ──────────────────────────────────────────────
@@ -532,7 +627,7 @@ export function showAddCardModal(deckId) {
   app.openModal(`${esc(deck.name)} — ${app.t('add_card')}`, `
     <div id="modal-add-preview-wrap" class="fc-preview-wrap"></div>
     <div class="form-group"><label>${app.t('kanji_label')} <span class="required">*</span></label><input type="text" id="modal-add-kanji" placeholder="${app.t('kanji_placeholder')}"></div>
-    <div class="form-group"><label>${app.t('furigana_label')} <span class="required">*</span></label><input type="text" id="modal-add-furigana" placeholder="${app.t('furigana_placeholder')}"></div>
+    <div class="form-group"><label>${app.t('furigana_label')}</label><input type="text" id="modal-add-furigana" placeholder="${app.t('furigana_auto_placeholder')}"></div>
     <div class="form-group"><label>${app.t('meaning_label')} <span class="required">*</span></label><input type="text" id="modal-add-meaning" placeholder="${app.t('meaning_placeholder')}"></div>
     <div class="form-group"><label>${app.t('example_jp_label')}</label><input type="text" id="modal-add-example-jp" placeholder="${app.t('example_jp_placeholder')}"><div class="furigana-mark-row" id="modal-add-example-mark-row" style="display:none"><button type="button" class="btn btn-ghost tap btn-sm" id="modal-add-example-mark-btn">${app.icon('spark')} ${app.t('mark_words_btn')}</button></div><div id="modal-add-example-furigana-editor"></div></div>
     <div class="form-group"><label>${app.t('example_tr_label')}</label><input type="text" id="modal-add-example-tr" placeholder="${app.t('example_tr_placeholder')}"></div>
@@ -546,11 +641,11 @@ export function showAddCardModal(deckId) {
   app.attachPreviewListeners('modal-add-', 'modal-add-preview-wrap');
 }
 
-export function saveCardFromModal(deckId) {
+export async function saveCardFromModal(deckId) {
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
   const kanji = document.getElementById('modal-add-kanji').value.trim();
-  const furigana = document.getElementById('modal-add-furigana').value.trim();
+  let furigana = document.getElementById('modal-add-furigana').value.trim();
   const meaning = document.getElementById('modal-add-meaning').value.trim();
   const exJpEl = document.getElementById('modal-add-example-jp');
   const exJp = exJpEl.value.trim();
@@ -558,6 +653,7 @@ export function saveCardFromModal(deckId) {
   let exFuriganaMap = {};
   try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
+  furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
   deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
   app.save();
   app.showToast(app.t('toast_card_added', {kanji}));
@@ -580,7 +676,7 @@ export function showEditModal(deckId, cardId) {
   if (!card) return;
   app.openModal(app.t('modal_edit_card'), `
     <div class="form-group"><label>${app.t('kanji_label')}</label><input id="edit-kanji" value="${esc(card.kanji)}"></div>
-    <div class="form-group"><label>${app.t('furigana_label')}</label><input id="edit-furigana" value="${esc(card.furigana)}"></div>
+    <div class="form-group"><label>${app.t('furigana_label')}</label><input id="edit-furigana" value="${esc(card.furigana)}" placeholder="${app.t('furigana_auto_placeholder')}"></div>
     <div class="form-group"><label>${app.t('meaning_label')}</label><input id="edit-meaning" value="${esc(card.meaningTr)}"></div>
     <div class="form-group"><label>${app.t('example_jp_label')}</label><input id="edit-example-jp" value="${esc(card.exampleJp)}"><div class="furigana-mark-row" id="edit-example-mark-row" style="display:${card.exampleJp ? 'flex' : 'none'}"><button type="button" class="btn btn-ghost tap btn-sm" id="edit-example-mark-btn">${app.icon('spark')} ${app.t('mark_words_btn')}</button></div><div id="edit-example-furigana-editor"></div></div>
     <div class="form-group"><label>${app.t('example_tr_label')}</label><input id="edit-example-tr" value="${esc(card.exampleTr)}"></div>
@@ -591,13 +687,13 @@ export function showEditModal(deckId, cardId) {
   setupExampleFuriganaAssist('edit-example-jp', 'edit-example-mark-row', 'edit-example-mark-btn', 'edit-example-furigana-editor');
 }
 
-export function saveEditCard(deckId, cardId) {
+export async function saveEditCard(deckId, cardId) {
   const deck = app.findDeck(deckId);
   const card = deck?.cards.find(c => c.id === cardId);
   if (!card) return;
   const exJpEl = document.getElementById('edit-example-jp');
   card.kanji = document.getElementById('edit-kanji').value.trim();
-  card.furigana = document.getElementById('edit-furigana').value.trim();
+  card.furigana = await autoFurigana(document.getElementById('edit-furigana').value.trim(), card.kanji); // boşsa offline üret
   card.meaningTr = document.getElementById('edit-meaning').value.trim();
   card.exampleJp = exJpEl.value.trim();
   card.exampleTr = document.getElementById('edit-example-tr').value.trim();
@@ -630,6 +726,65 @@ export function deleteCard(deckId, cardId) {
   deck.cards = deck.cards.filter(c => c.id !== cardId);
   app.save(); renderDeckDetail();
   app.showToast(app.t('toast_card_deleted'));
+}
+
+// ─── AI THEMATIC DECK GENERATOR ──────────────────────────────────────
+export function showAiDeckModal() {
+  app.openModal(app.t('modal_ai_deck_title'), `
+    <div class="form-group">
+      <input id="ai-deck-topic" placeholder="${app.t('ai_deck_placeholder')}" autocomplete="off">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" id="ai-deck-submit-btn" onclick="submitAiDeck()">${app.t('btn_ai_deck')}</button>
+      <button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button>
+    </div>
+  `);
+  const input = document.getElementById('ai-deck-topic');
+  if (input) {
+    input.focus();
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submitAiDeck(); });
+  }
+}
+
+export async function submitAiDeck() {
+  const input = document.getElementById('ai-deck-topic');
+  const btn = document.getElementById('ai-deck-submit-btn');
+  const topic = input ? input.value.trim() : '';
+  if (!topic) { app.showToast(app.t('warn_required')); return; }
+
+  // Settings live in runtime state (same access as KanjiModal's AI tutor).
+  const settings = (app.state && app.state.settings) || {};
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) { app.showToast(app.t('msg_ai_key_missing'), 4000); return; }
+
+  const defaultLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = app.t('ai_generating'); }
+
+  try {
+    const rows = await generateDeck(topic, app.currentLang, apiKey, settings.geminiModel);
+    // createDeck returns the deck object (not an id) and already persists it.
+    const deck = app.createDeck(`${topic} (AI)`);
+    for (const r of rows) {
+      if (!r || !r.word) continue;
+      deck.cards.push(app.makeCard(
+        String(r.word || '').trim(),
+        String(r.furigana || '').trim(),
+        String(r.meaning || '').trim(),
+        String(r.exampleJp || '').trim(),
+        String(r.exampleTranslation || '').trim(),
+        {}
+      ));
+    }
+    if (!deck.cards.length) throw new Error('AI returned no usable cards');
+    app.save();
+    app.closeModal();
+    renderDeckList();
+    app.renderGlobalStats();
+    app.showToast(app.t('toast_ai_deck_success', { count: deck.cards.length }), 3000);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = defaultLabel; }
+    app.showToast(app.t('warn_error', { msg: e?.message || 'Unknown error' }), 3500);
+  }
 }
 
 // ─── COMMUNITY PUBLISH ───────────────────────────────────────────────
