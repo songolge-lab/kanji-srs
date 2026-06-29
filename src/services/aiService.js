@@ -1,5 +1,5 @@
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const FALLBACK_MODEL = 'gemini-1.5-flash';
+const FALLBACK_MODEL = 'gemini-1.5-flash-8b';
 const RETRY_DELAY_MS = 1500;
 
 // ─── RETRY / FALLBACK INTERNALS ──────────────────────────────────────

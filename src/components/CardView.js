@@ -47,27 +47,13 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-export function smartRuby(surface, reading, sentence) {
-  surface = (surface || '').toString();
-  reading = (reading || '').toString();
-  sentence = (sentence || surface).toString();
+import { getTokenizerSync } from '../utils/furiganaParser.js';
 
-  const inner = buildRubyInner(surface, reading);
-
-  // Japonca kart + kanji içeren kelime → tüm bloğu tıklanabilir kelime yap.
-  if (isJapaneseCard() && KANJI_RUN.test(surface)) {
-    return wrapWord(inner, surface, sentence);
+function buildRubyInnerRaw(surface, reading) {
+  if (!reading || surface === reading) {
+    return [{ text: surface, html: esc(surface) }];
   }
-  return inner;
-}
 
-// Ruby/düz-metin iç HTML'ini üretir. Kanji düz metin olarak basılır
-// (tıklanabilirlik kelime düzeyinde smartRuby tarafından sağlanır).
-function buildRubyInner(surface, reading) {
-  // Okuma yok ya da yüzeyle birebir aynı → düz metin (redundant kana yok).
-  if (!reading || surface === reading) return esc(surface);
-
-  // Yüzeyi kanji / kana koşularına böl.
   const segs = [];
   let buf = '', type = null;
   for (const ch of surface) {
@@ -78,20 +64,20 @@ function buildRubyInner(surface, reading) {
   }
   if (buf) segs.push({ type, text: buf });
 
-  // Hiç kanji yoksa → düz metin (rt yok).
-  if (!segs.some((s) => s.type === 'k')) return esc(surface);
+  if (!segs.some((s) => s.type === 'k')) {
+    return [{ text: surface, html: esc(surface) }];
+  }
 
-  let r = reading, html = '';
+  let r = reading;
+  const out = [];
   for (let i = 0; i < segs.length; i++) {
     const seg = segs[i];
     if (seg.type === 'h') {
-      // Kana koşusu: düz metin, okumadan eşleşen kısmı tüket.
       const idx = r.indexOf(seg.text);
       r = idx >= 0 ? r.slice(idx + seg.text.length) : r;
-      html += esc(seg.text);
+      out.push({ text: seg.text, html: esc(seg.text) });
       continue;
     }
-    // Kanji koşusu: okumayı bir sonraki kana koşusuna kadar al.
     const next = segs[i + 1];
     let rd;
     if (next && next.type === 'h') {
@@ -101,10 +87,72 @@ function buildRubyInner(surface, reading) {
     } else {
       rd = r; r = '';
     }
-    html += rd
-      ? `<ruby>${esc(seg.text)}<rt>${esc(rd)}</rt></ruby>`
-      : esc(seg.text);
+    out.push({
+      text: seg.text,
+      html: rd ? `<ruby>${esc(seg.text)}<rt>${esc(rd)}</rt></ruby>` : esc(seg.text)
+    });
   }
+  return out;
+}
+
+// Bağlama duyarlı ruby: yalnızca KANJI koşuları <rt> okuma alır; saf
+// hiragana/katakana parçalar (を, します gibi) düz metin kalır — okuma
+// yüzeyle aynıysa hiç ruby üretilmez. Japonca kartlarda kanji İÇEREN kelime
+// blokları ayrı ayrı `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
+// açılır. Kuromoji token'larına göre ayırarak tüm cümleyi gruplamasını engelleriz.
+export function smartRuby(surface, reading, sentence) {
+  surface = (surface || '').toString();
+  reading = (reading || '').toString();
+  sentence = (sentence || surface).toString();
+
+  const rawSegs = buildRubyInnerRaw(surface, reading);
+
+  if (!isJapaneseCard() || !KANJI_RUN.test(surface)) {
+    return rawSegs.map(s => s.html).join('');
+  }
+
+  const tokenizer = getTokenizerSync();
+  if (!tokenizer) {
+    // Fallback: kuromoji hazır değilse tek blok halinde sar (eski davranış)
+    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+  }
+
+  const tokens = tokenizer.tokenize(surface);
+  let html = '';
+  let segIdx = 0;
+  let segOffset = 0;
+
+  for (const tok of tokens) {
+    const tokText = tok.surface_form;
+    const isKanjiToken = KANJI_RUN.test(tokText);
+    
+    let tokHtml = '';
+    let remaining = tokText.length;
+    
+    while (remaining > 0 && segIdx < rawSegs.length) {
+      const seg = rawSegs[segIdx];
+      const segRemaining = seg.text.length - segOffset;
+      
+      if (segRemaining <= remaining) {
+        if (segOffset === 0) tokHtml += seg.html;
+        else tokHtml += esc(seg.text.slice(segOffset, segOffset + segRemaining));
+        remaining -= segRemaining;
+        segIdx++;
+        segOffset = 0;
+      } else {
+        tokHtml += esc(seg.text.slice(segOffset, segOffset + remaining));
+        segOffset += remaining;
+        remaining = 0;
+      }
+    }
+    
+    if (isKanjiToken) {
+      html += wrapWord(tokHtml, tokText, sentence);
+    } else {
+      html += tokHtml;
+    }
+  }
+
   return html;
 }
 
