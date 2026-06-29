@@ -65,7 +65,10 @@ async function fetchMeaning(word, sentence) {
   out.textContent = app.t('msg_ai_loading');
   try {
     const meaning = await defineWordContextually(word, sentence, app.currentLang, apiKey, settings.geminiModel);
-    out.textContent = meaning;
+    // The model returns `**translation** - context`; promote the **bold** part
+    // to <strong> (escape first → XSS-safe). Falls back gracefully to plain
+    // escaped text if the model ignores the format.
+    out.innerHTML = esc(meaning).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   } catch (e) {
     out.textContent = app.t('warn_error', { msg: e?.message || 'Unknown error' });
   }

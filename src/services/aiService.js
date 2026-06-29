@@ -6,7 +6,13 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 const LANG_NAMES = { en: 'English', tr: 'Turkish', ko: 'Korean', mn: 'Mongolian' };
 
 // ─── CONTEXTUAL WORD DEFINER (Jukugo Smart Word Modal) ───────────────
-const WORD_SYSTEM_PROMPT = `You are a precise bilingual Japanese dictionary. You explain how a Japanese word is used in a specific sentence, writing the explanation in the learner's language. Reply with PLAIN TEXT only — never markdown, code fences, headings, or bullet points.`;
+// Output MUST be a single line in the exact shape:
+//   **<direct translation>** - <one short contextual sentence>
+// The translation is wrapped in **double asterisks** so the Word Modal can
+// render it bold; everything else (code fences, headings, lists) is forbidden.
+const WORD_SYSTEM_PROMPT = `You are a precise bilingual Japanese dictionary for language learners. Given a Japanese word and the sentence it appears in, you reply on ONE line using EXACTLY this format:
+**<direct translation>** - <one short sentence of context>
+Do NOT just explain the word. You MUST provide the direct, most common translation first, wrapped in double asterisks, followed by a hyphen, then a brief contextual explanation. The text inside ** ** must be a translation (a word or short phrase), never a description. No code fences, no headings, no bullet points, no extra lines.`;
 
 // Returns a concise, dictionary-style definition of `word` as it is used in
 // `sentence`, written entirely in the learner's UI language (`targetLang`:
@@ -19,7 +25,13 @@ export async function defineWordContextually(word, sentence, targetLang, apiKey,
   const userPrompt = `Japanese word: ${word}
 Sentence it appears in: ${sentence || word}
 
-Give a concise, highly accurate dictionary-style translation/definition of "${word}" exactly as it is used in the sentence above. Write it entirely in ${langName} (language code: ${targetLang || 'en'}). Use at most 2 sentences. Output ONLY the definition text — no markdown, no code fences, no extra commentary.`;
+Reply with EXACTLY this format and nothing else, written in ${langName} (language code: ${targetLang || 'en'}):
+**[direct translation]** - [one short sentence explaining how it is used in this context]
+
+Rules:
+- The text inside ** ** must be the direct, most common ${langName} translation of "${word}" (a word or short phrase) — NOT a description of what it does.
+- Follow it with " - " then ONE short sentence of context, also in ${langName}.
+- Output nothing else: no code fences, no markdown headings, no lists, no extra lines.`;
 
   const url = `${GEMINI_API_BASE}/${model || 'gemini-2.5-pro'}:generateContent?key=${apiKey}`;
 
@@ -28,9 +40,10 @@ Give a concise, highly accurate dictionary-style translation/definition of "${wo
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: {
       temperature: 0.4,
-      // Explicit ceiling so the API never falls back to a tiny default that
-      // would truncate the definition mid-sentence.
-      maxOutputTokens: 200,
+      // Explicit ceiling so the API never falls back to a tiny default. Raised
+      // to 500 because verbose languages (Turkish, Korean) were truncating the
+      // contextual sentence mid-word at 200.
+      maxOutputTokens: 500,
     },
   };
 
