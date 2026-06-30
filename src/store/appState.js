@@ -21,9 +21,14 @@ function _tryLS(fn) {
 }
 
 export function saveState(state) {
+  if (!state || typeof state !== 'object' || !Array.isArray(state.decks)) {
+    console.error('saveState: Invalid state payload intercepted. Aborting save to prevent data loss.');
+    return;
+  }
   const json = JSON.stringify(state);
   if (_inMemory) { _memStore = json; return; }
   _tryLS(() => localStorage.setItem('kanji_srs_v1', json));
+  if (_inMemory) { _memStore = json; }
 }
 
 export function loadState() {
@@ -36,10 +41,15 @@ export function loadState() {
     return parsed;
   }
   catch {
-    // VERİ KAYBI KORUMASI: Bozuk veriyi sessizce null'a düşürmeden önce ham
-    // string'i yedekle. Aksi halde null dönünce bir sonraki save() boş state'i
-    // yazar ve kullanıcının (kurtarılabilir olabilecek) verisi kalıcı silinir.
-    _tryLS(() => localStorage.setItem('kanji_srs_v1_corrupt_backup', raw));
+    // VERİ KAYBI KORUMASI: Bozuk veriyi sessizce null'a düşürmeden önce ham string'i yedekle.
+    // Rolling backup mekanizması (önceki yedeklerin üzerine yazılmasını engeller).
+    _tryLS(() => {
+      const ts = Date.now();
+      localStorage.setItem(`kanji_srs_v1_corrupt_backup_${ts}`, raw);
+      if (!localStorage.getItem('kanji_srs_v1_corrupt_backup')) {
+        localStorage.setItem('kanji_srs_v1_corrupt_backup', raw);
+      }
+    });
     return null;
   }
 }

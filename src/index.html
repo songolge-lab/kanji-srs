@@ -185,6 +185,14 @@ body {
 rt { font-size: .55em; }
 ruby { -webkit-touch-callout: none; }
 
+/* Çalışma ekranı aktifken (CardView) body scroll'u kilitlenir → mobilde kart
+   sürüklerken elastik viewport zıplaması (overscroll bounce) olmaz. showView
+   'study'ye girince eklenir, çıkınca kaldırılır. */
+body.study-mode-active {
+  overflow: hidden !important;
+  overscroll-behavior-y: none !important;
+}
+
 /* ─── BOOT SPLASH (kısa açılış ekranı) ──────────────────────────────── */
 #boot-splash {
   position: fixed; inset: 0; z-index: 9999;
@@ -1020,17 +1028,18 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 .fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
 
 /* ─── KART ÖNİZLEME MODALI (deste kart listesi → satıra tık) ───────────
-   Çalışma kartının statik iki yüzlü temsili: üst yüz (kanji) + alt yüz
-   (okuma/anlam/örnek). Grade butonu YOK. .flashcard sınıfını yeniden
-   kullanır; modal içinde daha kompakt olsun diye min-height düşürülür. */
+   Çalışma ekranındaki cevap kartıyla BİREBİR aynı `.flashcard` + `.fc-back`
+   yapısını kullanır (arka plan/kenarlık/gölge/padding base `.flashcard`'tan
+   miras alınır → görsel olarak çalışma kartıyla aynı). Modalda iki kart üst
+   üste sığsın diye yalnızca min-height düşürülür ve alt boşluk kaldırılır. */
 .card-preview-modal { display: flex; flex-direction: column; gap: .9rem; }
-.card-preview-modal .flashcard,
-.card-preview-modal .fc-preview-front {
-  min-height: 140px;
-  max-height: none;
+.card-preview-modal .flashcard {
+  min-height: 150px;
   margin-bottom: 0;
-  padding: 1.6rem 1.2rem;
 }
+/* Ön yüz kanji'si çalışma ön yüzü gibi hanko vurgulu + kalın (düz metin,
+   tıklanamaz). */
+.card-preview-modal .cpm-front .fc-kanji { color: var(--hanko); font-weight: 700; }
 .card-preview-modal .fc-kanji { font-size: clamp(3rem, 16vw, 5rem); }
 /* Uzun metin (kanjiSizeClass → fc-kanji-sm/-xs) modalda dev kalmasın: base
    `.card-preview-modal .fc-kanji` kuralıyla aynı özgüllükte (2 sınıf) olan
@@ -1038,8 +1047,6 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
    modal kapsamlı (3 sınıf) override ile küçültme sınıfları geri kazandırılır. */
 .card-preview-modal .fc-kanji.fc-kanji-sm { font-size: clamp(1.5rem, 8vw, 2.6rem); }
 .card-preview-modal .fc-kanji.fc-kanji-xs { font-size: clamp(1rem, 5vw, 1.5rem); }
-/* Ön yüz kanji'si çalışma kartındaki gibi hanko vurgulu (tıklanamaz). */
-.card-preview-modal .fc-preview-front .fc-kanji { color: var(--hanko); }
 
 /* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
 .fc-preview-wrap {
@@ -1313,6 +1320,20 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
 }
 #modal-bg.show #modal { transform: translateY(0); }
 #modal h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; }
+/* Modal başlığının sol üstüne basılan geri (←) butonu. #modal position:relative
+   olduğundan #modal-body içindeki bu absolute buton modal köşesine konumlanır.
+   Buton varken başlık çakışmasın diye :has() ile başlık sağa kaydırılır. */
+.modal-back-btn {
+  position: absolute; top: 1.1rem; left: .6rem;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--ink);
+  cursor: pointer; border-radius: 50%; z-index: 2;
+  transition: background .15s, transform .1s;
+}
+.modal-back-btn:hover { background: var(--paper-2); }
+.modal-back-btn:active { transform: scale(.9); }
+#modal:has(.modal-back-btn) > #modal-title { padding-left: 2.4rem; }
 
 /* =====================================================================
    EMPTY STATE

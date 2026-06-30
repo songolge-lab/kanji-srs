@@ -1,63 +1,30 @@
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const FALLBACK_MODEL = 'gemini-1.5-flash-8b';
-const RETRY_DELAY_MS = 1500;
 
-// ─── RETRY / FALLBACK INTERNALS ──────────────────────────────────────
+// ─── GEMINI REQUEST ──────────────────────────────────────────────────
+// A single request to Gemini using the user's selected model. No retry loop
+// and no fallback model: the previous fallback to a secondary model was removed
+// because the API rejected that model id. On any non-OK response the native API
+// error message is thrown so the calling UI can surface it directly.
+async function geminiRequest(model, apiKey, body) {
+  const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
 
-/** Returns true when the error payload indicates a transient capacity issue. */
-function isRetryableError(status, errorBody) {
-  if (status === 503 || status === 429) return true;
-  const msg = (errorBody?.error?.message || '').toLowerCase();
-  return /high demand|quota|rate.?limit|overloaded|resource.?exhausted/.test(msg);
-}
-
-/**
- * Wrapper around fetch→Gemini that retries once on transient errors.
- *
- * Attempt 1 – uses the caller's `model`.
- * If that fails with a retryable error, waits RETRY_DELAY_MS, then
- * Attempt 2 – switches to FALLBACK_MODEL.
- * If both fail, throws a clean, user-friendly message.
- *
- * @param {string} model   – primary model id (e.g. 'gemini-2.5-flash')
- * @param {string} apiKey  – Gemini API key
- * @param {object} body    – JSON payload (system_instruction, contents, generationConfig)
- * @returns {Promise<object>} parsed JSON response from the API
- */
-async function fetchWithRetry(model, apiKey, body) {
-  const models = [model, FALLBACK_MODEL];
-
-  for (let attempt = 0; attempt < models.length; attempt++) {
-    const url = `${GEMINI_API_BASE}/${models[attempt]}:generateContent?key=${apiKey}`;
-
-    const res = await fetch(url, {
+  let res;
+  try {
+    res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-
-    if (res.ok) return res.json();
-
-    // Parse error body once
-    const errBody = await res.json().catch(() => ({}));
-
-    // Non-retryable error → throw immediately with the API message
-    if (!isRetryableError(res.status, errBody)) {
-      const msg = errBody?.error?.message || `HTTP ${res.status}`;
-      throw new Error(msg);
-    }
-
-    // Last attempt already – fall through to the final throw below
-    if (attempt === models.length - 1) break;
-
-    // Wait before retrying with the fallback model
-    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+  } catch (err) {
+    throw new Error('Network error or timeout while connecting to AI service.');
   }
 
-  // Both attempts exhausted with retryable errors
-  throw new Error(
-    'The AI servers are currently overloaded. Please try again in a few moments.'
-  );
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody?.error?.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
 }
 
 // Shared: UI language code → full language name. Used by both the contextual
@@ -105,9 +72,9 @@ Rules:
     },
   };
 
-  const data = await fetchWithRetry(model || 'gemini-2.5-pro', apiKey, body);
+  const data = await geminiRequest(model || 'gemini-2.5-pro', apiKey, body);
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  // Defensive fallback: empty or whitespace-only response → retryable error.
+  // Defensive guard: empty or whitespace-only response → surface a clear error.
   if (!text || !text.trim()) throw new Error('Generation failed, try again');
   // Strip stray markdown fences if the model ignores instructions.
   return text.trim()
@@ -159,7 +126,7 @@ Rules:
     },
   };
 
-  const data = await fetchWithRetry(model || 'gemini-2.5-pro', apiKey, body);
+  const data = await geminiRequest(model || 'gemini-2.5-pro', apiKey, body);
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Empty response from AI model');
 

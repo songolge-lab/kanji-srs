@@ -47,7 +47,7 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizerSync } from '../utils/furiganaParser.js';
+import { getTokenizerSync, kataToHira } from '../utils/furiganaParser.js';
 
 function buildRubyInnerRaw(surface, reading) {
   if (!reading || surface === reading) {
@@ -112,47 +112,46 @@ export function smartRuby(surface, reading, sentence) {
   }
 
   const tokenizer = getTokenizerSync();
+
+  // Tokenizer hazır değil → tüm yüzeyi tek blok olarak sar. Bu yolda `rawSegs`
+  // çağıranın verdiği okumayı (kart furiganası) bütün hâlde taşır → furigana
+  // doğru kalır (güvenli/eski davranış).
   if (!tokenizer) {
-    // Fallback: kuromoji hazır değilse tek blok halinde sar (eski davranış)
     return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
-  const tokens = tokenizer.tokenize(surface);
-  let html = '';
-  let segIdx = 0;
-  let segOffset = 0;
-
-  for (const tok of tokens) {
-    const tokText = tok.surface_form;
-    const isKanjiToken = KANJI_RUN.test(tokText);
-    
-    let tokHtml = '';
-    let remaining = tokText.length;
-    
-    while (remaining > 0 && segIdx < rawSegs.length) {
-      const seg = rawSegs[segIdx];
-      const segRemaining = seg.text.length - segOffset;
-      
-      if (segRemaining <= remaining) {
-        if (segOffset === 0) tokHtml += seg.html;
-        else tokHtml += esc(seg.text.slice(segOffset, segOffset + segRemaining));
-        remaining -= segRemaining;
-        segIdx++;
-        segOffset = 0;
-      } else {
-        tokHtml += esc(seg.text.slice(segOffset, segOffset + remaining));
-        segOffset += remaining;
-        remaining = 0;
-      }
-    }
-    
-    if (isKanjiToken) {
-      html += wrapWord(tokHtml, tokText, sentence);
-    } else {
-      html += tokHtml;
-    }
+  // Beklenmedik girdide tokenize patlarsa render'ı çökertme: tek bloğa düş.
+  let tokens;
+  try {
+    tokens = tokenizer.tokenize(surface);
+  } catch {
+    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
+  // Tek token → tüm yüzeyi tek tıklanabilir kelime yap; okumayı çağıranın
+  // verdiği `reading`'ten (kart furiganası = doğruluk kaynağı) al. Tek-kelime
+  // kartların çoğu bu yoldan geçer.
+  if (!tokens || tokens.length <= 1) {
+    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+  }
+
+  // Çok token → her kelimeyi AYRI bir `.word-clickable` yap ki Word Modal
+  // gerçek bileşen kelimeleri (毎日 / 漢字) arasın, tüm öbeği değil. KRİTİK:
+  // her kanji token'ı KENDİ okumasını doğrudan kuromoji'den (tok.reading,
+  // katakana → hiragana) alır → eski rawSegs-dilimleme yolunun çok-token'lı
+  // kanji koşularında furigana'yı düşürmesi (v2.3.1 regresyonu) giderilir.
+  // Bilinmeyen kelime (reading '*') → okumasız düz metin (yine de tıklanabilir).
+  let html = '';
+  for (const tok of tokens) {
+    const tokText = tok.surface_form;
+    if (KANJI_RUN.test(tokText)) {
+      const tokReading = (tok.reading && tok.reading !== '*') ? kataToHira(tok.reading) : '';
+      const segs = buildRubyInnerRaw(tokText, tokReading);
+      html += wrapWord(segs.map(s => s.html).join(''), tokText, sentence);
+    } else {
+      html += esc(tokText);
+    }
+  }
   return html;
 }
 
@@ -161,6 +160,15 @@ let studyQueue = [];
 let studyCardIndex = 0;
 let studyDoneToday = 0;
 let studyShowingBack = false;
+// Aktif çalışma oturumunun kimliği — { deckId, masteredOnly }. Modül-seviyesi
+// olduğundan sekme değiştirip geri gelmek state'i KORUR. Yalnızca (a) kuyruk
+// bitince veya (b) çalışma ekranındaki "Geri/Çık" tuşuna basılınca temizlenir;
+// alt nav ile gezinme oturumu ASLA bozmaz.
+let activeSession = null;
+
+// Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
+// sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
+export function clearStudySession() { activeSession = null; }
 
 // ─── REVIEW STATE ────────────────────────────────────────────────────
 let reviewQueue = [];
@@ -181,15 +189,24 @@ function stateLabel(srs) {
 export function startStudy(deckId, masteredOnly) {
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
-  const hasChildren = app.getChildDecks(deckId).length > 0;
-  if (hasChildren) {
-    studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly));
-  } else {
-    studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly);
+  // RESUME: aynı deste + kapsam için yarım bir oturum varsa kuyruğu/konumu koru
+  // (sekme değiştirip dönmek ilerlemeyi sıfırlamasın). Aksi halde taze kur.
+  const resume = activeSession
+    && activeSession.deckId === deckId
+    && activeSession.masteredOnly === masteredOnly
+    && studyQueue.length && studyCardIndex < studyQueue.length;
+  if (!resume) {
+    const hasChildren = app.getChildDecks(deckId).length > 0;
+    if (hasChildren) {
+      studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly));
+    } else {
+      studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly);
+    }
+    studyCardIndex = 0;
+    studyDoneToday = 0;
+    studyShowingBack = false;
+    activeSession = { deckId, masteredOnly };
   }
-  studyCardIndex = 0;
-  studyDoneToday = 0;
-  studyShowingBack = false;
   startSessionTimer();
   app.showView('study');
 }
@@ -199,6 +216,7 @@ export function renderStudy() {
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
     stopSessionTimer();
+    activeSession = null; // kuyruk bitti → bir sonraki giriş taze oturum kursun
     screen.innerHTML = `
       <div class="study-done">
         <div class="done-icon">${app.icon('done','ic-lg')}</div>

@@ -11,7 +11,10 @@ const KANJI_CHAR = /[一-龯]/;
 let app;
 export function init(ctx) { app = ctx; }
 
-export function open(word, sentence) {
+// `cachedMeaningHtml` (opsiyonel): bir kanji çipinden KanjiModal'a geçip geri
+// dönüldüğünde, daha önce üretilen AI tanımının render'lanmış HTML'i geri verilir
+// → AI yeniden çağrılmaz (native "geri" hissi + maliyet/gecikme yok).
+export function open(word, sentence, cachedMeaningHtml = null) {
   word = (word || '').toString();
   sentence = (sentence || '').toString();
 
@@ -36,15 +39,28 @@ export function open(word, sentence) {
     <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
   `);
 
-  wireChips();
-  fetchMeaning(word, sentence);
+  wireChips(word, sentence);
+
+  if (cachedMeaningHtml != null) {
+    // Geri navigasyonu: önceki AI sonucunu olduğu gibi geri yerleştir (refetch yok).
+    const out = document.getElementById('word-ai-output');
+    if (out) out.innerHTML = cachedMeaningHtml;
+  } else {
+    fetchMeaning(word, sentence);
+  }
 }
 
 // Modal HTML is injected synchronously by openModal, so chips can be wired
-// immediately (fresh buttons each open → no listener leak).
-function wireChips() {
+// immediately (fresh buttons each open → no listener leak). Bir çipe tıklayınca
+// mevcut AI çıktısı önbelleğe alınıp KanjiModal'a `onBack` ile geçilir → geri
+// dönüşte Word Modal AI'ı yeniden çağırmadan aynı tanımla geri gelir.
+function wireChips(word, sentence) {
   document.querySelectorAll('#modal .kanji-chip').forEach((chip) => {
-    chip.addEventListener('click', () => app.openKanjiModal(chip.dataset.char));
+    chip.addEventListener('click', () => {
+      const out = document.getElementById('word-ai-output');
+      const cached = out ? out.innerHTML : null;
+      app.openKanjiModal(chip.dataset.char, { onBack: () => open(word, sentence, cached) });
+    });
   });
 }
 

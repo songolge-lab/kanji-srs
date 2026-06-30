@@ -2,7 +2,6 @@ import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
 import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 import { generateDeck } from '../services/aiService.js';
 import { smartRuby, kanjiSizeClass } from './CardView.js';
-import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
 
 let app;
 export function init(ctx) { app = ctx; }
@@ -456,18 +455,21 @@ export function showCardPreview(deckId, cardId) {
 }
 
 // Çalışma kartının statik iki yüzlü (ön + arka) görsel temsilini modalda
-// gösterir — "Show answer" / grade butonları YOK. Çalışma ekranıyla aynı
-// CSS sınıfları (.flashcard / .fc-kanji / .fc-back) ve smartRuby kullanılır.
+// gösterir — "Show answer" / grade butonları YOK. Çalışma ekranındaki cevap
+// kartıyla BİREBİR aynı yapıyı (.flashcard + .fc-back) kullanır → ödünç alınan
+// add-form sınıfı `.fc-preview-front` ve tanımsız `.cpm-face` kaldırıldı.
+// Ön yüz kanji'si düz metin basılır (tıklanamaz, çalışma ön yüzü gibi hanko
+// vurgulu); arka yüz smartRuby/highlightKanji ile tıklanabilir kalır.
 export function showCardPreviewModal(card) {
   const sizeCls = kanjiSizeClass(card.kanji);
-  const frontText = isJapaneseCard() ? wrapKanji(esc(card.kanji)) : esc(card.kanji);
+  const frontText = esc(card.kanji) || '&nbsp;';
   const exHighlight = card.exampleJp ? highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap) : '';
   app.openModal(app.t('card_preview_title'), `
     <div class="card-preview-modal">
-      <div class="flashcard fc-preview-front cpm-face">
-        <div class="fc-kanji${sizeCls}">${frontText || '&nbsp;'}</div>
+      <div class="flashcard cpm-front">
+        <div class="fc-kanji${sizeCls}">${frontText}</div>
       </div>
-      <div class="flashcard cpm-face">
+      <div class="flashcard">
         <div class="fc-back">
           <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
           <div class="fc-meaning">${esc(card.meaningTr)}</div>

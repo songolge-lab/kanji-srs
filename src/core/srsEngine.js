@@ -120,6 +120,10 @@ function graduate(srs, fsrsGrade, relearning, now, settings) {
     const init = computeInitialDS(fsrsGrade);
     srs.D = round4(init.D);
     srs.S = round4(init.S);
+  } else if (fsrsGrade === 4) {
+    // Relearning graduation fix: "Easy" should reward the user with higher stability
+    // than "Good", rather than defaulting to the identical banked post-lapse stability.
+    srs.S = round4(srs.S * (settings.easyBonus || 1.3));
   }
   srs.state = 'review';
   srs.stepIndex = 0;
