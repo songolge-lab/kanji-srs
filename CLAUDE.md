@@ -547,3 +547,36 @@ SPA'yı gerçek bir native uygulama gibi hissettirmek için 4 UX iyileştirmesi.
   - **Add Card:** `AddCard.js` diye bir dosya **YOK** (add akışı `DeckList.js`'de). `view-add` **statik HTML**; `showView` yalnız `.active` class'ı toggle eder, inputları **silmez** → yazılan değerler sekme değişiminde DOM'da kalır (canlı: `persisted: true`).
   - **Search:** `Search.js`'de `currentQuery`/`currentFilter` zaten **modül-seviyesi**; `renderView()` dönüşte `input.value`/`filter.value`'ya geri yazıp `executeSearch()` çağırır → query + sonuçlar (state'ten yeniden türetilir) geri gelir (canlı: `queryPersisted: true`, `resultsPersisted: true`).
 - **KARAR:** Redundant `draft` objesi eklenmedi — statik DOM + mevcut modül-state zaten native davranışı sağlıyor; eklemek over-engineering + clear-on-save mantığıyla çakışma/regresyon riski olurdu.
+
+## Dopamine Update (v2.5.0) — 4 Yönlü Kaydırma, Haptik, Mikro-Etkileşim, Konfeti
+
+Çalışma deneyimini "native oyun" hissine yükselten 4 özellik. Çekirdek FSRS `gradeCard`/`applySRS` akışı ve sync **dokunulmadı** — kaydırma yalnızca mevcut `gradeCard(grade)`'i tetikler. Tüm animasyonlar **GPU-hızlandırmalı** (yalnız `transform` + `opacity`). Vite preview'da canlı doğrulandı (eval tabanlı); build temiz (`vite build` ✓, 52 modül).
+
+### 1. 4 Yönlü Kaydırma Fiziği + FSRS eşlemesi (`CardView.js` → `initSwipeGrade`/`flyOff`)
+- **Cevap (arka) kartında** pointer-tabanlı kaydırma. Ön yüzün mevcut `initFlipGesture`'ı (yatay sürükle → çevir) **korundu**; kaydırma-ile-notlama yalnız cevap görünürken (`studyShowingBack`) `.swipe-card` (`#grade-card`) üzerinde aktif.
+- **Eşleme:** SOL=Again(0), AŞAĞI=Hard(1), SAĞ=Good(2), YUKARI=Easy(3). `DIR_TO_GRADE` sabiti + `SWIPE_THRESHOLD=100`px.
+- `pointerdown/move/up/cancel`. **8px `MOVE_START` eşiği**: bu mesafenin altındaki hareket "tap" sayılır → `.word-clickable`/`.kanji-clickable` tıklamaları Word/Kanji Modal'ı açmaya devam eder (kaydırma tetiklenmez). Gerçek sürüklemede `setPointerCapture` (try/catch, sentetik pointer'da patlamaz) + sürükleme sonrası **capture-fazında tek seferlik click yutucu** (350ms self-cleaning) → snap-back sonrası kazara modal açılmaz.
+- Sürükleme: `translate(dx,dy) rotate(deg)` (rot = `dx/genişlik*12`). Bırakışta dominant eksen (`max(|dx|,|dy|)`) < eşik → `.snapping` yay animasyonu ile geri; ≥ eşik → `flyOff` (ekran dışına `140vw/140vh` uçuş) + **230ms sonra** `gradeCard(DIR_TO_GRADE[dir])` (re-render kartı değiştirir). `.swipe-card { touch-action:none }` → dikey kaydırma tarayıcıya kapılmaz.
+
+### 2. Yönlü Kenar Işıması (`index.html` CSS + `CardView.js`)
+- `.swipe-glow` (kartın arkasında `inset:-22px` halka, `z-index:-1`) içinde **4 `.glow-layer`** (left/right/up/down). Her katman ilgili kenardan `radial-gradient` + **tema değişkeninden** `color-mix`: SOL=`--hanko`(kırmızı/Again), SAĞ=`--sky`(mavi/Good), YUKARI=`--jade`(yeşil/Easy), AŞAĞI=`--gold`(turuncu/Hard) → tüm temalarda otomatik uyum (canlı doğrulandı).
+- **Yalnız `opacity` animasyonu** (GPU): sürüklerken aktif yön katmanının opaklığı mesafeyle orantılı, `min(1, dist/(threshold*1.2))*0.5` → **zarif yumuşak max 0.5**. Diğer katmanlar 0. Sürükleme sırasında `.is-dragging` ile `transition:none` (parmağı 1:1 takip), bırakışta `.3s` fade.
+
+### 3. Haptik Geri Bildirim (`utils.js` + `appState.js` + `Settings.js` + `CardView.js`)
+- **`utils.js → vibrate(pattern)`:** güvenli sarmalayıcı — `navigator.vibrate` feature-detect + try/catch (masaüstü/iOS'ta sessiz no-op).
+- **Ayar:** `CONFIG.enableHaptics:true` + `migrateSettings` guard (`typeof !== 'boolean'`). `Settings.js`: SRS bölümünde on/off toggle (`cfg-haptics`) + `info_haptics` bilgi paneli + `saveSettings` okuma. **Varsayılan ON**, undefined→ON.
+- **`CardView.js → haptic(pattern)`:** `app.cfg().enableHaptics !== false` iken `vibrate`. **Tek kaynak `gradeCard`'da** (`HAPTIC_BY_GRADE = {0:[50,50,50],1:[30],2:[20],3:[10,30,10]}`) → kaydırma/buton/klavye hepsi aynı desen. Kart çevirme (`showBack`) = `[10]`.
+- **Squish (`index.html`):** `.ans-btn:active` ve `#btn-show:active` → `transform: scale(.95)` (mikro-etkileşim).
+
+### 4. Deste Tamamlama Kutlaması (`CardView.js` + yeni `src/utils/confetti.js`)
+- **`confetti.js → fireConfetti(opts)`:** bağımlılıksız saf canvas konfeti. `position:fixed` tam ekran canvas, yerçekimi altında partiküller, **tek RAF döngüsü**, süre/partikül sönümlenince canvas + resize listener **kendi kendini temizler**. `prefers-reduced-motion` → burst yok. Tekrar çağrılabilir (her çağrı bağımsız patlama).
+- **`renderStudy` tamamlama dalı:** 🎉 patlama + `great_job` ("Harika iş!") başlığı + `session_complete` alt + **2 istatistik kartı** (`done_cards_label`=oturum kartı sayısı, `done_streak_label`=🔥 seri) + "Desteye dön". `celebrated` modül flag'i (startStudy'de reset) → konfeti **oturum başına tam bir kez** (yalnız `studied>0`), her re-render'da değil.
+- **`animateCountUp(elId, target)`:** cubic ease-out sayaç. **KRİTİK sağlamlık:** hedef değerler HTML template'ine **doğrudan basılır** (`id="done-cards">${studied}`); animasyon 0'dan sayar. `document.hidden` (rAF duraklatılmış = arka plan sekmesi) → template hedefi korunur (sayaç 0'da takılmaz). Görünür sekmede önce senkron `'0'` → temiz sayım (geri-flaş yok).
+
+### Wiring & i18n
+- `CardView.js` importları: `vibrate` (utils), `fireConfetti` (confetti.js). Yeni window global GEREKMEZ (`gradeCard`/`showBack` zaten global; kaydırma & konfeti modül-içi).
+- **i18n (4 dil):** `great_job`, `done_cards_label`, `done_streak_label`, `swipe_hint`, `srs_haptics`, `srs_haptics_hint`, `info_haptics` — `back_to_deck`'ten hemen sonra eklendi.
+- **Sürüm:** `main.js APP_VERSION` + root `package.json` + `electron/package.json` → `2.5.0`.
+
+### Doğrulama (Vite preview canlı, eval tabanlı)
+Kaydırma fiziği (translate+rotate), 4 yön→grade eşlemesi (SOL→Again re-queue, SAĞ→Good, YUKARI→Easy uçuş), glow renkleri (4 tema değişkeni doğru çözüldü) + opaklık-mesafe eşlemesi (max 0.5), tap-through (hareketsiz dokunuş notlamıyor → Word Modal açılıyor), tamamlama (başlık/8 kart/1 seri/🔥/konfeti canvas), Settings toggle (default '1'), i18n (en+tr "Harika iş!"), build temiz, konsol hatası yok. **NOT:** preview sekmesi `visibilityState:hidden` olduğundan rAF duraklıyor → sayaç animasyonu & screenshot doğrulanamadı (ortam artefaktı, kod değil); `document.hidden` guard'ı bu durumda doğru değeri gösterir.

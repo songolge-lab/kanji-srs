@@ -34,6 +34,17 @@ export function shuffle(arr) {
   return arr;
 }
 
+// Safe haptic feedback wrapper. Feature-detects the Vibration API and never
+// throws (unsupported on desktop / iOS Safari; may be blocked by the browser).
+// Callers gate on the `enableHaptics` setting before invoking.
+export function vibrate(pattern) {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern);
+    }
+  } catch { /* vibration unavailable or blocked — ignore */ }
+}
+
 export function debounce(fn, wait) {
   let _dt = null;
   return (...args) => {

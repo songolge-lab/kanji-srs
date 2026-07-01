@@ -1,9 +1,20 @@
-import { esc, nowMs, highlightKanji, shuffle } from '../utils.js';
+import { esc, nowMs, highlightKanji, shuffle, vibrate } from '../utils.js';
 import { previewSRS, applySRS } from '../core/srsEngine.js';
 import { wrapKanji, wrapWord, isJapaneseCard } from '../utils/kanjiUtils.js';
 import { startSessionTimer, stopSessionTimer } from './Analytics.js';
+import { fireConfetti } from '../utils/confetti.js';
 
 let app;
+
+// ─── HAPTICS ─────────────────────────────────────────────────────────
+// Grade → vibration pattern (ms). Fired once per grade in gradeCard() so the
+// same feedback applies whether graded by swipe, button, or keyboard.
+const HAPTIC_BY_GRADE = { 0: [50, 50, 50], 1: [30], 2: [20], 3: [10, 30, 10] };
+// Safe wrapper: no-op unless the setting is on (undefined defaults to on to
+// match the default config; only an explicit `false` disables).
+function haptic(pattern) {
+  if (pattern && app.cfg().enableHaptics !== false) vibrate(pattern);
+}
 let kanjiListenerAdded = false;
 export function init(ctx) {
   app = ctx;
@@ -160,6 +171,10 @@ let studyQueue = [];
 let studyCardIndex = 0;
 let studyDoneToday = 0;
 let studyShowingBack = false;
+// Guards the completion celebration (confetti) so it fires exactly once per
+// finished session, not on every re-render of the "done" screen. Reset when a
+// fresh queue is built in startStudy().
+let celebrated = false;
 // Aktif çalışma oturumunun kimliği — { deckId, masteredOnly }. Modül-seviyesi
 // olduğundan sekme değiştirip geri gelmek state'i KORUR. Yalnızca (a) kuyruk
 // bitince veya (b) çalışma ekranındaki "Geri/Çık" tuşuna basılınca temizlenir;
@@ -205,6 +220,7 @@ export function startStudy(deckId, masteredOnly) {
     studyCardIndex = 0;
     studyDoneToday = 0;
     studyShowingBack = false;
+    celebrated = false;
     activeSession = { deckId, masteredOnly };
   }
   startSessionTimer();
@@ -217,13 +233,29 @@ export function renderStudy() {
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
     stopSessionTimer();
     activeSession = null; // kuyruk bitti → bir sonraki giriş taze oturum kursun
+    const studied = studyDoneToday;
+    const streak = app.state.stats.streak || 0;
     screen.innerHTML = `
       <div class="study-done">
-        <div class="done-icon">${app.icon('done','ic-lg')}</div>
-        <h2>${app.t('session_complete')}</h2>
-        <p>${app.t('cards_studied', {count: studyDoneToday})}</p>
-        <button class="btn btn-primary tap" onclick="showView('deck')">${app.t('back_to_deck')}</button>
+        <div class="done-burst">🎉</div>
+        <h2 class="done-title">${app.t('great_job')}</h2>
+        <p class="done-sub">${app.t('session_complete')}</p>
+        <div class="done-stats">
+          <div class="done-stat">
+            <div class="done-stat-num" id="done-cards">${studied}</div>
+            <div class="done-stat-label">${app.t('done_cards_label')}</div>
+          </div>
+          <div class="done-stat">
+            <div class="done-stat-num done-streak-num"><span class="done-fire">🔥</span><span id="done-streak">${streak}</span></div>
+            <div class="done-stat-label">${app.t('done_streak_label')}</div>
+          </div>
+        </div>
+        <button class="btn btn-primary tap done-btn" onclick="showView('deck')">${app.t('back_to_deck')}</button>
       </div>`;
+    animateCountUp('done-cards', studied);
+    animateCountUp('done-streak', streak);
+    // Fire the confetti once, only if the user actually studied something.
+    if (studied > 0 && !celebrated) { celebrated = true; fireConfetti(); }
     return;
   }
 
@@ -269,17 +301,26 @@ export function renderStudy() {
         <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
         <div class="study-count">${done}/${done + remaining}</div>
       </div>
-      <div class="flashcard">
-        <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-        <div class="fc-back">
-          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
-          <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
-          ${card.exampleJp ? `
-          <hr class="fc-divider">
-          <div class="fc-example">${exHighlight}</div>
-          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+      <div class="swipe-stage" id="swipe-stage">
+        <div class="swipe-glow" id="swipe-glow" aria-hidden="true">
+          <div class="glow-layer glow-left"></div>
+          <div class="glow-layer glow-right"></div>
+          <div class="glow-layer glow-up"></div>
+          <div class="glow-layer glow-down"></div>
+        </div>
+        <div class="flashcard swipe-card" id="grade-card">
+          <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+          <div class="fc-back">
+            <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
+            <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
+            ${card.exampleJp ? `
+            <hr class="fc-divider">
+            <div class="fc-example">${exHighlight}</div>
+            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+          </div>
         </div>
       </div>
+      <div class="swipe-hint">${app.t('swipe_hint')}</div>
       <div class="answer-grid">
         <button class="ans-btn ans-again tap" onclick="gradeCard(0)">${app.t('grade_again')}<span class="next-time">${previews[0]}</span></button>
         <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">${app.t('grade_hard')}<span class="next-time">${previews[1]}</span></button>
@@ -287,12 +328,34 @@ export function renderStudy() {
         <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${app.t('grade_easy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
+    initSwipeGrade();
   }
 }
 
-export function showBack() { studyShowingBack = true; renderStudy(); }
+// Count-up animation for the completion stats (cards studied, streak). Cubic
+// ease-out; GPU-irrelevant (text only), cheap and short.
+function animateCountUp(elId, target, dur = 900) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!(target > 0)) { el.textContent = '0'; return; }
+  // rAF is paused on hidden tabs — keep the pre-rendered final value so the
+  // count is never stuck at 0 if a session ends in the background.
+  if (typeof document !== 'undefined' && document.hidden) { el.textContent = String(target); return; }
+  el.textContent = '0'; // start from zero (before first paint) → clean count-up
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = String(Math.round(eased * target));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+export function showBack() { haptic([10]); studyShowingBack = true; renderStudy(); }
 
 export function gradeCard(grade) {
+  haptic(HAPTIC_BY_GRADE[grade]);
   const card = studyQueue[studyCardIndex];
   const wasNew = card.srs.state === 'new';
   const wasMastered = card.srs.mastered;
@@ -314,6 +377,107 @@ export function gradeCard(grade) {
   studyShowingBack = false;
   app.save();
   renderStudy();
+}
+
+// ─── 4-WAY SWIPE GRADING ─────────────────────────────────────────────
+// Pointer-driven swipe on the answer card. Drag past the threshold in a
+// direction → fly the card off-screen and grade. Below threshold → spring back.
+// Direction → grade: LEFT=Again(0), DOWN=Hard(1), RIGHT=Good(2), UP=Easy(3).
+// A soft directional edge-glow fades in with drag distance. Everything animated
+// is transform/opacity only (GPU-accelerated).
+const SWIPE_THRESHOLD = 100;
+const DIR_TO_GRADE = { left: 0, down: 1, right: 2, up: 3 };
+
+function initSwipeGrade() {
+  const stage = document.getElementById('swipe-stage');
+  const card = document.getElementById('grade-card');
+  const glow = document.getElementById('swipe-glow');
+  if (!stage || !card || !glow) return;
+  const layers = {
+    left: glow.querySelector('.glow-left'),
+    right: glow.querySelector('.glow-right'),
+    up: glow.querySelector('.glow-up'),
+    down: glow.querySelector('.glow-down'),
+  };
+  const MOVE_START = 8; // px before a press becomes a drag (taps pass through)
+  let startX = 0, startY = 0, dx = 0, dy = 0;
+  let pointerDown = false, dragging = false, pid = null;
+
+  function dominantDir() {
+    if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
+    return dy > 0 ? 'down' : 'up';
+  }
+  function setGlow(dir, strength) {
+    for (const k in layers) layers[k].style.opacity = k === dir ? strength : 0;
+  }
+  function clearGlow() { for (const k in layers) layers[k].style.opacity = 0; }
+
+  function onDown(e) {
+    pointerDown = true; dragging = false; pid = e.pointerId;
+    startX = e.clientX; startY = e.clientY; dx = 0; dy = 0;
+    card.classList.remove('snapping', 'flying');
+  }
+  function onMove(e) {
+    if (!pointerDown) return;
+    dx = e.clientX - startX; dy = e.clientY - startY;
+    if (!dragging) {
+      if (Math.hypot(dx, dy) < MOVE_START) return;
+      dragging = true;
+      stage.classList.add('is-dragging');
+      try { card.setPointerCapture(pid); } catch { /* capture optional */ }
+    }
+    e.preventDefault();
+    const rot = (dx / (stage.offsetWidth || 320)) * 12;
+    card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+    const dir = dominantDir();
+    const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
+    // Elegant soft cap: reaches max 0.5 opacity around 1.2× the threshold.
+    const strength = Math.min(1, dist / (SWIPE_THRESHOLD * 1.2)) * 0.5;
+    setGlow(dir, strength);
+  }
+  function onUp() {
+    if (!pointerDown) return;
+    pointerDown = false;
+    stage.classList.remove('is-dragging');
+    try { card.releasePointerCapture(pid); } catch { /* ignore */ }
+    if (!dragging) return; // was a tap → let the click through (Word Modal etc.)
+
+    // Swallow the click that trails a real drag (prevents opening a word modal
+    // on release). Self-cleaning so a lingering listener never eats a real tap.
+    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    card.addEventListener('click', swallow, true);
+    setTimeout(() => card.removeEventListener('click', swallow, true), 350);
+
+    const dir = dominantDir();
+    const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
+    if (dist < SWIPE_THRESHOLD) {
+      card.classList.add('snapping');
+      card.style.transform = '';
+      clearGlow();
+      return;
+    }
+    clearGlow();
+    flyOff(card, dir);
+    // Grade after the card has mostly flown off; gradeCard re-renders the screen.
+    setTimeout(() => gradeCard(DIR_TO_GRADE[dir]), 230);
+  }
+
+  card.addEventListener('pointerdown', onDown);
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerup', onUp);
+  card.addEventListener('pointercancel', onUp);
+}
+
+function flyOff(card, dir) {
+  const off = {
+    left: 'translate(-140vw, 0) rotate(-24deg)',
+    right: 'translate(140vw, 0) rotate(24deg)',
+    up: 'translate(0, -140vh) rotate(0deg)',
+    down: 'translate(0, 140vh) rotate(0deg)',
+  }[dir];
+  card.classList.add('flying');
+  // Next frame so the .flying transition applies from the current transform.
+  requestAnimationFrame(() => { card.style.transform = off; card.style.opacity = '0'; });
 }
 
 // ─── REVIEW (Browse) ─────────────────────────────────────────────────

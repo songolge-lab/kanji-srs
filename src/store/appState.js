@@ -9,6 +9,7 @@ export const CONFIG = {
   fuzz: true,
   dailyNewLimit: 0,
   autoUseShield: true,
+  enableHaptics: true,
 };
 
 // ─── STORAGE LAYER ────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ export function migrateSettings(settings) {
     settings.learnSteps = [...CONFIG.learnSteps];
   }
   if (typeof settings.autoUseShield !== 'boolean') settings.autoUseShield = true;
+  if (typeof settings.enableHaptics !== 'boolean') settings.enableHaptics = true;
   if (typeof settings.geminiApiKey !== 'string') settings.geminiApiKey = '';
   if (typeof settings.geminiModel !== 'string') settings.geminiModel = 'gemini-2.5-pro';
   return settings;

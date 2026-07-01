@@ -140,6 +140,7 @@ function getSettingInfo() {
     'steps': app.t('info_steps'), 'grad': app.t('info_grad'), 'easy-iv': app.t('info_easy_iv'),
     'ease': app.t('info_ease'), 'easy-bonus': app.t('info_easy_bonus'), 'mastery': app.t('info_mastery'),
     'daily': app.t('info_daily'), 'fuzz': app.t('info_fuzz'), 'shield': app.t('info_shield'),
+    'haptics': app.t('info_haptics'),
   };
 }
 
@@ -181,6 +182,8 @@ export function renderSettings() {
       `<select class="si-input" id="cfg-fuzz" style="text-align:left"><option value="1" ${s.fuzz?'selected':''}>${app.t('on')}</option><option value="0" ${!s.fuzz?'selected':''}>${app.t('off')}</option></select>`) +
     settingItemHTML('shield', app.t('srs_shield'), app.t('srs_shield_hint'),
       `<select class="si-input" id="cfg-shield" style="text-align:left"><option value="1" ${s.autoUseShield?'selected':''}>${app.t('on')}</option><option value="0" ${!s.autoUseShield?'selected':''}>${app.t('off')}</option></select>`) +
+    settingItemHTML('haptics', app.t('srs_haptics'), app.t('srs_haptics_hint'),
+      `<select class="si-input" id="cfg-haptics" style="text-align:left"><option value="1" ${s.enableHaptics!==false?'selected':''}>${app.t('on')}</option><option value="0" ${s.enableHaptics===false?'selected':''}>${app.t('off')}</option></select>`) +
     `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">${app.t('save_settings')}</button>
     <div class="version-tag">${app.t('version_tag', {version: app.APP_VERSION})}<br><span class="version-motto">${app.t('keep_stacking')}</span></div>`;
   const langSection = document.getElementById('lang-section');
@@ -208,6 +211,7 @@ export function saveSettings() {
     state.settings.dailyNewLimit = parseInt(document.getElementById('cfg-daily').value) || 0;
     state.settings.fuzz = document.getElementById('cfg-fuzz').value === '1';
     state.settings.autoUseShield = document.getElementById('cfg-shield').value === '1';
+    state.settings.enableHaptics = document.getElementById('cfg-haptics').value === '1';
     app.save();
     app.showToast(app.t('toast_settings_saved'));
   } catch (e) { app.showToast(app.t('warn_error', {msg: e.message})); }
