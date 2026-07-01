@@ -580,3 +580,38 @@ SPA'yı gerçek bir native uygulama gibi hissettirmek için 4 UX iyileştirmesi.
 
 ### Doğrulama (Vite preview canlı, eval tabanlı)
 Kaydırma fiziği (translate+rotate), 4 yön→grade eşlemesi (SOL→Again re-queue, SAĞ→Good, YUKARI→Easy uçuş), glow renkleri (4 tema değişkeni doğru çözüldü) + opaklık-mesafe eşlemesi (max 0.5), tap-through (hareketsiz dokunuş notlamıyor → Word Modal açılıyor), tamamlama (başlık/8 kart/1 seri/🔥/konfeti canvas), Settings toggle (default '1'), i18n (en+tr "Harika iş!"), build temiz, konsol hatası yok. **NOT:** preview sekmesi `visibilityState:hidden` olduğundan rAF duraklıyor → sayaç animasyonu & screenshot doğrulanamadı (ortam artefaktı, kod değil); `document.hidden` guard'ı bu durumda doğru değeri gösterir.
+
+## Arama UX — Nav'dan Kaldırma + Satır İçi Kompakt Arama (Decks başlığı + Deste-kapsamlı)
+
+Arama artık ayrı bir alt-nav sekmesi/view değil. Decks başlığında kompakt bir arama butonu ve deste detayında "Search in this deck" ile açılan satır içi arama çubuklarına dönüştürüldü. `Search.js` **silinmedi** — motoru genelleştirilip iki yeni bağlama da hizmet edecek şekilde yeniden kullanıldı.
+
+### `Search.js` — view'dan reusable motora dönüşüm
+- Eski `renderView()`/`refreshSearch()` (tek, sabit `#search-content` id'lerine bağımlı) **kaldırıldı**. Yerine `renderInto(containerId, {scope, deckId})` / `unmount(containerId)` / `refreshAll()` geldi.
+- **Scope başına state:** `scopedState['global']` (Decks başlığı) ve `scopedState['deck:<deckId>']` (deste-kapsamlı) ayrı `{query, filter}` tutar → iki arama çubuğu aynı oturumda birbirini ezmez, aynı desteye tekrar girildiğinde önceki sorgu geri gelir.
+- **Benzersiz DOM id'leri:** Tüm iç eleman id'leri (`search-input-*`, `search-filter-*`, vb.) `uid` (`global` ya da `deck-<deckId>`) ile son eklenir → iki arama çubuğu (Decks + deste) aynı anda DOM'da olsa bile (biri gizli) id çakışması olmaz.
+- **`activeMounts` Map:** Hangi container'ın hangi scope/deckId ile bağlı olduğunu tutar. `app.save()` sonrası (`main.js`) artık `currentView === 'search'` kontrolü yerine koşulsuz `Search.refreshAll()` çağrılır → o an açık olan arama çubuğu (hangi view'da olursa olsun) güncel veriyle tazelenir; kapalıysa no-op.
+- **Deste-kapsamlı sorgu:** `scope:'deck'` iken `app.findDeck(deckId)` + `app.getDescendantDecks(deckId)` ile kök deste ve TÜM alt desteler taranır. Sonuç kartın `deckId`'si taranan kök deste ile **aynıysa** "📁 deste adı" rozeti **gizlenir** (zaten bağlamdan belli); bir alt desteden geliyorsa gösterilir.
+
+### Decks başlığı — kompakt arama (`index.html` + `DeckList.js` + `main.js`)
+- **`index.html`:** "My Decks" başlığı `.section-hd-row` ile sarılıp yanına `#btn-toggle-deck-search` (küçük `.icon-btn`, arama ikonu) eklendi. Hemen altına statik, başlangıçta gizli `#deck-search-bar` div'i eklendi. Eski `#nav-search` (alt nav) ve `#view-search`/`#search-content` (ayrı view) **tamamen kaldırıldı**.
+- **`DeckList.js → toggleDeckSearch()`:** `#deck-search-bar`'ı aç/kapat + `Search.renderInto('deck-search-bar', {scope:'global'})` / `Search.unmount(...)`. Buton ikonunu aç/kapalıya göre arama↔çarpı olarak değiştirir (ayrı CSS aktif-state sınıfı gerekmedi).
+- **`DeckList.js → closeDeckSearch()`:** `main.js → showView()` içinde **her çağrıda koşulsuz** çalıştırılır (yalnız decks dışına çıkışta değil) — sebep: dil değişimi de `setLang()` → `showView(currentView)` tetikler; arama açıkken dil değişirse zaten render edilmiş placeholder/filtre metni yeni dile geçmezdi (canlı testte yakalandı). Koşulsuz kapatma bunu basitçe çözer; her `showView` çağrısı zaten "temiz" bir view girişi sayılıyor.
+- **Bağlanma:** `main.js` EVENT BINDINGS bölümünde `btn-add-deck` gibi doğrudan `addEventListener` (inline onclick/window global GEREKMEZ — statik, tek instance).
+
+### Deste-kapsamlı arama (`DeckList.js → renderDeckDetail`)
+- Study/Add Card/Delete butonlarının altına, Browse butonundan hemen sonra `"🔍 Search in this deck"` (`search_in_deck`) `btn-block` butonu + hemen altına statik-ama-dinamik-üretilen `#deck-scoped-search-bar` (`renderDeckDetail`'in şablonunun parçası, kapalı başlar) eklendi.
+- **`toggleDeckScopedSearch(deckId)` (export + `window` global, inline `onclick` ile çağrılır — deste detay şablonu diğer tüm butonlar gibi inline onclick kullanıyor):** `Search.renderInto('deck-scoped-search-bar', {scope:'deck', deckId})` / `unmount`.
+- **State senkronu:** `renderDeckDetail()` her çağrıldığında (deste değişimi, kart CRUD, dil değişimi — hepsi bu fonksiyonu tetikler) `#deck-detail-content.innerHTML` **tamamen** yeniden kurulur → eski `#deck-scoped-search-bar` düğümü DOM'dan atılır. Bu yüzden fonksiyon başında koşulsuz `Search.unmount('deck-scoped-search-bar'); deckScopedSearchOpen = null;` çağrılır — aksi halde `activeMounts` eski (artık DOM'da olmayan) container'ı referans tutmaya devam eder ve modül değişkeni `deckScopedSearchOpen` gerçek (kapalı) DOM durumuyla senkron kalmazdı.
+
+### CSS (`index.html`)
+- **Kritik düzeltme (önceden var olan, fark edilmemiş bug):** Global `input, textarea, select { width:100% }` kuralı `.search-filter` (`<select>`) için de geçerli olduğundan, flex satırında (`.search-header-bar`) select tüm satırı kaplayıp yanındaki arama input'unu ~0 genişliğe sıkıştırıyordu (canlı testte yakalandı — orijinal tekil Search view'ında da aynı bug vardı, hiç görsel doğrulanmamıştı). **Düzeltme:** `.search-filter { width:auto; flex-shrink:0; }`.
+- Eski ID-tabanlı seçiciler (`#search-input`, `#search-filter`, `#search-clear-btn`, `#search-header-bar`) **class-tabanlı**a çevrildi (`.search-input`, `.search-filter`, `.search-clear-btn`, `.search-header-bar`) — artık birden fazla yerde (farklı `uid` son ekli id'lerle) render ediliyor.
+- Clear "X" butonu zaten `position:absolute` ile input'un içindeydi; boyutu 32px→28px, ikon 18px→15px küçültülüp daha "input içi" hissettirildi (ayrı büyük kare buton görünümü yok).
+- Yeni: `.section-hd-row` (Decks başlığı + arama butonu flex satırı), `.deck-search-bar` (alt boşluk).
+
+### i18n (`src/main.js → LANG`)
+- **Kaldırıldı:** `nav_search` (4 dilden) — artık nav item yok, dead key.
+- **Eklendi** (4 dil, `search_placeholder`/`search_empty_state`'ten hemen sonra): `search_placeholder_deck`, `search_empty_state_deck` (deste-kapsamlı arama input placeholder'ı ve boş-durum metni — "Tüm destelerde" yerine "Bu destede" ifadesi), `search_in_deck` ("Search in this deck" buton metni).
+
+### Doğrulama (Vite preview canlı)
+(1) Alt nav 5 öğe (Search yok); (2) Decks başlığında kompakt arama ikonu → tık → satır içi çubuk açılır (input+filter+sonuçlar doğru genişlikte, önceki select-genişlik bugı düzeltildi), tekrar tık → kapanır + ikon eski haline döner; (3) deste detayında "Search in this deck" → alt deste dahil arama (`漢文` alt destede bulundu, "📁 Verbs SubDeck" rozeti sadece alt deste sonucunda görünüyor, kök deste sonucunda gizli); (4) `setLang('tr')` sırasında açık Decks-arama çubuğu otomatik kapanıyor (eski dilde render kalmıyor), tekrar açılınca yeni dilde doğru render; (5) build temiz (`vite build` ✓, 52 modül), konsol hatası yok.

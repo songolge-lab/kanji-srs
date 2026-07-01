@@ -2,6 +2,7 @@ import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
 import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 import { generateDeck } from '../services/aiService.js';
 import { smartRuby, kanjiSizeClass } from './CardView.js';
+import * as Search from './Search.js';
 
 let app;
 export function init(ctx) { app = ctx; }
@@ -10,6 +11,52 @@ export function init(ctx) { app = ctx; }
 const collapsedDecks = new Set();
 let _savingModal = false;
 let _savingEdit = false;
+
+// ─── INLINE SEARCH (nav'dan kaldırıldı — Decks başlığında kompakt buton +
+// deste detayında "Search in this deck" ile açılır/kapanır) ─────────────
+let deckSearchOpen = false; // Decks view başlığındaki genel arama çubuğu
+let deckScopedSearchOpen = null; // Deste detayındaki arama çubuğu — açıksa deckId, değilse null
+
+export function toggleDeckSearch() {
+  deckSearchOpen = !deckSearchOpen;
+  const bar = document.getElementById('deck-search-bar');
+  const btn = document.getElementById('btn-toggle-deck-search');
+  if (!bar) return;
+  if (deckSearchOpen) {
+    bar.style.display = 'block';
+    Search.renderInto('deck-search-bar', { scope: 'global' });
+    if (btn) btn.innerHTML = app.icon('close');
+  } else {
+    Search.unmount('deck-search-bar');
+    bar.style.display = 'none';
+    if (btn) btn.innerHTML = app.icon('search');
+  }
+}
+
+// Başka bir view'a geçerken çağrılır (main.js → showView) — arama açık kalıp
+// bir sonraki Decks girişinde şaşırtıcı durmasın diye kapatır.
+export function closeDeckSearch() {
+  if (!deckSearchOpen) return;
+  deckSearchOpen = false;
+  Search.unmount('deck-search-bar');
+  const bar = document.getElementById('deck-search-bar');
+  const btn = document.getElementById('btn-toggle-deck-search');
+  if (bar) bar.style.display = 'none';
+  if (btn) btn.innerHTML = app.icon('search');
+}
+
+export function toggleDeckScopedSearch(deckId) {
+  deckScopedSearchOpen = deckScopedSearchOpen === deckId ? null : deckId;
+  const bar = document.getElementById('deck-scoped-search-bar');
+  if (!bar) return;
+  if (deckScopedSearchOpen) {
+    bar.style.display = 'block';
+    Search.renderInto('deck-scoped-search-bar', { scope: 'deck', deckId });
+  } else {
+    Search.unmount('deck-scoped-search-bar');
+    bar.style.display = 'none';
+  }
+}
 
 // ─── OTOMATİK FURIGANA (kayıt anında) ────────────────────────────────
 // Kullanıcı Furigana alanını boş bıraktıysa, kart oluşturulmadan/güncellenmeden
@@ -361,6 +408,10 @@ function _attachLongPress(container) {
 export function renderDeckDetail() {
   const deck = app.findDeck(app.currentDeckId);
   if (!deck) { app.showView('decks'); return; }
+  // İçerik her render'da sıfırdan kurulur (yeni #deck-scoped-search-bar
+  // düğümü kapalı başlar) → toggle state'i senkron kalsın diye sıfırla.
+  Search.unmount('deck-scoped-search-bar');
+  deckScopedSearchOpen = null;
   const path = app.getDeckPath(deck.id);
   const breadcrumb = path.length > 1
     ? `<div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:.5rem">${path.map((p, i) => i < path.length - 1 ? `<a href="#" onclick="event.preventDefault();openDeck('${p.id}')" style="color:var(--ink-soft);text-decoration:underline">${esc(p.name)}</a>` : `<strong>${esc(p.name)}</strong>`).join(' › ')}</div>` : '';
@@ -412,9 +463,13 @@ export function renderDeckDetail() {
       <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${app.icon('plus')}${app.t('add_card')}</button>
       <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${app.icon('trash')}${app.t('delete_btn')}</button>
     </div>
-    <div class="btn-row" style="margin-bottom:1rem">
+    <div class="btn-row" style="margin-bottom:.6rem">
       <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${app.icon('eye')}${app.t('review_btn')}</button>
     </div>
+    <div class="btn-row" style="margin-bottom:.6rem">
+      <button class="btn btn-ghost tap btn-block" onclick="toggleDeckScopedSearch('${deck.id}')">${app.icon('search')}${app.t('search_in_deck')}</button>
+    </div>
+    <div id="deck-scoped-search-bar" class="deck-search-bar" style="display:none;margin-bottom:1rem"></div>
     ${subDecksHTML}
     ${masteredCards.length ? `
     <div class="mastered-banner">
