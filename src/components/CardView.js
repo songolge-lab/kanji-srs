@@ -461,11 +461,17 @@ function initSwipeGrade() {
     // Grade after the card has mostly flown off; gradeCard re-renders the screen.
     setTimeout(() => gradeCard(DIR_TO_GRADE[dir]), 230);
   }
-
+  if (card._swipeCleanup) card._swipeCleanup();
   card.addEventListener('pointerdown', onDown);
   card.addEventListener('pointermove', onMove);
   card.addEventListener('pointerup', onUp);
   card.addEventListener('pointercancel', onUp);
+  card._swipeCleanup = () => {
+    card.removeEventListener('pointerdown', onDown);
+    card.removeEventListener('pointermove', onMove);
+    card.removeEventListener('pointerup', onUp);
+    card.removeEventListener('pointercancel', onUp);
+  };
 }
 
 function flyOff(card, dir) {
@@ -589,10 +595,17 @@ function initFlipGesture() {
       setTimeout(() => showBack(), 350);
     } else { currentRotation = 0; inner.style.transform = 'rotateY(0deg)'; }
   }
+  if (container._flipCleanup) container._flipCleanup();
   container.addEventListener('mousedown', onStart); container.addEventListener('mousemove', onMove);
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  container._flipCleanup = () => {
+    container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
+    container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);
+    container.removeEventListener('touchstart', onStart); container.removeEventListener('touchmove', onMove);
+    container.removeEventListener('touchend', onEnd);
+  };
 }
 
 export function initFlipGestureToggle(containerId, innerId) {
@@ -620,10 +633,17 @@ export function initFlipGestureToggle(containerId, innerId) {
     inner.style.transform = `rotateY(${angle}deg)`;
     dragRotation = 0;
   }
+  if (container._flipToggleCleanup) container._flipToggleCleanup();
   container.addEventListener('mousedown', onStart); container.addEventListener('mousemove', onMove);
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  container._flipToggleCleanup = () => {
+    container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
+    container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);
+    container.removeEventListener('touchstart', onStart); container.removeEventListener('touchmove', onMove);
+    container.removeEventListener('touchend', onEnd);
+  };
 }
 
 export function flipCardToggle(innerId) {

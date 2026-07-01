@@ -193,7 +193,7 @@ export function computeSRS(card, grade, settings, now, preview) {
 
     if (grade === 0) { // Lapse → relearning steps; bank post-lapse S/D
       srs.lapses++;
-      const next = computeNextDS(srs.D, srs.S, R, fsrsGrade);
+      const next = computeNextDS(srs.D || 5, srs.S || 0.1, R, fsrsGrade);
       srs.D = round4(next.nextD);
       srs.S = round4(next.nextS);
       srs.state = 'relearning';
@@ -204,7 +204,7 @@ export function computeSRS(card, grade, settings, now, preview) {
       if (srs.mastered) srs.mastered = false;
       label = fmtDur(stepMs(0, steps));
     } else { // Success → full FSRS stability update
-      const next = computeNextDS(srs.D, srs.S, R, fsrsGrade);
+      const next = computeNextDS(srs.D || 5, srs.S || 0.1, R, fsrsGrade);
       srs.D = round4(next.nextD);
       srs.S = round4(next.nextS);
       const ivDays = Math.max(1, fuzzInterval(Math.round(next.nextS), settings.fuzz));
