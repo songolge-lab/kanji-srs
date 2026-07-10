@@ -1,6 +1,9 @@
 export function esc(s) {
   if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  // String() first: callers occasionally pass non-string truthy values (e.g.
+  // a TRUE_FALSE test question's boolean correctValue), which has no .replace
+  // of its own and would throw.
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 export function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -32,6 +35,17 @@ export function shuffle(arr) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+// Safe haptic feedback wrapper. Feature-detects the Vibration API and never
+// throws (unsupported on desktop / iOS Safari; may be blocked by the browser).
+// Callers gate on the `enableHaptics` setting before invoking.
+export function vibrate(pattern) {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern);
+    }
+  } catch { /* vibration unavailable or blocked — ignore */ }
 }
 
 export function debounce(fn, wait) {

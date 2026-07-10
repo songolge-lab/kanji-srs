@@ -1,9 +1,21 @@
-import { esc, nowMs, highlightKanji, shuffle } from '../utils.js';
+import { esc, nowMs, highlightKanji, shuffle, vibrate } from '../utils.js';
 import { previewSRS, applySRS } from '../core/srsEngine.js';
 import { wrapKanji, wrapWord, isJapaneseCard } from '../utils/kanjiUtils.js';
 import { startSessionTimer, stopSessionTimer } from './Analytics.js';
+import { fireConfetti } from '../utils/confetti.js';
+import { getStudyDirection } from '../store/appState.js';
 
 let app;
+
+// ─── HAPTICS ─────────────────────────────────────────────────────────
+// Grade → vibration pattern (ms). Fired once per grade in gradeCard() so the
+// same feedback applies whether graded by swipe, button, or keyboard.
+const HAPTIC_BY_GRADE = { 0: [50, 50, 50], 1: [30], 2: [20], 3: [10, 30, 10] };
+// Safe wrapper: no-op unless the setting is on (undefined defaults to on to
+// match the default config; only an explicit `false` disables).
+function haptic(pattern) {
+  if (pattern && app.cfg().enableHaptics !== false) vibrate(pattern);
+}
 let kanjiListenerAdded = false;
 export function init(ctx) {
   app = ctx;
@@ -47,7 +59,56 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizerSync } from '../utils/furiganaParser.js';
+import { getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap } from '../utils/furiganaParser.js';
+
+const lazyFuriganaJobs = new WeakSet();
+
+function hasKanjiText(text) {
+  return KANJI_RUN.test(text || '');
+}
+
+function needsMainFurigana(card) {
+  return card && hasKanjiText(card.kanji) && (!card.furigana || card.furiganaStatus === 'pending');
+}
+
+function needsExampleFurigana(card) {
+  const map = card && card.exampleFuriganaMap;
+  return card && hasKanjiText(card.exampleJp) && (!map || !Object.keys(map).length || card.exampleFuriganaStatus === 'pending');
+}
+
+export function ensureCardFurigana(card, onReady) {
+  if (!card || lazyFuriganaJobs.has(card)) return;
+  const needMain = needsMainFurigana(card);
+  const needExample = needsExampleFurigana(card);
+  if (!needMain && !needExample) return;
+
+  lazyFuriganaJobs.add(card);
+  Promise.all([
+    needMain ? generateFurigana(card.kanji).catch(() => '') : Promise.resolve(card.furigana || ''),
+    needExample ? generateFuriganaMap(card.exampleJp).catch(() => ({})) : Promise.resolve(card.exampleFuriganaMap || {}),
+  ]).then(([furigana, exampleMap]) => {
+    let changed = false;
+    if (needMain) {
+      if (furigana && card.furigana !== furigana) { card.furigana = furigana; changed = true; }
+      if (card.furiganaStatus === 'pending') { card.furiganaStatus = card.furigana ? 'ready' : 'empty'; changed = true; }
+    }
+    if (needExample) {
+      const nextMap = exampleMap || {};
+      if (JSON.stringify(card.exampleFuriganaMap || {}) !== JSON.stringify(nextMap)) {
+        card.exampleFuriganaMap = nextMap;
+        changed = true;
+      }
+      if (card.exampleFuriganaStatus === 'pending') {
+        card.exampleFuriganaStatus = Object.keys(card.exampleFuriganaMap || {}).length ? 'ready' : 'empty';
+        changed = true;
+      }
+    }
+    if (changed) {
+      app.save();
+      if (typeof onReady === 'function') onReady();
+    }
+  }).finally(() => lazyFuriganaJobs.delete(card));
+}
 
 function buildRubyInnerRaw(surface, reading) {
   if (!reading || surface === reading) {
@@ -105,54 +166,62 @@ export function smartRuby(surface, reading, sentence) {
   reading = (reading || '').toString();
   sentence = (sentence || surface).toString();
 
+  const tokenizer = isJapaneseCard() && KANJI_RUN.test(surface) ? getTokenizerSync() : null;
+  if (!reading && tokenizer) {
+    try {
+      reading = tokenizer.tokenize(surface)
+        .map((tok) => KANJI_RUN.test(tok.surface_form) && tok.reading && tok.reading !== '*' ? kataToHira(tok.reading) : tok.surface_form)
+        .join('');
+    } catch {
+      reading = '';
+    }
+  }
+
   const rawSegs = buildRubyInnerRaw(surface, reading);
 
   if (!isJapaneseCard() || !KANJI_RUN.test(surface)) {
     return rawSegs.map(s => s.html).join('');
   }
 
-  const tokenizer = getTokenizerSync();
+  // Tokenizer hazır değil → tüm yüzeyi tek blok olarak sar. Bu yolda `rawSegs`
+  // çağıranın verdiği okumayı (kart furiganası) bütün hâlde taşır → furigana
+  // doğru kalır (güvenli/eski davranış).
   if (!tokenizer) {
-    // Fallback: kuromoji hazır değilse tek blok halinde sar (eski davranış)
     return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
-  const tokens = tokenizer.tokenize(surface);
-  let html = '';
-  let segIdx = 0;
-  let segOffset = 0;
-
-  for (const tok of tokens) {
-    const tokText = tok.surface_form;
-    const isKanjiToken = KANJI_RUN.test(tokText);
-    
-    let tokHtml = '';
-    let remaining = tokText.length;
-    
-    while (remaining > 0 && segIdx < rawSegs.length) {
-      const seg = rawSegs[segIdx];
-      const segRemaining = seg.text.length - segOffset;
-      
-      if (segRemaining <= remaining) {
-        if (segOffset === 0) tokHtml += seg.html;
-        else tokHtml += esc(seg.text.slice(segOffset, segOffset + segRemaining));
-        remaining -= segRemaining;
-        segIdx++;
-        segOffset = 0;
-      } else {
-        tokHtml += esc(seg.text.slice(segOffset, segOffset + remaining));
-        segOffset += remaining;
-        remaining = 0;
-      }
-    }
-    
-    if (isKanjiToken) {
-      html += wrapWord(tokHtml, tokText, sentence);
-    } else {
-      html += tokHtml;
-    }
+  // Beklenmedik girdide tokenize patlarsa render'ı çökertme: tek bloğa düş.
+  let tokens;
+  try {
+    tokens = tokenizer.tokenize(surface);
+  } catch {
+    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
+  // Tek token → tüm yüzeyi tek tıklanabilir kelime yap; okumayı çağıranın
+  // verdiği `reading`'ten (kart furiganası = doğruluk kaynağı) al. Tek-kelime
+  // kartların çoğu bu yoldan geçer.
+  if (!tokens || tokens.length <= 1) {
+    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+  }
+
+  // Çok token → her kelimeyi AYRI bir `.word-clickable` yap ki Word Modal
+  // gerçek bileşen kelimeleri (毎日 / 漢字) arasın, tüm öbeği değil. KRİTİK:
+  // her kanji token'ı KENDİ okumasını doğrudan kuromoji'den (tok.reading,
+  // katakana → hiragana) alır → eski rawSegs-dilimleme yolunun çok-token'lı
+  // kanji koşularında furigana'yı düşürmesi (v2.3.1 regresyonu) giderilir.
+  // Bilinmeyen kelime (reading '*') → okumasız düz metin (yine de tıklanabilir).
+  let html = '';
+  for (const tok of tokens) {
+    const tokText = tok.surface_form;
+    if (KANJI_RUN.test(tokText)) {
+      const tokReading = (tok.reading && tok.reading !== '*') ? kataToHira(tok.reading) : '';
+      const segs = buildRubyInnerRaw(tokText, tokReading);
+      html += wrapWord(segs.map(s => s.html).join(''), tokText, sentence);
+    } else {
+      html += esc(tokText);
+    }
+  }
   return html;
 }
 
@@ -161,6 +230,24 @@ let studyQueue = [];
 let studyCardIndex = 0;
 let studyDoneToday = 0;
 let studyShowingBack = false;
+// Guards the completion celebration (confetti) so it fires exactly once per
+// finished session, not on every re-render of the "done" screen. Reset when a
+// fresh queue is built in startStudy().
+let celebrated = false;
+// Aktif çalışma oturumunun kimliği — { deckId, masteredOnly }. Modül-seviyesi
+// olduğundan sekme değiştirip geri gelmek state'i KORUR. Yalnızca (a) kuyruk
+// bitince veya (b) çalışma ekranındaki "Geri/Çık" tuşuna basılınca temizlenir;
+// alt nav ile gezinme oturumu ASLA bozmaz.
+let activeSession = null;
+// Aktif oturumun kart yönü ('normal' | 'reverse') — renderStudy'nin ön yüzü
+// hangi alanı (card.kanji vs card.meaningTr) soru olarak basacağını bilmesi
+// için modül-seviyesinde tutulur. startStudy'de her (yeniden) kurulumda/
+// resume'da güncellenir.
+let studyDirection = 'normal';
+
+// Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
+// sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
+export function clearStudySession() { activeSession = null; }
 
 // ─── REVIEW STATE ────────────────────────────────────────────────────
 let reviewQueue = [];
@@ -177,19 +264,50 @@ function stateLabel(srs) {
   return {new:app.t('state_new'), learning:app.t('state_learning'), review:app.t('state_review')}[srs.state] || '';
 }
 
+// Yön bağımsız ön yüz (soru) render'ı. Normal modda card.kanji büyük gösterilir
+// (mevcut davranış, değişmedi). Reverse modda soru card.meaningTr'dir ("back
+// prompt", generic — dile/desteye özel etiket YOK); boşsa card.kanji'ye, o da
+// yoksa güvenli bir yer tutucuya düşer (asla boş/çökme). `.fc-prompt` (index.html)
+// `.fc-kanji`'nin CJK serif yazı tipini generic sans-serif ile geçersiz kılar —
+// meaningTr çoğunlukla UI dilinde düzyazıdır, kanji fontuyla basılmamalı.
+function frontFaceHTML(card) {
+  if (studyDirection === 'reverse') {
+    const prompt = (card.meaningTr && String(card.meaningTr).trim()) || card.kanji || '—';
+    return `<div class="fc-kanji fc-prompt${kanjiSizeClass(prompt)}">${esc(prompt)}</div>`;
+  }
+  return `<div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>`;
+}
+
 // ─── STUDY ───────────────────────────────────────────────────────────
 export function startStudy(deckId, masteredOnly) {
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
-  const hasChildren = app.getChildDecks(deckId).length > 0;
-  if (hasChildren) {
-    studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly));
-  } else {
-    studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly);
+  // Yön, çalışılan destenin (üst deste dahil çocuklarıyla çalışılıyorsa üst
+  // destenin) `studyDirection` alanından gelir — basit ve güvenli varsayım.
+  const direction = getStudyDirection(app.findDeck(deckId));
+  // RESUME: aynı deste + kapsam + YÖN için yarım bir oturum varsa kuyruğu/konumu
+  // koru (sekme değiştirip dönmek ilerlemeyi sıfırlamasın). Yön değiştiyse eski
+  // kuyruk yanlış SRS deposuna işaret eder → taze kur (aşağıdaki koşul bunu
+  // otomatik sağlar, activeSession.direction eşleşmez).
+  const resume = activeSession
+    && activeSession.deckId === deckId
+    && activeSession.masteredOnly === masteredOnly
+    && activeSession.direction === direction
+    && studyQueue.length && studyCardIndex < studyQueue.length;
+  studyDirection = direction;
+  if (!resume) {
+    const hasChildren = app.getChildDecks(deckId).length > 0;
+    if (hasChildren) {
+      studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly, direction));
+    } else {
+      studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly, direction);
+    }
+    studyCardIndex = 0;
+    studyDoneToday = 0;
+    studyShowingBack = false;
+    celebrated = false;
+    activeSession = { deckId, masteredOnly, direction };
   }
-  studyCardIndex = 0;
-  studyDoneToday = 0;
-  studyShowingBack = false;
   startSessionTimer();
   app.showView('study');
 }
@@ -199,17 +317,48 @@ export function renderStudy() {
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
     stopSessionTimer();
-    screen.innerHTML = `
-      <div class="study-done">
-        <div class="done-icon">${app.icon('done','ic-lg')}</div>
-        <h2>${app.t('session_complete')}</h2>
-        <p>${app.t('cards_studied', {count: studyDoneToday})}</p>
+    activeSession = null; // kuyruk bitti → bir sonraki giriş taze oturum kursun
+    const studied = studyDoneToday;
+    const streak = app.state.stats.streak || 0;
+    // Nothing was actually studied (entered with an empty/finished queue) →
+    // quiet caught-up state instead of an unearned celebration.
+    if (studied === 0) {
+      screen.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">${app.icon('done', 'ic-lg')}</div>
+        <p>${app.t('study_all_caught_up')}</p>
         <button class="btn btn-primary tap" onclick="showView('deck')">${app.t('back_to_deck')}</button>
       </div>`;
+      return;
+    }
+    screen.innerHTML = `
+      <div class="study-done">
+        <div class="done-burst">🎉</div>
+        <h2 class="done-title">${app.t('great_job')}</h2>
+        <p class="done-sub">${app.t('session_complete')}</p>
+        <div class="done-stats">
+          <div class="done-stat">
+            <div class="done-stat-num" id="done-cards">${studied}</div>
+            <div class="done-stat-label">${app.t('done_cards_label')}</div>
+          </div>
+          <div class="done-stat">
+            <div class="done-stat-num done-streak-num"><span class="done-fire">🔥</span><span id="done-streak">${streak}</span></div>
+            <div class="done-stat-label">${app.t('done_streak_label')}</div>
+          </div>
+        </div>
+        <button class="btn btn-primary tap done-btn" onclick="showView('deck')">${app.t('back_to_deck')}</button>
+      </div>`;
+    animateCountUp('done-cards', studied);
+    animateCountUp('done-streak', streak);
+    // Fire the confetti once, only if the user actually studied something.
+    if (studied > 0 && !celebrated) { celebrated = true; fireConfetti(); }
     return;
   }
 
   const card = studyQueue[studyCardIndex];
+  ensureCardFurigana(card, () => {
+    if (app.currentView === 'study' && studyQueue[studyCardIndex] === card) renderStudy();
+  });
   const done = studyCardIndex;
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
@@ -226,7 +375,7 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            <div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>
+            ${frontFaceHTML(card)}
           </div>
           <div class="fc-flip-back">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
@@ -235,8 +384,10 @@ export function renderStudy() {
               <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
               ${card.exampleJp ? `
               <hr class="fc-divider">
-              <div class="fc-example">${exHighlight}</div>
-              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+              <div class="fc-example-wrap">
+                <div class="fc-example">${exHighlight}</div>
+                ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+              </div>` : ''}
             </div>
           </div>
         </div>
@@ -251,17 +402,28 @@ export function renderStudy() {
         <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
         <div class="study-count">${done}/${done + remaining}</div>
       </div>
-      <div class="flashcard">
-        <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-        <div class="fc-back">
-          <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
-          <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
-          ${card.exampleJp ? `
-          <hr class="fc-divider">
-          <div class="fc-example">${exHighlight}</div>
-          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+      <div class="swipe-stage" id="swipe-stage">
+        <div class="swipe-glow" id="swipe-glow" aria-hidden="true">
+          <div class="glow-layer glow-left"></div>
+          <div class="glow-layer glow-right"></div>
+          <div class="glow-layer glow-up"></div>
+          <div class="glow-layer glow-down"></div>
+        </div>
+        <div class="flashcard swipe-card" id="grade-card">
+          <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+          <div class="fc-back">
+            <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
+            <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
+            ${card.exampleJp ? `
+            <hr class="fc-divider">
+            <div class="fc-example-wrap">
+              <div class="fc-example">${exHighlight}</div>
+              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+            </div>` : ''}
+          </div>
         </div>
       </div>
+      <div class="swipe-hint">${app.t('swipe_hint')}</div>
       <div class="answer-grid">
         <button class="ans-btn ans-again tap" onclick="gradeCard(0)">${app.t('grade_again')}<span class="next-time">${previews[0]}</span></button>
         <button class="ans-btn ans-hard tap" onclick="gradeCard(1)">${app.t('grade_hard')}<span class="next-time">${previews[1]}</span></button>
@@ -269,12 +431,36 @@ export function renderStudy() {
         <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${app.t('grade_easy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
+    initSwipeGrade();
   }
 }
 
-export function showBack() { studyShowingBack = true; renderStudy(); }
+// Count-up animation for the completion stats (cards studied, streak). Cubic
+// ease-out; GPU-irrelevant (text only), cheap and short.
+function animateCountUp(elId, target, dur = 900) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!(target > 0)) { el.textContent = '0'; return; }
+  // rAF is paused on hidden tabs — keep the pre-rendered final value so the
+  // count is never stuck at 0 if a session ends in the background.
+  if (typeof document !== 'undefined' && document.hidden) { el.textContent = String(target); return; }
+  // Reduced motion: show the final value immediately (no count-up).
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = String(target); return; }
+  el.textContent = '0'; // start from zero (before first paint) → clean count-up
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = String(Math.round(eased * target));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+export function showBack() { haptic([10]); studyShowingBack = true; renderStudy(); }
 
 export function gradeCard(grade) {
+  haptic(HAPTIC_BY_GRADE[grade]);
   const card = studyQueue[studyCardIndex];
   const wasNew = card.srs.state === 'new';
   const wasMastered = card.srs.mastered;
@@ -296,6 +482,113 @@ export function gradeCard(grade) {
   studyShowingBack = false;
   app.save();
   renderStudy();
+}
+
+// ─── 4-WAY SWIPE GRADING ─────────────────────────────────────────────
+// Pointer-driven swipe on the answer card. Drag past the threshold in a
+// direction → fly the card off-screen and grade. Below threshold → spring back.
+// Direction → grade: LEFT=Again(0), DOWN=Hard(1), RIGHT=Good(2), UP=Easy(3).
+// A soft directional edge-glow fades in with drag distance. Everything animated
+// is transform/opacity only (GPU-accelerated).
+const SWIPE_THRESHOLD = 100;
+const DIR_TO_GRADE = { left: 0, down: 1, right: 2, up: 3 };
+
+function initSwipeGrade() {
+  const stage = document.getElementById('swipe-stage');
+  const card = document.getElementById('grade-card');
+  const glow = document.getElementById('swipe-glow');
+  if (!stage || !card || !glow) return;
+  const layers = {
+    left: glow.querySelector('.glow-left'),
+    right: glow.querySelector('.glow-right'),
+    up: glow.querySelector('.glow-up'),
+    down: glow.querySelector('.glow-down'),
+  };
+  const MOVE_START = 8; // px before a press becomes a drag (taps pass through)
+  let startX = 0, startY = 0, dx = 0, dy = 0;
+  let pointerDown = false, dragging = false, pid = null;
+
+  function dominantDir() {
+    if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
+    return dy > 0 ? 'down' : 'up';
+  }
+  function setGlow(dir, strength) {
+    for (const k in layers) layers[k].style.opacity = k === dir ? strength : 0;
+  }
+  function clearGlow() { for (const k in layers) layers[k].style.opacity = 0; }
+
+  function onDown(e) {
+    pointerDown = true; dragging = false; pid = e.pointerId;
+    startX = e.clientX; startY = e.clientY; dx = 0; dy = 0;
+    card.classList.remove('snapping', 'flying');
+  }
+  function onMove(e) {
+    if (!pointerDown) return;
+    dx = e.clientX - startX; dy = e.clientY - startY;
+    if (!dragging) {
+      if (Math.hypot(dx, dy) < MOVE_START) return;
+      dragging = true;
+      stage.classList.add('is-dragging');
+      try { card.setPointerCapture(pid); } catch { /* capture optional */ }
+    }
+    e.preventDefault();
+    const rot = (dx / (stage.offsetWidth || 320)) * 12;
+    card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+    const dir = dominantDir();
+    const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
+    // Elegant soft cap: reaches max 0.5 opacity around 1.2× the threshold.
+    const strength = Math.min(1, dist / (SWIPE_THRESHOLD * 1.2)) * 0.5;
+    setGlow(dir, strength);
+  }
+  function onUp() {
+    if (!pointerDown) return;
+    pointerDown = false;
+    stage.classList.remove('is-dragging');
+    try { card.releasePointerCapture(pid); } catch { /* ignore */ }
+    if (!dragging) return; // was a tap → let the click through (Word Modal etc.)
+
+    // Swallow the click that trails a real drag (prevents opening a word modal
+    // on release). Self-cleaning so a lingering listener never eats a real tap.
+    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    card.addEventListener('click', swallow, true);
+    setTimeout(() => card.removeEventListener('click', swallow, true), 350);
+
+    const dir = dominantDir();
+    const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
+    if (dist < SWIPE_THRESHOLD) {
+      card.classList.add('snapping');
+      card.style.transform = '';
+      clearGlow();
+      return;
+    }
+    clearGlow();
+    flyOff(card, dir);
+    // Grade after the card has mostly flown off; gradeCard re-renders the screen.
+    setTimeout(() => gradeCard(DIR_TO_GRADE[dir]), 230);
+  }
+  if (card._swipeCleanup) card._swipeCleanup();
+  card.addEventListener('pointerdown', onDown);
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerup', onUp);
+  card.addEventListener('pointercancel', onUp);
+  card._swipeCleanup = () => {
+    card.removeEventListener('pointerdown', onDown);
+    card.removeEventListener('pointermove', onMove);
+    card.removeEventListener('pointerup', onUp);
+    card.removeEventListener('pointercancel', onUp);
+  };
+}
+
+function flyOff(card, dir) {
+  const off = {
+    left: 'translate(-140vw, 0) rotate(-24deg)',
+    right: 'translate(140vw, 0) rotate(24deg)',
+    up: 'translate(0, -140vh) rotate(0deg)',
+    down: 'translate(0, 140vh) rotate(0deg)',
+  }[dir];
+  card.classList.add('flying');
+  // Next frame so the .flying transition applies from the current transform.
+  requestAnimationFrame(() => { card.style.transform = off; card.style.opacity = '0'; });
 }
 
 // ─── REVIEW (Browse) ─────────────────────────────────────────────────
@@ -340,6 +633,9 @@ export function renderReview() {
     return;
   }
   const card = reviewQueue[reviewIndex];
+  ensureCardFurigana(card, () => {
+    if (app.currentView === 'review' && reviewQueue[reviewIndex] === card) renderReview();
+  });
   const pct = ((reviewIndex + 1) / reviewQueue.length) * 100;
   const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
   screen.innerHTML = `
@@ -360,8 +656,10 @@ export function renderReview() {
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
             ${card.exampleJp ? `
             <hr class="fc-divider">
-            <div class="fc-example">${exHighlight}</div>
-            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+            <div class="fc-example-wrap">
+              <div class="fc-example">${exHighlight}</div>
+              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+            </div>` : ''}
           </div>
         </div>
       </div>
@@ -407,10 +705,17 @@ function initFlipGesture() {
       setTimeout(() => showBack(), 350);
     } else { currentRotation = 0; inner.style.transform = 'rotateY(0deg)'; }
   }
+  if (container._flipCleanup) container._flipCleanup();
   container.addEventListener('mousedown', onStart); container.addEventListener('mousemove', onMove);
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  container._flipCleanup = () => {
+    container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
+    container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);
+    container.removeEventListener('touchstart', onStart); container.removeEventListener('touchmove', onMove);
+    container.removeEventListener('touchend', onEnd);
+  };
 }
 
 export function initFlipGestureToggle(containerId, innerId) {
@@ -438,10 +743,17 @@ export function initFlipGestureToggle(containerId, innerId) {
     inner.style.transform = `rotateY(${angle}deg)`;
     dragRotation = 0;
   }
+  if (container._flipToggleCleanup) container._flipToggleCleanup();
   container.addEventListener('mousedown', onStart); container.addEventListener('mousemove', onMove);
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  container._flipToggleCleanup = () => {
+    container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
+    container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);
+    container.removeEventListener('touchstart', onStart); container.removeEventListener('touchmove', onMove);
+    container.removeEventListener('touchend', onEnd);
+  };
 }
 
 export function flipCardToggle(innerId) {

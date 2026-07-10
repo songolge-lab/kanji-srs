@@ -2,15 +2,98 @@ import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
 import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 import { generateDeck } from '../services/aiService.js';
 import { smartRuby, kanjiSizeClass } from './CardView.js';
-import { wrapKanji, isJapaneseCard } from '../utils/kanjiUtils.js';
+import { getStudyDirection } from '../store/appState.js';
+import * as Search from './Search.js';
 
 let app;
-export function init(ctx) { app = ctx; }
+let _menuListenerAdded = false;
+export function init(ctx) {
+  app = ctx;
+  // Dışarı tıklanınca açık kebab menüsünü kapat (TestManager ile aynı desen;
+  // menü butonları stopPropagation yaptığından yalnız gerçek dış tıklamada çalışır).
+  if (!_menuListenerAdded) {
+    _menuListenerAdded = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.card-menu')) closeDeckMenus();
+    });
+  }
+}
 
 // İç içe destelerde toggle ile gizlenen üst destelerin id'leri (collapse durumu).
 const collapsedDecks = new Set();
 let _savingModal = false;
 let _savingEdit = false;
+
+// ─── KEBAB ACTION MENU (TestManager'daki .card-menu deseninin aynası) ──
+export function toggleDeckMenu(menuId) {
+  const pop = document.getElementById('deck-menu-' + menuId);
+  if (!pop) return;
+  const willOpen = pop.style.display === 'none';
+  closeDeckMenus();
+  if (willOpen) {
+    pop.style.display = 'block';
+    pop.parentElement.querySelector('.card-menu-btn')?.setAttribute('aria-expanded', 'true');
+  }
+}
+
+export function closeDeckMenus() {
+  document.querySelectorAll('.card-menu-pop').forEach(p => (p.style.display = 'none'));
+  document.querySelectorAll('.card-menu-btn[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+}
+
+function deckMenuHTML(menuId, itemsHTML) {
+  return `
+  <div class="card-menu">
+    <button class="icon-btn tap card-menu-btn" onclick="event.stopPropagation();toggleDeckMenu('${menuId}')" aria-label="${app.t('card_actions')}" title="${app.t('card_actions')}" aria-haspopup="true" aria-expanded="false">${app.icon('more')}</button>
+    <div class="card-menu-pop" id="deck-menu-${menuId}" style="display:none">${itemsHTML}</div>
+  </div>`;
+}
+
+// ─── INLINE SEARCH (nav'dan kaldırıldı — Decks başlığında kompakt buton +
+// deste detayında "Search in this deck" ile açılır/kapanır) ─────────────
+let deckSearchOpen = false; // Decks view başlığındaki genel arama çubuğu
+let deckScopedSearchOpen = null; // Deste detayındaki arama çubuğu — açıksa deckId, değilse null
+
+export function toggleDeckSearch() {
+  deckSearchOpen = !deckSearchOpen;
+  const bar = document.getElementById('deck-search-bar');
+  const btn = document.getElementById('btn-toggle-deck-search');
+  if (!bar) return;
+  if (deckSearchOpen) {
+    bar.style.display = 'block';
+    Search.renderInto('deck-search-bar', { scope: 'global' });
+    if (btn) btn.innerHTML = app.icon('close');
+  } else {
+    Search.unmount('deck-search-bar');
+    bar.style.display = 'none';
+    if (btn) btn.innerHTML = app.icon('search');
+  }
+}
+
+// Başka bir view'a geçerken çağrılır (main.js → showView) — arama açık kalıp
+// bir sonraki Decks girişinde şaşırtıcı durmasın diye kapatır.
+export function closeDeckSearch() {
+  if (!deckSearchOpen) return;
+  deckSearchOpen = false;
+  Search.unmount('deck-search-bar');
+  const bar = document.getElementById('deck-search-bar');
+  const btn = document.getElementById('btn-toggle-deck-search');
+  if (bar) bar.style.display = 'none';
+  if (btn) btn.innerHTML = app.icon('search');
+}
+
+export function toggleDeckScopedSearch(deckId) {
+  deckScopedSearchOpen = deckScopedSearchOpen === deckId ? null : deckId;
+  const bar = document.getElementById('deck-scoped-search-bar');
+  if (!bar) return;
+  if (deckScopedSearchOpen) {
+    bar.style.display = 'block';
+    Search.renderInto('deck-scoped-search-bar', { scope: 'deck', deckId });
+  } else {
+    Search.unmount('deck-scoped-search-bar');
+    bar.style.display = 'none';
+  }
+}
 
 // ─── OTOMATİK FURIGANA (kayıt anında) ────────────────────────────────
 // Kullanıcı Furigana alanını boş bıraktıysa, kart oluşturulmadan/güncellenmeden
@@ -188,10 +271,29 @@ export function toggleDeckCollapse(deckId) {
 }
 
 // ─── DECK LIST RENDER ────────────────────────────────────────────────
+// Nova hero greeting (date + weekday). Always filled — the element itself is
+// .nv-only, so standard themes simply never display it.
+function fillNovaGreeting() {
+  const el = document.getElementById('nv-decks-greeting');
+  if (!el) return;
+  const now = new Date();
+  const days = app.t('weekdays_full').split(',');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  el.innerHTML = `<span class="nv-date">${mm}.${dd}</span><span class="nv-day">${esc(days[(now.getDay() + 6) % 7] || '')}</span>`;
+}
+
+// First grapheme of a name as the Nova tile glyph (spread handles surrogate pairs).
+function novaTile(name, extraCls = '') {
+  const ch = [...String(name || '').trim()][0] || '·';
+  return `<span class="nv-only nv-tile${extraCls ? ' ' + extraCls : ''}" aria-hidden="true">${esc(ch)}</span>`;
+}
+
 export function renderDeckList() {
   const { state } = app;
   const container = document.getElementById('deck-list');
   const empty = document.getElementById('deck-list-empty');
+  fillNovaGreeting();
   if (!state.decks.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const tree = app.getDecksInTreeOrder();
@@ -203,29 +305,34 @@ export function renderDeckList() {
     const hasChildren = children.length > 0;
     const isCollapsed = collapsedDecks.has(deck.id);
     const s = hasChildren ? app.aggregateDeckStats(deck.id) : app.deckStats(deck);
-    const qLen = hasChildren ? app._buildQueue(app.getAllCardsForDeck(deck.id)).length : app.buildQueue(deck).length;
+    const direction = getStudyDirection(deck);
+    const qLen = hasChildren ? app._buildQueue(app.getAllCardsForDeck(deck.id), false, direction).length : app.buildQueue(deck, false, direction).length;
     const indent = depth * 1.2;
     const collapseBtn = hasChildren
-      ? `<button class="icon-btn tap deck-collapse-btn" onclick="event.stopPropagation();toggleDeckCollapse('${deck.id}')" aria-label="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}" title="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}">${app.icon(isCollapsed ? 'chevron_right' : 'chevron_down')}</button>`
+      ? `<button class="icon-btn tap deck-collapse-btn" onclick="event.stopPropagation();toggleDeckCollapse('${deck.id}')" aria-label="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}" title="${app.t(isCollapsed ? 'expand_decks' : 'collapse_decks')}" aria-expanded="${!isCollapsed}">${app.icon(isCollapsed ? 'chevron_right' : 'chevron_down')}</button>`
       : '';
     const subBadge = hasChildren ? ` <span class="badge badge-soft deck-sub-badge">${app.t('sub_decks_count', {count: children.length})}</span>` : '';
     rows.push(`
-    <div class="card deck-draggable" draggable="true" data-deck-id="${deck.id}" style="${depth ? 'margin-left:' + indent + 'rem;border-left:3px solid var(--line)' : ''}">
+    <div class="card deck-draggable${depth ? ' card-child' : ''}" draggable="true" data-deck-id="${deck.id}" style="${depth ? 'margin-left:' + indent + 'rem' : ''}">
       <div class="card-row">
         ${collapseBtn}
-        <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${deck.id}')">
+        <button class="card-title-btn tap" onclick="openDeck('${deck.id}')">
+          ${novaTile(deck.name)}
           <span>
-            <span class="card-title" style="display:block">${hasChildren ? app.icon('folder') + ' ' : ''}${esc(deck.name)}${subBadge}</span>
+            <span class="card-title">${hasChildren ? app.icon('folder') + ' ' : ''}${esc(deck.name)}${subBadge}</span>
             <span class="deck-meta">${app.t('deck_meta', {total: s.total, mastered: s.mastered})}</span>
           </span>
         </button>
-        <button class="icon-btn tap deck-move-btn" onclick="event.stopPropagation();showMoveDeckModal('${deck.id}')" aria-label="${app.t('move_deck')}" title="${app.t('move_deck')}">${app.icon('move')}</button>
+        ${deckMenuHTML(deck.id, `
+          <button onclick="event.stopPropagation();closeDeckMenus();showRenameModal('${deck.id}')">${app.icon('edit')}${app.t('modal_rename')}</button>
+          <button onclick="event.stopPropagation();closeDeckMenus();showMoveDeckModal('${deck.id}')">${app.icon('move')}${app.t('move_label')}</button>
+          <button class="danger" onclick="event.stopPropagation();closeDeckMenus();deleteDeck('${deck.id}')">${app.icon('trash')}${app.t('delete_btn')}</button>`)}
       </div>
-      <div class="btn-row" style="margin-top:.6rem">
-        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${app.t('no_cards_to_study')}</span>`}
-        <button class="btn btn-ghost tap" onclick="openDeck('${deck.id}')">${app.t('detail')}</button>
+      <div class="btn-row card-actions">
+        ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: qLen})}</button>` : `<span class="text-muted action-note">${app.t('no_cards_to_study')}</span>`}
+        <button class="btn btn-ghost tap nv-hide" onclick="openDeck('${deck.id}')">${app.t('detail')}</button>
       </div>
-      <div class="btn-row" style="margin-top:.5rem">
+      <div class="badge-row">
         ${s.newC ? `<span class="badge badge-sky">${app.t('badge_new', {count: s.newC})}</span>` : ''}
         ${s.learning ? `<span class="badge badge-gold">${app.t('badge_learning', {count: s.learning})}</span>` : ''}
         ${s.due ? `<span class="badge badge-hanko">${app.t('badge_review', {count: s.due})}</span>` : ''}
@@ -362,37 +469,43 @@ function _attachLongPress(container) {
 export function renderDeckDetail() {
   const deck = app.findDeck(app.currentDeckId);
   if (!deck) { app.showView('decks'); return; }
+  // İçerik her render'da sıfırdan kurulur (yeni #deck-scoped-search-bar
+  // düğümü kapalı başlar) → toggle state'i senkron kalsın diye sıfırla.
+  Search.unmount('deck-scoped-search-bar');
+  deckScopedSearchOpen = null;
   const path = app.getDeckPath(deck.id);
   const breadcrumb = path.length > 1
     ? `<div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:.5rem">${path.map((p, i) => i < path.length - 1 ? `<a href="#" onclick="event.preventDefault();openDeck('${p.id}')" style="color:var(--ink-soft);text-decoration:underline">${esc(p.name)}</a>` : `<strong>${esc(p.name)}</strong>`).join(' › ')}</div>` : '';
   document.getElementById('topbar-title').innerHTML = `
     <span style="display:flex;align-items:center;gap:.4rem;min-width:0">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(deck.name)}</span>
-      <button class="icon-btn tap" style="width:30px;height:30px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="${app.t('modal_rename')}">${app.icon('edit')}</button>
+      <button class="icon-btn tap" style="width:34px;height:34px;font-size:.8rem;flex-shrink:0" onclick="showRenameModal('${deck.id}')" aria-label="${app.t('modal_rename')}">${app.icon('edit')}</button>
     </span>`;
   const children = app.getChildDecks(deck.id);
   const hasChildren = children.length > 0;
   const s = hasChildren ? app.aggregateDeckStats(deck.id) : app.deckStats(deck);
   const allCards = hasChildren ? app.getAllCardsForDeck(deck.id) : deck.cards;
-  const qLen = hasChildren ? app._buildQueue(allCards).length : app.buildQueue(deck).length;
-  const mLen = hasChildren ? app._buildQueue(allCards, true).length : app.buildQueue(deck, true).length;
+  const direction = getStudyDirection(deck);
+  const qLen = hasChildren ? app._buildQueue(allCards, false, direction).length : app.buildQueue(deck, false, direction).length;
+  const mLen = hasChildren ? app._buildQueue(allCards, true, direction).length : app.buildQueue(deck, true, direction).length;
   const masteredCards = deck.cards.filter(c => c.srs.mastered);
   const normalCards = deck.cards.filter(c => !c.srs.mastered);
   const subDecksHTML = children.length ? `
     <div class="section-hd">${app.t('sub_decks_section', {count: children.length})}</div>
     ${children.map(child => {
       const cs = app.aggregateDeckStats(child.id);
-      const cq = app._buildQueue(app.getAllCardsForDeck(child.id)).length;
+      const cq = app._buildQueue(app.getAllCardsForDeck(child.id), false, getStudyDirection(child)).length;
       return `
-      <div class="card" style="border-left:3px solid var(--line)">
+      <div class="card card-child">
         <div class="card-row">
-          <button class="tap" style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0" onclick="openDeck('${child.id}')">
-            <span><span class="card-title" style="display:block">${esc(child.name)}</span><span class="deck-meta">${app.t('deck_meta', {total: cs.total, mastered: cs.mastered})}</span></span>
+          <button class="card-title-btn tap" onclick="openDeck('${child.id}')">
+            ${novaTile(child.name)}
+            <span><span class="card-title">${esc(child.name)}</span><span class="deck-meta">${app.t('deck_meta', {total: cs.total, mastered: cs.mastered})}</span></span>
           </button>
         </div>
-        <div class="btn-row" style="margin-top:.4rem">
-          ${cq > 0 ? `<button class="btn btn-primary tap btn-sm" onclick="startStudy('${child.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: cq})}</button>` : `<span class="text-muted" style="font-size:.82rem">${app.t('no_cards_to_study')}</span>`}
-          <button class="btn btn-ghost tap btn-sm" onclick="openDeck('${child.id}')">${app.t('detail')}</button>
+        <div class="btn-row card-actions">
+          ${cq > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${child.id}',false)">${app.icon('play','ic-fill')}${app.t('study_btn', {count: cq})}</button>` : `<span class="text-muted action-note">${app.t('no_cards_to_study')}</span>`}
+          <button class="btn btn-ghost tap nv-hide" onclick="openDeck('${child.id}')">${app.t('detail')}</button>
         </div>
       </div>`;
     }).join('')}
@@ -400,6 +513,7 @@ export function renderDeckDetail() {
   ` : '';
   document.getElementById('deck-detail-content').innerHTML = `
     ${breadcrumb}
+    <div class="deck-detail-hero">
     <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
       <div class="stat-box"><div class="stat-num" style="color:var(--sky)">${s.newC}</div><div class="stat-lbl">${app.t('stat_new')}</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--gold)">${s.learning}</div><div class="stat-lbl">${app.t('stat_learning')}</div></div>
@@ -408,13 +522,23 @@ export function renderDeckDetail() {
       <div class="stat-box"><div class="stat-num" style="color:var(--jade)">${s.mastered}</div><div class="stat-lbl">${app.t('stat_mastered')}</div></div>
       <div class="stat-box"><div class="stat-num">${qLen}</div><div class="stat-lbl">${app.t('stat_queue')}</div></div>
     </div>
-    <div class="btn-row" style="margin-bottom:1rem">
-      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${hasChildren ? app.t('start_study_all', {count: qLen}) : app.t('start_study', {count: qLen})}</button>` : `<span class="text-muted" style="display:flex;align-items:center;flex:1">${app.t('no_cards_to_study')}</span>`}
-      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${app.icon('plus')}${app.t('add_card')}</button>
-      <button class="btn btn-danger tap" onclick="deleteDeck('${deck.id}')">${app.icon('trash')}${app.t('delete_btn')}</button>
+    <div class="direction-row">
+      <span class="direction-label">${app.t('card_direction')}</span>
+      <div class="direction-seg" role="group" aria-label="${app.t('card_direction')}">
+        <button type="button" class="direction-seg-btn${direction === 'normal' ? ' is-active' : ''}" onclick="setCardDirection('${deck.id}','normal')" aria-pressed="${direction === 'normal'}">${app.t('card_direction_normal')}</button>
+        <button type="button" class="direction-seg-btn${direction === 'reverse' ? ' is-active' : ''}" onclick="setCardDirection('${deck.id}','reverse')" aria-pressed="${direction === 'reverse'}">${app.t('card_direction_reverse')}</button>
+      </div>
+      <div class="direction-hint">${app.t('card_direction_hint')}</div>
     </div>
     <div class="btn-row" style="margin-bottom:1rem">
-      <button class="btn btn-ghost tap btn-block" onclick="showReviewPickModal('${deck.id}')">${app.icon('eye')}${app.t('review_btn')}</button>
+      ${qLen > 0 ? `<button class="btn btn-primary tap" onclick="startStudy('${deck.id}',false)">${app.icon('play','ic-fill')}${hasChildren ? app.t('start_study_all', {count: qLen}) : app.t('start_study', {count: qLen})}</button>` : `<span class="text-muted action-note">${app.t('no_cards_to_study')}</span>`}
+      <button class="btn btn-ghost tap" onclick="showAddCardModal('${deck.id}')">${app.icon('plus')}${app.t('add_card')}</button>
+      ${deckMenuHTML(`detail-${deck.id}`, `
+        <button onclick="event.stopPropagation();closeDeckMenus();showReviewPickModal('${deck.id}')">${app.icon('eye')}${app.t('review_btn')}</button>
+        <button onclick="event.stopPropagation();closeDeckMenus();toggleDeckScopedSearch('${deck.id}')">${app.icon('search')}${app.t('search_in_deck')}</button>
+        <button class="danger" onclick="event.stopPropagation();closeDeckMenus();deleteDeck('${deck.id}')">${app.icon('trash')}${app.t('delete_btn')}</button>`)}
+    </div>
+    <div id="deck-scoped-search-bar" class="deck-search-bar" style="display:none;margin-bottom:1rem"></div>
     </div>
     ${subDecksHTML}
     ${masteredCards.length ? `
@@ -456,25 +580,30 @@ export function showCardPreview(deckId, cardId) {
 }
 
 // Çalışma kartının statik iki yüzlü (ön + arka) görsel temsilini modalda
-// gösterir — "Show answer" / grade butonları YOK. Çalışma ekranıyla aynı
-// CSS sınıfları (.flashcard / .fc-kanji / .fc-back) ve smartRuby kullanılır.
+// gösterir — "Show answer" / grade butonları YOK. Çalışma ekranındaki cevap
+// kartıyla BİREBİR aynı yapıyı (.flashcard + .fc-back) kullanır → ödünç alınan
+// add-form sınıfı `.fc-preview-front` ve tanımsız `.cpm-face` kaldırıldı.
+// Ön yüz kanji'si düz metin basılır (tıklanamaz, çalışma ön yüzü gibi hanko
+// vurgulu); arka yüz smartRuby/highlightKanji ile tıklanabilir kalır.
 export function showCardPreviewModal(card) {
   const sizeCls = kanjiSizeClass(card.kanji);
-  const frontText = isJapaneseCard() ? wrapKanji(esc(card.kanji)) : esc(card.kanji);
+  const frontText = esc(card.kanji) || '&nbsp;';
   const exHighlight = card.exampleJp ? highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap) : '';
   app.openModal(app.t('card_preview_title'), `
     <div class="card-preview-modal">
-      <div class="flashcard fc-preview-front cpm-face">
-        <div class="fc-kanji${sizeCls}">${frontText || '&nbsp;'}</div>
+      <div class="flashcard cpm-front">
+        <div class="fc-kanji${sizeCls}">${frontText}</div>
       </div>
-      <div class="flashcard cpm-face">
+      <div class="flashcard">
         <div class="fc-back">
           <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
           <div class="fc-meaning">${esc(card.meaningTr)}</div>
           ${card.exampleJp ? `
           <hr class="fc-divider">
-          <div class="fc-example">${exHighlight}</div>
-          ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+          <div class="fc-example-wrap">
+            <div class="fc-example">${exHighlight}</div>
+            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+          </div>` : ''}
         </div>
       </div>
       <div class="btn-row"><button class="btn btn-ghost tap btn-block" onclick="closeModal()">${app.t('close')}</button></div>
@@ -488,6 +617,16 @@ export function toggleMasteredList() {
 }
 
 export function openDeck(deckId) { app.currentDeckId = deckId; app.showView('deck'); }
+
+// ─── CARD DIRECTION ──────────────────────────────────────────────────
+// Deste detayındaki segmented control'den çağrılır (inline onclick). Bir
+// sonraki startStudy çağrısı, yön değiştiyse (activeSession.direction eşleşmez)
+// otomatik olarak taze bir oturum kurar — burada oturumu ayrıca temizlemeye
+// gerek yok.
+export function setCardDirection(deckId, direction) {
+  app.setStudyDirection(deckId, direction);
+  if (app.currentView === 'deck') renderDeckDetail();
+}
 
 // ─── ADD FORM ────────────────────────────────────────────────────────
 export function renderAddForm() {
@@ -742,8 +881,15 @@ export function deleteDeck(deckId) {
   app.state.decks = app.state.decks.filter(d => !idsToDelete.has(d.id));
   idsToDelete.forEach(id => collapsedDecks.delete(id));
   app.save();
-  if (deck.parentId) { app.currentDeckId = deck.parentId; app.showView('deck'); }
-  else app.showView('decks');
+  // Deck-detail view navigates away from the deleted deck; the list kebab
+  // stays on the list and just re-renders in place.
+  if (app.currentView === 'deck') {
+    if (deck.parentId) { app.currentDeckId = deck.parentId; app.showView('deck'); }
+    else app.showView('decks');
+  } else {
+    renderDeckList();
+    app.renderGlobalStats();
+  }
   app.showToast(app.t('toast_deck_deleted'));
 }
 

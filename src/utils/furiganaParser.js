@@ -76,7 +76,9 @@ class SmartDictionaryLoader extends DictionaryLoader {
 
     const source = useIpc
       ? dictBytesViaIpc(url.split('/').pop())
-      : fetch(url).then((res) => {
+      : fetch(url).catch((err) => {
+          throw new Error('Network error while loading dictionary: ' + err.message);
+        }).then((res) => {
           if (!res.ok) throw new Error(res.statusText || ('HTTP ' + res.status));
           return res.arrayBuffer().then((ab) => new Uint8Array(ab));
         });

@@ -1,0 +1,2657 @@
+/* =====================================================================
+   TOKENS — sumi (mürekkep) + washi (kağıt) paleti
+   ===================================================================== */
+:root {
+  --ink:        #1c1a17;
+  --ink-soft:   #4a463f;
+  --paper:      #f3eee2;
+  --paper-2:    #ece5d4;
+  --card:       #fffdf8;
+  --line:       #ddd3bd;
+  --line-soft:  #e8e0cc;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #9c7a2e;
+  --gold-bg:    #f0e6c8;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+
+  /* RADIUS — tek bir ölçek: kart=lg, kontrol=md, çip/giriş=sm, hap=pill */
+  --r-lg:       14px;
+  --r-md:       10px;
+  --r-sm:       8px;
+  --r-pill:     999px;
+
+  /* BORDER — yapısal saç çizgisi vs. etkileşimli kontrol kenarı */
+  --bd:         1px;            /* kart/yüzey ana hattı */
+  --bd-ctrl:    1.5px;          /* giriş alanı + etkileşimli kontrol */
+
+  /* SHADOW — kağıt hissi için son derece hafif kaldırma */
+  --sh-sm:      0 1px 2px rgba(28,26,23,.05);
+  --sh-md:      0 4px 14px rgba(28,26,23,.07);
+  --sh-pop:     0 -3px 18px rgba(28,26,23,.07);
+
+  /* ICON — tek aile: ince çizgi, yuvarlak uç/köşe */
+  --icon-stroke: 1.75;
+
+  --tap:        48px;            /* minimum touch target */
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-t:     env(safe-area-inset-top, 0px);
+}
+
+/* =====================================================================
+   TEMALAR — [data-theme] ile :root değişkenleri override edilir.
+   Varsayılan (yukarıdaki :root) "Washi" temasıdır. Her tema kendi
+   paper/ink/card/line + hanko/gold/jade/sky setini tanımlar; uygulamanın
+   geri kalanı hep var(--...) kullandığı için TEK SATIR KOD DEĞİŞMEDEN
+   tüm arayüz yeni temaya geçer.
+   ===================================================================== */
+
+/* SUMI — karanlık mürekkep teması (dark mode) */
+[data-theme="sumi"] {
+  --ink:        #ece6da;
+  --ink-soft:   #b8b0a0;
+  --paper:      #1a1814;
+  --paper-2:    #242019;
+  --card:       #28241d;
+  --line:       #3a3528;
+  --line-soft:  #322e24;
+  --hanko:      #d97362;
+  --hanko-bg:   #432822;
+  --gold:       #cdab5f;
+  --gold-bg:    #3d3420;
+  --jade:       #6fae8c;
+  --jade-bg:    #20342b;
+  --sky:        #7fb0d6;
+  --sky-bg:     #1f3140;
+}
+
+/* MATCHA — yeşil çay teması */
+[data-theme="matcha"] {
+  --ink:        #243224;
+  --ink-soft:   #56654f;
+  --paper:      #eef0e1;
+  --paper-2:    #e3e7d2;
+  --card:       #fafcf2;
+  --line:       #cdd6b4;
+  --line-soft:  #dbe2c5;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93822c;
+  --gold-bg:    #ece3c0;
+  --jade:       #3c7048;
+  --jade-bg:    #d6e8d3;
+  --sky:        #2c5d80;
+  --sky-bg:     #d6e6ef;
+}
+
+/* SAKURA — kiraz çiçeği teması */
+[data-theme="sakura"] {
+  --ink:        #3e2630;
+  --ink-soft:   #7d5d68;
+  --paper:      #f7eee8;
+  --paper-2:    #f0e0d8;
+  --card:       #fffaf6;
+  --line:       #e8c9c2;
+  --line-soft:  #f0d9d2;
+  --hanko:      #b5495f;
+  --hanko-bg:   #f6dde2;
+  --gold:       #aa7e3e;
+  --gold-bg:    #f2e4c8;
+  --jade:       #4a7a5e;
+  --jade-bg:    #dcecdf;
+  --sky:        #5b6f9a;
+  --sky-bg:     #e0e4f0;
+}
+
+/* INDIGO — Japon mavisi (藍) teması */
+[data-theme="indigo"] {
+  --ink:        #1c2838;
+  --ink-soft:   #4d5e72;
+  --paper:      #e9edf3;
+  --paper-2:    #dde3ec;
+  --card:       #f8fafc;
+  --line:       #c2cedd;
+  --line-soft:  #d2dbe6;
+  --hanko:      #a8362a;
+  --hanko-bg:   #f3dcd6;
+  --gold:       #93782e;
+  --gold-bg:    #e9e0c4;
+  --jade:       #2f6b4f;
+  --jade-bg:    #d9ead9;
+  --sky:        #2456a3;
+  --sky-bg:     #d2e0f4;
+}
+
+/* NOVA — futuristic bright premium theme. Unlike the paper themes it also
+   overrides the radius + shadow tokens (softer, larger, blue-tinted depth)
+   and defines --nv-* tokens that ONLY the [data-theme="nova"] visual layer
+   at the end of this file reads. The semantic color map is unchanged:
+   hanko=Again/due/destructive, gold=Hard/learning, sky=Good/new/info,
+   jade=Easy/mastered. */
+[data-theme="nova"] {
+  --ink:        #131c31;
+  --ink-soft:   #556280;
+  --paper:      #edf1fa;
+  --paper-2:    #e2e8f5;
+  --card:       #fcfdff;
+  --line:       #c9d5ec;
+  --line-soft:  #dbe3f3;
+  --hanko:      #c2255c;
+  --hanko-bg:   #fbdce8;
+  --gold:       #9c6d0a;
+  --gold-bg:    #fcedc4;
+  --jade:       #0c7f62;
+  --jade-bg:    #d2f5e9;
+  --sky:        #2458df;
+  --sky-bg:     #dce6fc;
+
+  --r-lg:       22px;
+  --r-md:       14px;
+  --r-sm:       11px;
+
+  --sh-sm:      0 1px 2px rgba(19,28,49,.05), 0 8px 24px -16px rgba(36,88,223,.25);
+  --sh-md:      0 2px 6px rgba(19,28,49,.05), 0 18px 44px -20px rgba(36,88,223,.35);
+  --sh-pop:     0 -6px 32px rgba(19,28,49,.14);
+
+  --nv-accent-2:  #6d3fe0;
+  --nv-cyan:      #0aa8c4;
+  --nv-grad:      linear-gradient(135deg, #2458df, #6d3fe0);
+  --nv-glass:     rgba(255,255,255,.62);
+  --nv-glass-2:   rgba(255,255,255,.84);
+  --nv-glass-bd:  rgba(255,255,255,.92);
+  --nv-ring:      rgba(36,88,223,.16);
+}
+
+/* =====================================================================
+   RESET — touch-safe defaults
+   ===================================================================== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  /* Viewport scrolling follows the root element's overflow, so the sideways
+     clip must live here as well as on body (see body rule). */
+  overflow-x: clip;
+}
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', BlinkMacSystemFont,
+               'Segoe UI', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  /* clip (not hidden): kills the swipe-glow halo's 6px sideways bleed at 375px
+     without creating a scroll container — position:sticky keeps working. */
+  overflow-x: clip;
+}
+rt { font-size: .55em; }
+ruby { -webkit-touch-callout: none; }
+
+/* Çalışma ekranı aktifken (CardView) body scroll'u kilitlenir → mobilde kart
+   sürüklerken elastik viewport zıplaması (overscroll bounce) olmaz. showView
+   'study'ye girince eklenir, çıkınca kaldırılır. */
+body.study-mode-active {
+  overflow: hidden !important;
+  overscroll-behavior-y: none !important;
+}
+
+/* ─── BOOT SPLASH (kısa açılış ekranı) ──────────────────────────────── */
+#boot-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .4rem;
+  transition: opacity .35s ease;
+}
+#boot-splash.is-hidden { opacity: 0; pointer-events: none; }
+#boot-splash-title {
+  font-size: 1.6rem; font-weight: 700; color: var(--ink);
+  letter-spacing: .02em;
+}
+#boot-splash-motto {
+  font-size: .85rem; color: var(--ink-soft); font-style: italic;
+}
+
+/* Every interactive element gets a real, generous hit target */
+button, .tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  position: relative;
+}
+button:disabled { opacity: .5; cursor: default; }
+
+/* Keyboard focus: one consistent token ring app-wide. :focus-visible only —
+   mouse/touch interaction stays ring-free; inputs keep their sky border. */
+:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+
+/* =====================================================================
+   ICON SYSTEM — tek aile, inline SVG. Hepsi 24x24 viewBox, ince çizgi,
+   yuvarlak uç/köşe. currentColor ile bulunduğu butonun rengini alır.
+   ===================================================================== */
+.ic {
+  width: 1.2em;
+  height: 1.2em;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ic-fill { fill: currentColor; stroke: none; }
+.ic-lg { width: 52px; height: 52px; stroke-width: 1.4; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-flex; }
+.spin .ic { animation: spin .9s linear infinite; transform-origin: center; }
+
+input, textarea, select {
+  font: inherit;
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-sm);
+  padding: .7rem .85rem;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  min-height: var(--tap);
+  -webkit-appearance: none;
+  appearance: none;
+}
+textarea { min-height: 7rem; }
+input:focus, textarea:focus, select:focus { border-color: var(--sky); }
+label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35rem; }
+
+/* =====================================================================
+   APP SHELL
+   ===================================================================== */
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: calc(var(--safe-t) + .25rem) 1rem calc(80px + var(--safe-b) + 1rem);
+}
+
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ (tablet / masaüstü tarayıcı / Electron penceresi)
+   768px ve üzeri ekranlarda alt navigasyon sol kenarda dikey bir
+   "sidebar"a dönüşür; içerik onun yanında, kendi içinde okunabilir bir
+   genişlikte (max 720px) kalır. Mobil/dar ekranda HİÇBİR ŞEY değişmez
+   — bu blok sadece >=768px'te devreye girer.
+   ===================================================================== */
+/* TOP BAR — in normal flow, not sticky. Avoids stacking-context/touch bugs. */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 0 1rem;
+}
+#topbar-title {
+  flex: 1;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topbar-title .accent { color: var(--hanko); }
+
+.icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  box-shadow: var(--sh-sm);
+  color: var(--ink);
+  font-size: 1.15rem;          /* ikonlar em ile bu boyuta ölçeklenir */
+  flex-shrink: 0;
+}
+.icon-btn:active { background: var(--paper-2); transform: scale(.94); box-shadow: none; }
+.icon-btn .ic { width: 1.2em; height: 1.2em; }
+
+/* ─── GÜNCELLEME BUTONU + BALONCUK (sadece Electron/PC) ─────────────── */
+#btn-update {
+  background: var(--hanko);
+  border-color: var(--hanko);
+  color: #fff;
+  position: relative;
+  animation: update-pulse 2.2s ease-in-out infinite;
+}
+#btn-update:active { background: var(--hanko); opacity: .85; transform: scale(.94); }
+@keyframes update-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--hanko) 55%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.update-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 2rem);
+  background: var(--card);
+  border: var(--bd) solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  padding: .9rem;
+  z-index: 50;
+}
+.update-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px; right: 14px;
+  width: 12px; height: 12px;
+  background: var(--card);
+  border-left: var(--bd) solid var(--line);
+  border-top: var(--bd) solid var(--line);
+  transform: rotate(45deg);
+}
+.update-pop-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem;
+  margin-bottom: .5rem;
+}
+.update-pop-title { font-weight: 700; font-size: .92rem; color: var(--hanko); }
+.update-pop-close { background: none; border: none; color: var(--ink-soft); width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; }
+.update-pop-close .ic { width: 1em; height: 1em; }
+.update-pop-close:active { background: var(--paper-2); }
+.update-pop-version { font-size: .8rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.update-pop-notes {
+  font-size: .82rem; line-height: 1.55; color: var(--ink);
+  background: var(--paper-2); border-radius: var(--r-sm);
+  padding: .6rem .7rem; margin-bottom: .7rem;
+  max-height: 160px; overflow-y: auto;
+  white-space: pre-wrap;
+}
+.update-pop-progress {
+  height: 6px; border-radius: 3px; background: var(--paper-2);
+  overflow: hidden; margin-bottom: .6rem;
+}
+.update-pop-progress-fill { height: 100%; background: var(--hanko); transition: width .25s ease; }
+
+/* ─── FURİGANA OTOMASYONU (offline kuromoji) ────────────────────────── */
+.furigana-mark-row { margin-top: .4rem; }
+.btn-sm { font-size: .8rem; padding: .45rem .8rem; min-height: 0; }
+
+.fm-editor {
+  margin-top: .5rem; padding: .7rem; border-radius: var(--r-sm);
+  background: var(--paper-2); border: var(--bd) solid var(--line);
+}
+.fm-editor-hint { font-size: .76rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.fm-sentence { font-size: 1.05rem; line-height: 2; }
+.fm-token {
+  cursor: pointer; border-radius: 4px; padding: 0 1px;
+}
+.fm-token.fm-kanji { background: color-mix(in srgb, var(--hanko) 10%, transparent); }
+.fm-token.fm-kanji:active { background: color-mix(in srgb, var(--hanko) 22%, transparent); }
+.fm-token.fm-marked { background: var(--jade); color: #fff; }
+.fm-token.fm-marked rt { color: #fff; }
+.fm-token-popover {
+  margin-top: .6rem; padding: .6rem; border-radius: var(--r-sm);
+  background: var(--card); border: var(--bd) solid var(--line);
+}
+
+/* ─── STREAK / TAKVİM ────────────────────────────────────────────────── */
+.streak-card {
+  display: flex; align-items: center; gap: .9rem;
+  margin-bottom: 1rem; padding: .8rem .9rem;
+}
+.streak-flame {
+  flex-shrink: 0; width: 2.1em; height: 2.1em;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .2s ease;
+}
+.streak-flame .ic { width: 100%; height: 100%; }
+.streak-flame.lvl-cold { color: var(--ink-soft); }
+.streak-flame.lvl-warm { color: var(--gold); }
+.streak-flame.lvl-hot { color: var(--hanko); transform: scale(1.12); }
+.streak-flame.lvl-blaze {
+  color: var(--hanko); transform: scale(1.28);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--hanko) 45%, transparent));
+}
+.streak-info { flex: 1; min-width: 0; }
+.streak-count { font-size: 1.3rem; font-weight: 700; line-height: 1.15; }
+.streak-count .unit { font-size: .82rem; font-weight: 500; color: var(--ink-soft); margin-left: .25rem; }
+.streak-sub { font-size: .78rem; color: var(--ink-soft); margin-top: .1rem; }
+.streak-week-grid { display: flex; gap: .32rem; flex-shrink: 0; }
+.streak-day {
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+}
+.streak-day-label { font-size: .6rem; color: var(--ink-soft); line-height: 1; }
+.streak-day-dot {
+  width: 1.05em; height: 1.05em; border-radius: 50%;
+  background: var(--paper-2);
+  border: var(--bd) solid var(--line);
+}
+.streak-day-dot.is-active { background: var(--hanko); border-color: var(--hanko); }
+.streak-day-dot.is-shielded { background: var(--sky); border-color: var(--sky); }
+.streak-day.is-today .streak-day-label { color: var(--ink); font-weight: 700; }
+.streak-day.is-today .streak-day-dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--ink-soft); }
+
+.streak-detail-head {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem; margin-bottom: 1rem;
+}
+.streak-detail-flame { width: 3.2em; height: 3.2em; flex-shrink: 0; }
+.streak-detail-flame .ic { width: 100%; height: 100%; }
+.streak-detail-count { font-size: 2rem; font-weight: 700; line-height: 1; }
+.streak-detail-label { font-size: .82rem; color: var(--ink-soft); margin-top: .2rem; }
+
+.shield-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .8rem .9rem; margin-bottom: 1rem;
+}
+.shield-icon { color: var(--sky); flex-shrink: 0; width: 1.4em; height: 1.4em; }
+.shield-icon .ic { width: 100%; height: 100%; }
+.shield-text { flex: 1; font-size: .86rem; }
+.shield-count { font-weight: 700; }
+
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.cal-nav-title { font-weight: 700; font-size: .95rem; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .35rem; }
+.cal-weekday { text-align: center; font-size: .68rem; color: var(--ink-soft); padding-bottom: .3rem; }
+.cal-day {
+  aspect-ratio: 1; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; background: var(--paper-2); color: var(--ink-soft);
+}
+.cal-day.is-active { background: var(--hanko); color: #fff; font-weight: 600; }
+.cal-day.is-shielded { background: var(--sky); color: #fff; font-weight: 600; }
+.cal-day.is-today { box-shadow: inset 0 0 0 2px var(--ink-soft); }
+.cal-day.is-empty { background: transparent; }
+.cal-legend { display: flex; gap: 1rem; margin-top: .8rem; font-size: .76rem; color: var(--ink-soft); }
+.cal-legend-item { display: flex; align-items: center; gap: .35rem; }
+.cal-legend-dot { width: .85em; height: .85em; border-radius: 50%; }
+/* Tıklanabilir gün hücreleri + seçili gün halkası + detay paneli */
+.cal-day.is-clickable { cursor: pointer; transition: filter .12s ease; }
+.cal-day.is-clickable:hover { filter: brightness(1.1); }
+.cal-day.is-selected { box-shadow: inset 0 0 0 2px var(--gold); }
+.cal-day.is-selected.is-today { box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 2px var(--ink-soft); }
+.cal-day-details { margin-top: .9rem; padding: .85rem 1rem; background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.cal-detail-date { font-weight: 700; font-size: .9rem; margin-bottom: .5rem; color: var(--ink); }
+.cal-detail-row { font-size: .82rem; color: var(--ink-soft); padding: .15rem 0; }
+.cal-detail-empty { font-size: .82rem; color: var(--ink-soft); font-style: italic; }
+
+
+/* =====================================================================
+   TEST MANAGER & EDITOR
+   ===================================================================== */
+.test-actions-row { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.test-actions-row .btn { flex: 1; min-width: 130px; }
+
+/* Compact top-right action menu shared by deck, folder & test cards */
+.card-menu { position: relative; flex-shrink: 0; }
+.btn-row .card-menu { align-self: center; }
+.card-menu-btn { width: 32px; height: 32px; opacity: .55; transition: opacity .15s; }
+.card-menu-btn:hover, .card-menu-btn:focus-visible { opacity: 1; }
+.card-menu-btn .ic { width: 16px; height: 16px; }
+.card-menu-pop {
+  position: absolute; top: 100%; right: 0; z-index: 30;
+  min-width: 160px; margin-top: .3rem; padding: .3rem;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-md); box-shadow: var(--sh-md);
+}
+.card-menu-pop button {
+  display: flex; align-items: center; gap: .55rem; width: 100%;
+  padding: .55rem .6rem; background: transparent; border: none;
+  border-radius: var(--r-sm); text-align: left;
+  font-size: .9rem; color: var(--ink); cursor: pointer;
+}
+.card-menu-pop button:hover { background: var(--paper-2); }
+.card-menu-pop button.danger { color: var(--hanko); }
+.card-menu-pop .ic { width: 16px; height: 16px; flex-shrink: 0; }
+.te-question-block { margin-bottom: .75rem; }
+.te-option-row {
+  display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem;
+}
+.te-option-row input[type="radio"] {
+  width: 20px; height: 20px; min-height: auto; flex-shrink: 0;
+  accent-color: var(--hanko);
+}
+.te-option-row input[type="text"] { flex: 1; }
+.te-option-row .icon-btn { width: 36px; height: 36px; box-shadow: none; flex-shrink: 0; }
+.te-img-preview { margin-top: .5rem; }
+.te-img-preview img {
+  max-width: 150px; border-radius: var(--r-sm);
+  border: var(--bd) solid var(--line); display: block; margin-bottom: .4rem;
+}
+.te-options-area { margin-top: .5rem; }
+
+/* =====================================================================
+   TEST VIEW (Play) & TEST RESULTS
+   ===================================================================== */
+.tv-header { margin-bottom: .75rem; }
+.tv-title { font-weight: 700; font-size: 1.02rem; margin-bottom: .4rem; }
+.tv-progress-text { font-size: .82rem; color: var(--ink-soft); margin-bottom: .5rem; }
+.tv-question-card { padding: 1.5rem; }
+.tv-image { max-width: 100%; object-fit: contain; border-radius: var(--r-sm); margin-bottom: 1rem; display: block; }
+.tv-prompt { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.2rem; line-height: 1.5; }
+.tv-options { display: flex; flex-direction: column; gap: .5rem; }
+.tv-option {
+  background: var(--card); border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md); padding: .8rem 1rem; text-align: left;
+  font-size: .95rem; font-weight: 600; justify-content: flex-start;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.tv-option:active:not(:disabled) { background: var(--paper-2); }
+.tv-option.correct { background: var(--jade-bg); border-color: var(--jade); color: var(--jade); }
+.tv-option.wrong { background: var(--hanko-bg); border-color: var(--hanko); color: var(--hanko); }
+.tv-tf { flex-direction: row; }
+.tv-tf .tv-option { flex: 1; text-align: center; justify-content: center; }
+.tv-fill-wrap { display: flex; flex-direction: column; gap: .5rem; }
+.tv-fill-input.correct { border-color: var(--jade); background: var(--jade-bg); }
+.tv-fill-input.wrong { border-color: var(--hanko); background: var(--hanko-bg); }
+.tv-correct-hint { font-size: .85rem; color: var(--jade); font-weight: 600; margin-top: .3rem; }
+
+.tr-score-card { text-align: center; padding: 2rem 1rem; }
+.tr-score-icon { color: var(--jade); line-height: 0; margin-bottom: .8rem; }
+.tr-score-icon .ic-lg { width: 52px; height: 52px; }
+.tr-score-title { font-size: .92rem; color: var(--ink-soft); margin-bottom: .3rem; }
+.tr-score-text { font-size: 1.3rem; font-weight: 700; }
+.tr-score-pct { font-size: 2rem; font-weight: 700; color: var(--hanko); margin-top: .3rem; }
+.tr-answer-item { padding: .8rem 1rem; }
+.tr-answer-head { display: flex; align-items: center; gap: .5rem; }
+.tr-answer-num { font-weight: 700; color: var(--ink-soft); flex-shrink: 0; }
+.tr-answer-prompt { flex: 1; font-weight: 600; min-width: 0; word-break: break-word; }
+.tr-answer-icon { line-height: 0; flex-shrink: 0; }
+.tr-correct .tr-answer-icon { color: var(--jade); }
+.tr-wrong .tr-answer-icon { color: var(--hanko); }
+.tr-correct { border-left: 3px solid var(--jade); }
+.tr-wrong { border-left: 3px solid var(--hanko); }
+.tr-answer-detail { margin-top: .4rem; font-size: .85rem; color: var(--ink-soft); }
+.tr-label { font-weight: 600; }
+
+/* =====================================================================
+   VIEW ROUTER
+   ===================================================================== */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn .18s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* =====================================================================
+   GENERIC CARD
+   ===================================================================== */
+.card {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+  padding: 1.1rem;
+  margin-bottom: .75rem;
+}
+.card-row { display: flex; align-items: flex-start; gap: .75rem; }
+.card-title { font-weight: 700; font-size: 1.02rem; flex: 1; min-width: 0; word-break: break-word; }
+.deck-meta { font-size: .82rem; color: var(--ink-soft); margin-top: .2rem; }
+/* Invisible full-width title button inside a card row (deck & test cards). */
+.card-title-btn { text-align: left; justify-content: flex-start; flex: 1; min-width: 0; padding: 0; }
+.card-title-btn .card-title { display: block; }
+/* Indented child card in a tree (decks & tests share this hairline). */
+.card-child { border-left: 3px solid var(--line); }
+/* Compact action row inside deck/test cards (tighter than the default .btn-row). */
+.btn-row.card-actions { margin-top: .6rem; }
+/* Muted inline note that fills the slot where a primary action would sit. */
+.action-note { display: flex; align-items: center; flex: 1; }
+.badge-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .25rem .6rem;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.badge .ic { width: 13px; height: 13px; stroke-width: 2; margin-right: .3em; margin-left: -.05em; }
+.badge-sky   { background: var(--sky-bg);   color: var(--sky);   }
+.badge-jade  { background: var(--jade-bg);  color: var(--jade);  }
+.badge-gold  { background: var(--gold-bg);  color: var(--gold);  }
+.badge-hanko { background: var(--hanko-bg); color: var(--hanko); }
+.badge-soft  { background: var(--paper-2);  color: var(--ink-soft); }
+
+/* =====================================================================
+   COMMUNITY HUB (Market)
+   ===================================================================== */
+.community-hub-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .35rem; }
+.community-hub-head .section-hd { margin: 0; }
+.head-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+.community-hub-sub { font-size: .85rem; color: var(--ink-soft); margin-bottom: 1rem; }
+/* Deck picker rows in the publish modal (full-width ghost rows). */
+.deck-pick-list { display: flex; flex-direction: column; gap: .3rem; }
+.deck-pick-btn { width: 100%; text-align: left; justify-content: space-between; }
+.deck-pick-btn .text-muted { font-size: .8rem; }
+.community-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+.community-card { margin-bottom: 0; display: flex; flex-direction: column; }
+.community-desc { font-size: .9rem; color: var(--ink); margin-top: .45rem; overflow-wrap: anywhere; }
+.community-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.community-card-foot { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .8rem; }
+.community-dl-count { display: inline-flex; align-items: center; gap: .3em; font-size: .82rem; white-space: nowrap; }
+.community-dl-count .ic { width: 15px; height: 15px; }
+/* Curated pack cards: quietly distinct from user uploads — sky hairline plus a
+   small badge hierarchy (curated + level emphasized, details in one meta line). */
+.pack-card { border-color: var(--sky); }
+.pack-card-head { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .55rem; }
+.pack-meta { margin-top: .55rem; }
+.pack-grid { margin-bottom: 1.4rem; }
+@media (min-width: 768px) { .is-electron .community-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .is-electron .community-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* =====================================================================
+   BUTTONS — all sized to --tap, stacked when tight rather than squeezed
+   ===================================================================== */
+.btn {
+  min-height: var(--tap);
+  padding: 0 1.1rem;
+  border-radius: var(--r-md);
+  font-size: .92rem;
+  font-weight: 700;
+  white-space: normal;
+  word-break: keep-all;
+}
+.btn .ic { width: 1.15em; height: 1.15em; }
+.btn:active { transform: scale(.97); }
+.btn-block { width: 100%; }
+.btn-primary { background: var(--ink); color: var(--paper); box-shadow: var(--sh-sm); }
+/* Active states derive from tokens so they hold up in sumi (light-ink) too —
+   a hardcoded #000 fill made pressed primary text unreadable in dark mode. */
+.btn-primary:active { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); box-shadow: none; }
+.btn-ghost   { background: var(--card); color: var(--ink); border: var(--bd-ctrl) solid var(--line); }
+.btn-ghost:active { background: var(--paper-2); }
+.btn-danger  { background: var(--hanko-bg); color: var(--hanko); }
+.btn-danger:active { background: color-mix(in srgb, var(--hanko) 12%, var(--hanko-bg)); }
+@media (hover: hover) {
+  .btn-ghost:hover { background: var(--paper-2); }
+  .icon-btn:hover { background: var(--paper-2); }
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+.btn-row .btn { flex: 1 1 auto; min-width: 0; }
+
+/* =====================================================================
+   GLOBAL STATS (deck list top)
+   ===================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: .55rem;
+  margin-bottom: 1.1rem;
+}
+#global-stats { grid-template-columns: repeat(4, minmax(0,1fr)); }
+@media (max-width: 420px) {
+  #global-stats {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+}
+.stat-box {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .7rem .4rem;
+  text-align: center;
+}
+.stat-num { font-size: 1.35rem; font-weight: 700; line-height: 1.15; }
+.stat-lbl { font-size: .68rem; color: var(--ink-soft); margin-top: .15rem; }
+
+/* =====================================================================
+   CARD DIRECTION — deck-level segmented control (deck detail, near
+   Study/Browse). Generic front/back wording only, no language labels.
+   ===================================================================== */
+.direction-row { margin-bottom: 1rem; }
+.direction-label {
+  display: block;
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: .4rem;
+}
+.direction-seg {
+  display: flex;
+  background: var(--paper-2);
+  border-radius: var(--r-md);
+  padding: 3px;
+  gap: 3px;
+}
+.direction-seg-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: .82rem;
+  font-weight: 700;
+  padding: .55rem .5rem;
+  border-radius: calc(var(--r-md) - 3px);
+  white-space: normal;
+  line-height: 1.25;
+  transition: background .2s, color .2s;
+}
+.direction-seg-btn.is-active { background: var(--card); color: var(--ink); box-shadow: var(--sh-sm); }
+.direction-seg-btn:active { transform: scale(.98); }
+.direction-hint { font-size: .78rem; color: var(--ink-soft); margin-top: .4rem; line-height: 1.4; }
+
+/* =====================================================================
+   7-DAY REVIEW FORECAST (pure CSS bar chart)
+   ===================================================================== */
+.forecast-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: .9rem;
+}
+.forecast-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.forecast-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.forecast-bar-track {
+  width: 100%;
+  height: 130px;
+  box-sizing: border-box;
+  padding-top: 1.15rem; /* tepe boşluğu: yüksek çubukların üstündeki sayı kırpılmasın */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+.forecast-count {
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.forecast-bar {
+  width: 70%;
+  max-width: 30px;
+  min-height: 3px;
+  background-color: var(--jade);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+.forecast-bar.is-empty {
+  background-color: var(--line);
+  min-height: 2px;
+}
+.forecast-label {
+  font-size: .68rem;
+  color: var(--ink-soft);
+  margin-top: .45rem;
+  white-space: nowrap;
+}
+.forecast-label.is-today {
+  color: var(--hanko);
+  font-weight: 700;
+}
+
+/* =====================================================================
+   SECTION HEADER
+   ===================================================================== */
+.section-hd {
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 1.4rem 0 .6rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-hd::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.section-hd-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-hd-row .section-hd { flex: 1; min-width: 0; margin-right: 0; }
+/* Inline header action (search toggle): compact but still a comfortable target. */
+.section-hd-row .icon-btn { width: 40px; height: 40px; font-size: .9rem; flex-shrink: 0; }
+
+/* =====================================================================
+   MASTERED BANNER
+   ===================================================================== */
+.mastered-banner {
+  border: var(--bd-ctrl) solid var(--jade);
+  background: var(--jade-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.mastered-banner .mb-top { display: flex; align-items: center; gap: .7rem; margin-bottom: .1rem; }
+.mastered-banner .mb-icon { color: var(--jade); line-height: 0; }
+.mastered-banner .mb-icon .ic { width: 26px; height: 26px; }
+.mastered-banner .mb-title { font-weight: 700; font-size: .98rem; color: var(--ink); }
+.mastered-banner .mb-sub { font-size: .8rem; color: var(--jade); }
+
+/* =====================================================================
+   CARD LIST ITEM (deck detail) — full row is one big tap target
+   ===================================================================== */
+.card-list-item {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .7rem .85rem;
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  min-width: 0;
+}
+.cli-kanji {
+  font-size: 1.6rem;
+  line-height: 1;
+  min-width: 2.6rem;
+  /* Uzun kanji/cümle alanı tüm satırı kaplayıp okuma+anlamı taşırmasın:
+     genişliği sınırla, taşınca ellipsis (Task 2 — sınır taşması). */
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  flex-shrink: 0;
+}
+.cli-info { flex: 1; min-width: 0; }
+/* Furigana/okuma satırı flexbox tarafından sıkıştırılıp Japonca karakterleri
+   dikey istiflemesin: tek satır + taşınca ellipsis (Task 2). */
+.cli-info .cli-furi { font-weight: 700; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cli-info .cli-meaning { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cli-actions { display: flex; gap: .25rem; flex-shrink: 0; }
+.cli-actions .icon-btn { width: 40px; height: 40px; font-size: 1rem; box-shadow: none; }
+/* Kart satırına tıklanınca önizleme modalı açılır — tıklanabilir görünüm. */
+.card-list-item.clickable-row { cursor: pointer; transition: background .15s, border-color .15s; }
+.card-list-item.clickable-row:hover { background: var(--paper-2); border-color: var(--line); }
+.card-list-item.clickable-row:active { transform: scale(.995); }
+/* Deste collapse (chevron) toggle butonu: küçük, soluk, sade. */
+.deck-collapse-btn { width: 30px; height: 30px; box-shadow: none; flex-shrink: 0; color: var(--ink-soft); }
+.deck-sub-badge { font-weight: 600; vertical-align: middle; }
+
+/* =====================================================================
+   INLINE SEARCH BAR — Decks başlığındaki kompakt arama + deste-kapsamlı arama
+   (artık ayrı bir nav view'ı değil; Search.js her ikisini de bu sınıflarla
+   birden çok yere basar, id'leri scope'a göre benzersizleşir).
+   ===================================================================== */
+.deck-search-bar { margin-bottom: 1rem; }
+.search-header-bar {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-input-wrap .ic-search {
+  position: absolute;
+  left: .8rem;
+  color: var(--ink-soft);
+  width: 18px; height: 18px;
+}
+.search-input {
+  width: 100%;
+  padding: .65rem 2.2rem .65rem 2.4rem;
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md);
+  font-size: .95rem;
+  color: var(--ink);
+  transition: border-color .2s;
+}
+/* Focus uses the app-wide informational token (all other inputs focus sky). */
+.search-input:focus { outline: none; border-color: var(--sky); }
+/* Clear "X" input'un İÇİNDE, küçük ve şeffaf — ayrı büyük kare buton değil. */
+.search-clear-btn {
+  position: absolute;
+  right: .3rem;
+  width: 28px; height: 28px;
+  background: none; border: none;
+  color: var(--ink-soft);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+}
+.search-clear-btn:active { background: var(--line-soft); }
+.search-clear-btn .ic { width: 15px; height: 15px; }
+.search-filter {
+  /* Global `select { width:100% }` kuralını ez — aksi halde flex-basis tüm
+     satırı kaplayıp yanındaki arama input'unu neredeyse sıfır genişliğe sıkıştırıyordu. */
+  width: auto;
+  flex-shrink: 0;
+  background: var(--card);
+  border: var(--bd-ctrl) solid var(--line);
+  border-radius: var(--r-md);
+  padding: 0 .6rem;
+  font-size: .85rem;
+  color: var(--ink);
+}
+.search-badge-row {
+  margin-bottom: .8rem;
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+.search-deck-badge {
+  background: var(--sky-bg);
+  color: var(--sky);
+  font-size: .7rem;
+  padding: .15rem .45rem;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  display: inline-block;
+  margin-top: .25rem;
+}
+/* Search result rows reuse the card-list row, but swap the emphasis:
+   ruby reading shrinks into the glyph slot, meaning is promoted to the
+   lead line and the example sentence is demoted to the meta line. */
+.search-result .cli-kanji { font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+.search-result .cli-kanji .fc-ruby { font-size: 1rem; margin: 0; }
+.search-result .cli-meaning { font-size: .9rem; font-weight: 600; color: var(--ink); }
+.search-result .cli-furi { font-weight: 400; color: var(--ink-soft); font-size: .8rem; margin-top: .15rem; }
+
+/* =====================================================================
+   STUDY SCREEN
+   ===================================================================== */
+.study-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: 1.1rem;
+}
+.study-progress {
+  flex: 1;
+  height: 6px;
+  background: var(--line-soft);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.study-progress-fill {
+  height: 100%;
+  background: var(--hanko);
+  border-radius: var(--r-pill);
+  transition: width .25s ease;
+}
+.study-count { font-size: .8rem; color: var(--ink-soft); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+.flashcard {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 280px;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 1.1rem;
+}
+.fc-flip-container {
+  perspective: 1000px;
+  margin-bottom: 1.1rem;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fc-flip-container:active { cursor: grabbing; }
+.fc-flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .5s ease;
+}
+.fc-flip-inner.no-transition { transition: none; }
+.fc-flip-front,
+.fc-flip-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  min-height: 280px;
+  max-height: 80vh;
+  padding: 2.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+/* Göz at / durum rozeti güvenli alanı: rozet barındıran yüzlerde üst dolgu
+   artırılır ki uzun metnin ruby/furigana satırı rozetle çakışmasın (Task 4).
+   Hem flip yüzleri (.fc-flip-front/back) hem cevap-açık kart (.flashcard). */
+.fc-flip-front:has(.fc-state-badge),
+.fc-flip-back:has(.fc-state-badge),
+.flashcard:has(.fc-state-badge) { padding-top: 3.4rem; }
+.fc-flip-front::-webkit-scrollbar,
+.fc-flip-back::-webkit-scrollbar { display: none; }
+.fc-flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.fc-flip-hint {
+  text-align: center;
+  font-size: .72rem;
+  color: var(--ink-soft);
+  margin-top: -.5rem;
+  margin-bottom: .8rem;
+  opacity: .7;
+}
+.fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
+.fc-kanji {
+  font-size: clamp(4.5rem, 24vw, 8rem);
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--ink);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+/* Uzun cümlelerde dev font kart sınırlarını taşırmasın: metin uzadıkça
+   CardView küçültücü sınıf ekler (kanjiSizeClass). */
+.fc-kanji.fc-kanji-sm { font-size: clamp(1.6rem, 8vw, 2.8rem); line-height: 1.6; }
+.fc-kanji.fc-kanji-xs { font-size: clamp(1.1rem, 5vw, 1.6rem); line-height: 1.8; }
+/* Reverse-direction front prompt (card.meaningTr): reuses .fc-kanji's safe
+   sizing/overflow scaffold but swaps the CJK serif for the app's generic
+   sans stack — this text is prose in the UI language, not a kanji glyph. */
+.fc-prompt { font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 700; }
+.fc-back { width: 100%; text-align: center; }
+.fc-ruby {
+  font-size: 2.1rem;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  line-height: 2;
+  margin-bottom: .3rem;
+}
+.fc-furigana { font-size: 1.25rem; color: var(--ink-soft); margin-bottom: .6rem; }
+.fc-meaning { font-size: 1.2rem; font-weight: 700; margin-bottom: .6rem; }
+/* Short centered hairline: separates meaning from the example without slicing
+   the card in two — calmer back-face hierarchy. */
+.fc-divider { border: none; border-top: 1px solid var(--line); width: min(140px, 44%); margin: .9rem auto; }
+.fc-example { font-size: 1.05rem; line-height: 2.2; }
+.fc-example .hl { color: var(--hanko); font-weight: 700; }
+.fc-example ruby.hl rt { color: var(--ink-soft); font-weight: 400; }
+.kanji-clickable { border-bottom: 1px dashed var(--ink-soft); cursor: pointer; }
+.fc-flip-front .kanji-clickable,
+.fc-preview-front .kanji-clickable {
+  color: var(--hanko);
+  font-weight: 700;
+  border-bottom: none;
+  cursor: default;
+  pointer-events: none;
+}
+/* Arka yüzdeki kanji'ler örnek cümlelerdeki vurgu rengiyle (hanko) öne çıkar. */
+.fc-back .kanji-clickable,
+.fc-preview-back .kanji-clickable {
+  color: var(--hanko);
+  font-weight: 700;
+  border-bottom-color: var(--hanko);
+}
+/* Centered glyph header shared by the Kanji and Word detail modals. */
+.modal-glyph-head { text-align: center; margin-bottom: 1.15rem; }
+.modal-glyph-head .fc-kanji { font-size: 4rem; line-height: 1; }
+.kanji-detail-rows { display: flex; flex-direction: column; gap: .2rem; }
+.kanji-detail-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.kanji-detail-row:last-child { border-bottom: none; }
+.kanji-detail-label { font-size: .8rem; flex-shrink: 0; }
+.kanji-detail-value { font-weight: 600; text-align: right; }
+/* ─── JUKUGO SMART WORD MODAL ─────────────────────────────────────────
+   Arka yüzde kanji içeren tüm kelime bloğu tek tıklanabilir birim olur
+   (bağlamsal Word Modal açar). Kesik çizgi + hanko vurgusu ile belli edilir. */
+.word-clickable {
+  cursor: pointer;
+  color: var(--hanko);
+  font-weight: 700;
+  border-bottom: 1px dashed var(--hanko);
+}
+.word-clickable rt { color: var(--ink-soft); font-weight: 400; }
+.word-detail-head { font-size: 2.6rem; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.word-section-label { font-size: .8rem; color: var(--ink-soft); font-weight: 600; margin: 0 0 .5rem; }
+.word-ai-section { margin-bottom: 1.2rem; }
+.word-ai-output { font-style: italic; line-height: 1.55; min-height: 1.4em; }
+.kanji-chip-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.kanji-chip {
+  font-size: 1.45rem; font-weight: 700; line-height: 1;
+  padding: .45rem .7rem; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--paper-2);
+  color: var(--ink); cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.kanji-chip:hover { background: var(--paper); }
+.kanji-chip:active { transform: scale(.94); }
+.fc-exampletr { font-size: .86rem; color: var(--ink-soft); margin-top: .4rem; font-style: italic; }
+
+/* ─── KART ÖNİZLEME MODALI (deste kart listesi → satıra tık) ───────────
+   Çalışma ekranındaki cevap kartıyla BİREBİR aynı `.flashcard` + `.fc-back`
+   yapısını kullanır (arka plan/kenarlık/gölge/padding base `.flashcard`'tan
+   miras alınır → görsel olarak çalışma kartıyla aynı). Modalda iki kart üst
+   üste sığsın diye yalnızca min-height düşürülür ve alt boşluk kaldırılır. */
+.card-preview-modal { display: flex; flex-direction: column; gap: .9rem; }
+.card-preview-modal .flashcard {
+  min-height: 150px;
+  margin-bottom: 0;
+}
+/* Ön yüz kanji'si çalışma ön yüzü gibi hanko vurgulu + kalın (düz metin,
+   tıklanamaz). */
+.card-preview-modal .cpm-front .fc-kanji { color: var(--hanko); font-weight: 700; }
+.card-preview-modal .fc-kanji { font-size: clamp(3rem, 16vw, 5rem); }
+/* Uzun metin (kanjiSizeClass → fc-kanji-sm/-xs) modalda dev kalmasın: base
+   `.card-preview-modal .fc-kanji` kuralıyla aynı özgüllükte (2 sınıf) olan
+   `.fc-kanji.fc-kanji-sm/-xs` kuralları kaynak sırasında geride kalıp eziliyordu;
+   modal kapsamlı (3 sınıf) override ile küçültme sınıfları geri kazandırılır. */
+.card-preview-modal .fc-kanji.fc-kanji-sm { font-size: clamp(1.5rem, 8vw, 2.6rem); }
+.card-preview-modal .fc-kanji.fc-kanji-xs { font-size: clamp(1rem, 5vw, 1.5rem); }
+
+/* ─── FLASHCARD ÖNİZLEME (kart ekleme formu) ───────────────────────── */
+.fc-preview-wrap {
+  display: none;
+  margin-bottom: .75rem;
+  position: sticky;
+  top: .5rem;
+  z-index: 5;
+}
+.fc-preview-wrap.has-content { display: block; }
+.fc-preview {
+  min-height: 180px;
+  perspective: 800px;
+  position: relative;
+}
+.fc-preview-inner {
+  min-height: 180px;
+  position: relative;
+  transition: transform .45s ease;
+  transform-style: preserve-3d;
+}
+.fc-preview-front,
+.fc-preview-back {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.4rem 1rem;
+  min-height: 180px;
+  /* Modal içi önizleme uzun metinde ekranı şişirmesin: yüksekliği sınırla,
+     içinde kaydır (gizli scrollbar), genişliği taşırma (Task 3). */
+  max-height: 40vh;
+  max-width: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.fc-preview-front::-webkit-scrollbar,
+.fc-preview-back::-webkit-scrollbar { display: none; }
+.fc-preview-back {
+  transform: rotateY(180deg);
+  position: absolute;
+  inset: 0;
+}
+.fc-preview .fc-kanji { font-size: clamp(2.5rem, 14vw, 4.5rem); }
+.fc-preview .fc-ruby { font-size: 1.8rem; line-height: 2; margin-bottom: .2rem; }
+.fc-preview .fc-furigana { font-size: 1.1rem; }
+.fc-preview .fc-meaning { font-size: 1.05rem; font-weight: 700; margin-bottom: .6rem; }
+.fc-preview-sparse .fc-preview .fc-ruby { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+.fc-preview-sparse .fc-preview .fc-meaning { font-size: 1.2rem; }
+.fc-preview .fc-divider { margin: .5rem auto; }
+.fc-preview .fc-example { font-size: .9rem; line-height: 2.1; }
+.fc-preview .fc-exampletr { font-size: .78rem; }
+.fc-preview-label {
+  font-size: .7rem;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: .3rem 0 .5rem;
+  letter-spacing: .03em;
+}
+
+#btn-show {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1.02rem;
+  font-weight: 700;
+  box-shadow: var(--sh-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+}
+#btn-show:active { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); transform: scale(.95); box-shadow: none; }
+
+/* Answer grid: ALWAYS 2x2, generous targets, no neighbor mis-taps */
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+}
+.ans-btn {
+  min-height: 64px;
+  border-radius: var(--r-md);
+  font-size: .9rem;
+  font-weight: 700;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .5rem .3rem;
+  border: 1.5px solid transparent;
+  word-break: break-word;
+  white-space: normal;
+}
+.ans-btn:active { transform: scale(.95); }
+.ans-btn .next-time { font-size: .72rem; font-weight: 400; opacity: .85; }
+/* Grade → color map is semantic and MUST mirror the swipe glow layers exactly:
+   Again=hanko(glow-left), Hard=gold(glow-down), Good=sky(glow-right),
+   Easy=jade(glow-up). Do not change one side without the other. */
+.ans-again { background: var(--hanko-bg); color: var(--hanko); border-color: color-mix(in srgb, var(--hanko) 22%, transparent); }
+.ans-hard  { background: var(--gold-bg);  color: var(--gold);  border-color: color-mix(in srgb, var(--gold) 22%, transparent); }
+.ans-good  { background: var(--sky-bg);   color: var(--sky);   border-color: color-mix(in srgb, var(--sky) 22%, transparent); }
+.ans-easy  { background: var(--jade-bg);  color: var(--jade);  border-color: color-mix(in srgb, var(--jade) 22%, transparent); }
+.ans-again:active { background: color-mix(in srgb, var(--hanko) 12%, var(--hanko-bg)); }
+.ans-hard:active  { background: color-mix(in srgb, var(--gold) 12%, var(--gold-bg)); }
+.ans-good:active  { background: color-mix(in srgb, var(--sky) 12%, var(--sky-bg)); }
+.ans-easy:active  { background: color-mix(in srgb, var(--jade) 12%, var(--jade-bg)); }
+
+.study-done { text-align: center; padding: 2.6rem 1rem; }
+.study-done .done-icon { margin-bottom: .8rem; color: var(--jade); line-height: 0; }
+.study-done h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; }
+.study-done p { color: var(--ink-soft); margin-bottom: 1.4rem; }
+
+/* ─── DECK COMPLETION CELEBRATION (v2.5.0) ─────────────────────────── */
+.done-burst {
+  font-size: 3.4rem; line-height: 1; margin-bottom: .5rem;
+  animation: donePop .55s cubic-bezier(.2, .9, .3, 1.5) both;
+}
+@keyframes donePop {
+  0%   { transform: scale(0);    opacity: 0; }
+  60%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.done-title { font-size: 1.55rem; font-weight: 800; color: var(--ink); margin-bottom: .2rem; }
+.done-sub { color: var(--ink-soft); margin-bottom: 1.5rem; }
+.done-stats { display: flex; gap: .8rem; justify-content: center; margin-bottom: 1.7rem; }
+.done-stat {
+  background: var(--card); border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md); box-shadow: var(--sh-sm);
+  padding: 1rem 1.2rem; min-width: 112px;
+  animation: doneRise .5s ease both; animation-delay: .12s;
+}
+@keyframes doneRise {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.done-stat-num {
+  font-size: 2rem; font-weight: 800; color: var(--ink); line-height: 1;
+  display: flex; align-items: center; justify-content: center; gap: .25rem;
+}
+.done-stat-label { font-size: .72rem; color: var(--ink-soft); margin-top: .4rem; letter-spacing: .02em; }
+.done-fire { display: inline-block; transform-origin: center 70%; animation: fireFlicker 1.1s ease-in-out infinite; }
+@keyframes fireFlicker {
+  0%, 100% { transform: scale(1)    rotate(-3deg); }
+  50%      { transform: scale(1.2)  rotate(3deg); }
+}
+.done-btn { min-width: 190px; }
+
+/* ─── 4-WAY SWIPE STAGE + DIRECTIONAL EDGE GLOW (v2.5.0) ────────────── */
+.swipe-stage { position: relative; margin-bottom: 1.1rem; }
+.swipe-card {
+  touch-action: none;      /* claim all pointer axes for custom drag */
+  will-change: transform;
+  margin-bottom: 0;
+}
+.swipe-card.snapping { transition: transform .5s cubic-bezier(.22, .9, .28, 1.3); }
+.swipe-card.flying   { transition: transform .28s ease-in, opacity .28s ease-in; }
+/* Soft halo ring behind the card; only the inset margin shows around the edges. */
+.swipe-glow {
+  position: absolute; inset: -22px; z-index: -1;
+  pointer-events: none; overflow: hidden;
+  border-radius: calc(var(--r-lg) + 22px);
+}
+.glow-layer { position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease; }
+.swipe-stage.is-dragging .glow-layer { transition: none; } /* track finger 1:1 */
+.glow-left  { background: radial-gradient(ellipse 65% 90% at left center,   color-mix(in srgb, var(--hanko) 72%, transparent), transparent 72%); }
+.glow-right { background: radial-gradient(ellipse 65% 90% at right center,  color-mix(in srgb, var(--sky)   72%, transparent), transparent 72%); }
+.glow-up    { background: radial-gradient(ellipse 90% 65% at center top,    color-mix(in srgb, var(--jade)  72%, transparent), transparent 72%); }
+.glow-down  { background: radial-gradient(ellipse 90% 65% at center bottom, color-mix(in srgb, var(--gold)  72%, transparent), transparent 72%); }
+.swipe-hint {
+  text-align: center; font-size: .72rem; color: var(--ink-soft);
+  opacity: .7; margin: -.4rem 0 .8rem;
+}
+
+/* =====================================================================
+   FORMS
+   ===================================================================== */
+.form-group { margin-bottom: 1rem; }
+.form-hint { font-size: .78rem; color: var(--ink-soft); margin-top: .35rem; }
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+.settings-item {
+  background: var(--card);
+  border: var(--bd) solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  padding: .75rem .9rem;
+  margin-bottom: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.si-row { display: flex; align-items: center; gap: .8rem; }
+.si-label { flex: 1; font-size: .9rem; min-width: 0; display: flex; align-items: center; gap: .4rem; }
+.si-label small { display: block; font-size: .74rem; color: var(--ink-soft); margin-top: .1rem; }
+.si-input { width: 92px; text-align: right; min-height: 42px; flex-shrink: 0; }
+select.si-input { text-align: left; }
+.si-info-btn {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--paper-2);
+  color: var(--ink-soft); font-size: .72rem; font-weight: 800; flex-shrink: 0;
+  border: 1px solid var(--line-soft); line-height: 1;
+}
+.si-info-btn:active { background: var(--line-soft); }
+.si-info-panel {
+  display: none; background: var(--paper-2); border-radius: var(--r-sm);
+  padding: .7rem .8rem; font-size: .82rem; color: var(--ink); line-height: 1.5;
+}
+.si-info-panel.show { display: block; }
+.danger-zone {
+  background: var(--hanko-bg);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Versiyon belirteci */
+.version-tag {
+  text-align: center; font-size: .76rem; color: var(--ink-soft);
+  margin-top: 1.5rem; padding-bottom: .5rem;
+}
+.version-motto {
+  font-size: .72rem; color: var(--ink-soft); opacity: .7; font-style: italic;
+}
+
+/* ─── DİL SEÇİCİ (Ayarlar > Language) ───────────────────────────────── */
+.lang-grid { display: flex; gap: .5rem; flex-wrap: wrap; }
+.lang-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: .55rem .9rem;
+  border-radius: var(--r-md);
+  border: var(--bd-ctrl) solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 700;
+  white-space: normal;
+  word-break: keep-all;
+}
+.lang-btn:active { background: var(--paper-2); transform: scale(.97); }
+.lang-btn.is-active {
+  border-color: var(--hanko);
+  background: var(--hanko-bg);
+  color: var(--hanko);
+  box-shadow: var(--sh-sm);
+}
+.lang-btn .ic { width: 1em; height: 1em; }
+
+/* ─── TEMA SEÇİCİ (Ayarlar > Görünüm) ───────────────────────────────── */
+.theme-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: .7rem; margin-bottom: .9rem;
+}
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+.theme-swatch {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: var(--bd-ctrl) solid var(--line);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-option.is-active .theme-swatch { border: 2.5px solid var(--hanko); box-shadow: var(--sh-sm); }
+.theme-swatch-check { color: #fff; width: 1.1em; height: 1.1em; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.theme-label { font-size: .72rem; color: var(--ink-soft); }
+.theme-option.is-active .theme-label { color: var(--ink); font-weight: 600; }
+
+/* =====================================================================
+   BOTTOM NAV — fixed, full-width, large equal-area tap zones
+   ===================================================================== */
+#bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: var(--card);
+  border-top: var(--bd) solid var(--line);
+  box-shadow: var(--sh-pop);
+  padding-bottom: var(--safe-b);
+  z-index: 30;
+}
+.nav-item {
+  flex: 1 1 0;
+  min-height: 64px;
+  flex-direction: column;
+  gap: .2rem;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.nav-item svg, .nav-item .ic { width: 24px; height: 24px; }
+.nav-item.active { color: var(--hanko); }
+.nav-item:active { background: var(--paper-2); }
+
+/* =====================================================================
+   TOAST
+   ===================================================================== */
+#toast {
+  position: fixed;
+  left: 50%; bottom: calc(80px + var(--safe-b));
+  transform: translateX(-50%) translateY(16px);
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  background: var(--ink);
+  color: var(--paper);
+  padding: .65rem 1.2rem;
+  border-radius: var(--r-pill);
+  font-size: .86rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s, transform .22s;
+  z-index: 100;
+  max-width: 88vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast .ic { width: 17px; height: 17px; }
+#sync-badge { display: inline-flex; line-height: 0; }
+#sync-badge .ic { width: 16px; height: 16px; }
+
+/* =====================================================================
+   MODAL — normal-flow overlay, no fixed-element tap traps
+   ===================================================================== */
+#modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,17,12,.5);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s;
+}
+#modal-bg.show { opacity: 1; visibility: visible; }
+#modal {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(20,17,12,.2);
+  padding: 1.4rem 1.1rem calc(1.6rem + var(--safe-b));
+  width: 100%;
+  max-width: 600px;
+  max-height: 86vh;
+  overflow-y: auto;
+  transform: translateY(30px);
+  transition: transform .25s;
+  position: relative;
+  z-index: 1;
+}
+#modal-bg.show #modal { transform: translateY(0); }
+#modal h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem; }
+/* Modal başlığının sol üstüne basılan geri (←) butonu. #modal position:relative
+   olduğundan #modal-body içindeki bu absolute buton modal köşesine konumlanır.
+   Buton varken başlık çakışmasın diye :has() ile başlık sağa kaydırılır. */
+.modal-back-btn {
+  position: absolute; top: 1.1rem; left: .6rem;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--ink);
+  cursor: pointer; border-radius: 50%; z-index: 2;
+  transition: background .15s, transform .1s;
+}
+.modal-back-btn:hover { background: var(--paper-2); }
+.modal-back-btn:active { transform: scale(.9); }
+#modal:has(.modal-back-btn) > #modal-title { padding-left: 2.4rem; }
+
+/* =====================================================================
+   EMPTY STATE
+   ===================================================================== */
+.empty { text-align: center; padding: 3rem 1rem; color: var(--ink-soft); }
+.empty-icon { margin-bottom: .7rem; color: var(--ink-soft); opacity: .5; line-height: 0; }
+.empty p { margin-bottom: 1.2rem; }
+/* Compact variant for section-level async states (curated packs strip etc.)
+   so a loading/error note doesn't push the page around with 3rem padding. */
+.empty-sm { padding: 1.5rem 1rem; }
+.empty-sm .empty-icon .ic-lg { width: 36px; height: 36px; }
+.empty-sm p { margin: 0 0 .9rem; }
+
+/* =====================================================================
+   DECK & TEST DRAG & DROP / MOVE  (Tests reuse the Deck visual language)
+   ===================================================================== */
+.deck-draggable, .test-draggable {
+  touch-action: pan-y;        /* allow vertical scroll, prevent browser long-press actions */
+  -webkit-touch-callout: none; /* suppress iOS callout on long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity .2s, border-color .2s, box-shadow .2s;
+  cursor: grab;
+  position: relative;
+}
+.deck-draggable:active, .test-draggable:active { cursor: grabbing; }
+
+/* ── Dragging source ─────────────────────────────────────────────── */
+.deck-draggable.dragging, .test-draggable.dragging {
+  opacity: .4;
+  border: 2px dashed var(--ink-soft);
+  box-shadow: none;
+}
+
+/* ── Drop target highlight ───────────────────────────────────────── */
+.deck-draggable.drag-over, .test-draggable.drag-over {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky) 35%, transparent), var(--sh-sm);
+}
+
+/* ── Drop-to-top-level zone ──────────────────────────────────────── */
+.deck-drop-top-level, .test-drop-top-level {
+  display: none;  /* hidden by default, shown only when dragging */
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 1rem;
+  margin-top: .5rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--r-lg);
+  color: var(--ink-soft);
+  font-size: .85rem;
+  text-align: center;
+  transition: border-color .2s, background .2s, color .2s;
+}
+.deck-drop-top-level .ic, .test-drop-top-level .ic { width: 16px; height: 16px; }
+.deck-drop-top-level.drag-over, .test-drop-top-level.drag-over {
+  border-color: var(--sky);
+  background: color-mix(in srgb, var(--sky) 8%, transparent);
+  color: var(--sky);
+}
+/* Show the drop zone when any card is being dragged */
+.deck-draggable.dragging ~ .deck-drop-top-level,
+#deck-list:has(.dragging) .deck-drop-top-level,
+.test-draggable.dragging ~ .test-drop-top-level,
+#test-manager-content:has(.dragging) .test-drop-top-level {
+  display: flex;
+}
+
+
+/* =====================================================================
+   MISC
+   ===================================================================== */
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+/* Nova-shell-only structural elements: always rendered by components (so no
+   theme branches in JS) but invisible everywhere except [data-theme="nova"],
+   which reveals them at the end of this file. */
+.nv-only { display: none; }
+.text-muted { color: var(--ink-soft); font-size: .85rem; }
+.w-100 { width: 100%; }
+.required { color: var(--hanko); }
+
+@media (min-width: 480px) {
+  .stat-num { font-size: 1.5rem; }
+}
+
+/* =====================================================================
+   WEB GENİŞ EKRAN — sidebar yok, sadece içerik genişler.
+   Hem web hem Electron'da geçerli (temel genişletme).
+   ===================================================================== */
+@media (min-width: 768px) {
+  #app {
+    max-width: 720px;
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #app { max-width: 800px; }
+  .flashcard,
+  .fc-flip-front,
+  .fc-flip-back {
+    min-height: 320px;
+    padding: 2.5rem 1.8rem;
+  }
+  .fc-flip-container { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .fc-kanji { font-size: clamp(5rem, 14vw, 8rem); }
+  #btn-show,
+  .answer-grid {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #btn-show { display: block; }
+  #modal-bg { align-items: center; }
+  #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+}
+
+/* =====================================================================
+   GENİŞ EKRAN DÜZENİ — SADECE ELECTRON
+   .is-electron class'ı Electron ortamında body'ye eklenir.
+   Web/PWA tarafında bu class yoktur, dolayısıyla layout hep mobil kalır.
+   ===================================================================== */
+@media (min-width: 768px) {
+  .is-electron #app {
+    max-width: 720px;
+    margin: 0 auto;
+    margin-left: calc(220px + max(2rem, (100vw - 220px - 720px) / 2));
+    padding: calc(var(--safe-t) + 1.25rem) 2rem 2rem;
+  }
+
+  .is-electron #bottom-nav {
+    position: fixed;
+    left: 0; top: 0; bottom: 0; right: auto;
+    width: 220px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: .3rem;
+    padding: calc(var(--safe-t) + 1.5rem) .8rem 1rem;
+    border-top: none;
+    border-right: var(--bd) solid var(--line);
+    box-shadow: none;
+  }
+  .is-electron .nav-item {
+    flex: none !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: .7rem !important;
+    min-height: 44px !important;
+    border-radius: var(--r-md);
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    padding: 0 .7rem !important;
+  }
+  .is-electron .nav-item.active { background: var(--hanko-bg, var(--paper-2)); }
+  .is-electron .nav-item:active { background: var(--paper-2); }
+}
+
+/* =====================================================================
+   MASAÜSTÜ OPTİMİZASYONU (1024px+)
+   Geniş ekranlarda daha iyi alan kullanımı: grid deste listesi,
+   büyük flashcard, yan yana form, ortada modal.
+   ===================================================================== */
+@media (min-width: 1024px) {
+  .is-electron #app {
+    max-width: 960px;
+    padding: calc(var(--safe-t) + 1.5rem) 2.5rem 2.5rem;
+  }
+
+  /* Deste listesi: otomatik 2-3 sütun grid */
+  .is-electron #deck-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: .75rem;
+  }
+  .is-electron #deck-list > .card { margin-bottom: 0; }
+
+  /* İstatistik kutuları */
+  .is-electron .stats-grid { gap: .85rem; }
+  .is-electron .stat-box { padding: 1rem .6rem; }
+  .is-electron .stat-num { font-size: 1.7rem; }
+
+  /* Deste detay: 6 sütun istatistik */
+  .is-electron #deck-detail-content .stats-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  /* Flashcard: daha büyük, ortada */
+  .is-electron .flashcard,
+  .is-electron .fc-flip-container {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .is-electron .flashcard,
+  .is-electron .fc-flip-front,
+  .is-electron .fc-flip-back {
+    min-height: 340px;
+    padding: 3rem 2rem;
+  }
+  .is-electron .fc-kanji { font-size: clamp(5.5rem, 12vw, 9rem); }
+  .is-electron .fc-ruby { font-size: 2.5rem; }
+  .is-electron .fc-meaning { font-size: 1.4rem; }
+  .is-electron .fc-example { font-size: 1.15rem; }
+  .is-electron #btn-show,
+  .is-electron .answer-grid {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .is-electron #btn-show { display: block; }
+
+  /* Kart ekleme: preview + form yan yana */
+  .is-electron #view-add.view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+  }
+  .is-electron #view-add .section-hd { grid-column: 1 / -1; }
+  .is-electron #view-add .fc-preview-wrap {
+    position: sticky;
+    top: calc(var(--safe-t) + 1.5rem);
+    grid-row: 2 / 4;
+  }
+
+  /* Ayarlar: 2 sütun grid */
+  .is-electron #settings-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem 1.5rem;
+  }
+
+  /* Modal: ortada, tam yuvarlak köşeler */
+  .is-electron #modal-bg { align-items: center; }
+  .is-electron #modal {
+    border-radius: var(--r-lg);
+    max-width: 560px;
+  }
+
+  /* Genel spacing */
+  .is-electron .section-hd { font-size: .95rem; margin-top: 1.5rem; }
+  .is-electron .btn { padding: .65rem 1.3rem; }
+  .is-electron .form-group { margin-bottom: 1rem; }
+}
+
+/* =====================================================================
+   REDUCED MOTION — decorative animation off, essential feedback kept.
+   Confetti already opts out in confetti.js; the count-up opts out in
+   CardView.animateCountUp. Everything below is CSS-only. State changes
+   (flip result, snap-back, fly-off grade) still happen — near-instantly —
+   because only transition/animation timing is neutralized, not transforms.
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .view.active { animation: none; }                 /* view fadeIn */
+  #btn-update { animation: none; }                  /* update-pulse */
+  .done-burst, .done-stat, .done-fire { animation: none; } /* donePop/doneRise/fireFlicker */
+  .streak-flame { transition: none; }
+  .streak-flame.lvl-hot, .streak-flame.lvl-blaze { transform: none; }
+  .fc-flip-inner, .fc-preview-inner,
+  .swipe-card.snapping, .swipe-card.flying,
+  .glow-layer,
+  .study-progress-fill, .forecast-bar,
+  .update-pop-progress-fill,
+  #modal, #modal-bg, #toast { transition-duration: .01ms !important; }
+}
+
+
+/* =====================================================================
+   NOVA SHELL (v2) — theme-scoped alternate product shell.
+   Not a recolor: this layer re-COMPOSES screens (hero panels + overlapping
+   content sheets, dark floating dock, tile-driven cards, immersive study
+   scene, merged control-center settings, marketplace community). It relies
+   on three structural hooks that exist in every theme's DOM but are inert
+   outside Nova:
+     .nv-only  — Nova-only elements (hidden by the base .nv-only rule)
+     .nv-hide  — elements Nova replaces (hidden only here)
+     neutral wrappers (#decks-top/#decks-body, .deck-detail-hero,
+     .fc-example-wrap) — unstyled in standard themes.
+   Placed at the end of the file on purpose: Nova must win equal-specificity
+   conflicts against base component rules. No selector here can match other
+   themes, and no rule may change behavior or the semantic grade/swipe map
+   (Again=hanko, Hard=gold, Good=sky, Easy=jade).
+   ===================================================================== */
+
+[data-theme="nova"] .nv-only { display: block; }
+[data-theme="nova"] .nv-hide { display: none; }
+
+/* ─── Aurora backdrop (fixed ::before — background-attachment:fixed is
+   ignored on iOS). Negative z-index: above canvas, below all content. ── */
+[data-theme="nova"] body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 560px at 88% -12%, rgba(109,63,224,.13), transparent 62%),
+    radial-gradient(820px 540px at -14% 18%, rgba(36,88,223,.14), transparent 58%),
+    radial-gradient(940px 640px at 52% 118%, rgba(10,168,196,.12), transparent 62%);
+}
+
+/* Gradient display text — @supports-guarded so engines without
+   background-clip:text keep the solid fallback color on the element. */
+@supports (-webkit-background-clip: text) {
+  [data-theme="nova"] #boot-splash-title,
+  [data-theme="nova"] .nv-date,
+  [data-theme="nova"] #global-stats .stat-num,
+  [data-theme="nova"] .done-title,
+  [data-theme="nova"] .tr-score-pct,
+  [data-theme="nova"] .modal-glyph-head .fc-kanji,
+  [data-theme="nova"] .modal-glyph-head .word-detail-head {
+    background-image: var(--nv-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* ─── Motion language: view + panel entrances ───────────────────────── */
+[data-theme="nova"] .view.active { animation: novaViewIn .3s cubic-bezier(.22, 1, .36, 1); }
+@keyframes novaViewIn {
+  from { opacity: 0; transform: translateY(10px) scale(.995); }
+  to   { opacity: 1; transform: none; }
+}
+[data-theme="nova"] #decks-top { animation: novaRise .38s cubic-bezier(.22, 1, .36, 1) both; }
+[data-theme="nova"] #decks-body { animation: novaRise .44s cubic-bezier(.22, 1, .36, 1) both; animation-delay: .05s; }
+@keyframes novaRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─── Shell chrome ──────────────────────────────────────────────────── */
+[data-theme="nova"] #topbar-title { font-weight: 800; letter-spacing: -.03em; }
+[data-theme="nova"] .icon-btn {
+  background: var(--nv-glass-2);
+  border: 1px solid var(--nv-glass-bd);
+}
+[data-theme="nova"] .icon-btn:active { background: var(--paper-2); }
+
+/* Section headers drop the uppercase-hairline "paper" signature for a
+   modern headline style — a global texture change across every screen. */
+[data-theme="nova"] .section-hd {
+  text-transform: none;
+  letter-spacing: -.01em;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+[data-theme="nova"] .section-hd::after { display: none; }
+[data-theme="nova"] .direction-label { text-transform: none; letter-spacing: 0; font-size: .8rem; }
+
+/* ─── Generic surfaces ──────────────────────────────────────────────── */
+[data-theme="nova"] .card,
+[data-theme="nova"] .stat-box,
+[data-theme="nova"] .settings-item {
+  background: var(--nv-glass-2);
+  border-color: var(--nv-glass-bd);
+}
+[data-theme="nova"] .card { border-radius: 24px; padding: 1.2rem; margin-bottom: .85rem; }
+
+/* ─── Buttons: gradient primary + spring release ────────────────────── */
+[data-theme="nova"] .btn {
+  transition: transform .16s cubic-bezier(.3, 1.4, .6, 1), box-shadow .2s ease, background-color .2s ease, filter .2s ease;
+}
+[data-theme="nova"] .btn-primary {
+  background-color: var(--sky);
+  background-image: var(--nv-grad);
+  color: #fff;
+  box-shadow: 0 10px 24px -12px rgba(36,88,223,.6), inset 0 1px 0 rgba(255,255,255,.28);
+}
+[data-theme="nova"] .btn-primary:active {
+  background-color: var(--sky);
+  background-image: var(--nv-grad);
+  filter: brightness(.93);
+  box-shadow: 0 4px 12px -8px rgba(36,88,223,.5);
+}
+[data-theme="nova"] .btn-ghost {
+  background: var(--nv-glass);
+  box-shadow: 0 1px 2px rgba(19,28,49,.04);
+}
+@media (hover: hover) {
+  [data-theme="nova"] .btn-primary:hover {
+    box-shadow: 0 14px 30px -12px rgba(36,88,223,.7);
+    transform: translateY(-1px);
+  }
+  [data-theme="nova"] .btn-ghost:hover { background: #fff; border-color: var(--sky); }
+  [data-theme="nova"] .kanji-chip:hover { background: #fff; border-color: var(--sky); color: var(--sky); transform: translateY(-1px); }
+}
+[data-theme="nova"] .badge {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+}
+
+/* ─── Forms & search ────────────────────────────────────────────────── */
+[data-theme="nova"] input,
+[data-theme="nova"] textarea,
+[data-theme="nova"] select {
+  background: var(--nv-glass-2);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+[data-theme="nova"] input:focus,
+[data-theme="nova"] textarea:focus,
+[data-theme="nova"] select:focus {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px var(--nv-ring);
+}
+[data-theme="nova"] .search-input,
+[data-theme="nova"] .search-filter { border-radius: var(--r-pill); background: var(--nv-glass-2); }
+[data-theme="nova"] .direction-seg { border-radius: var(--r-pill); background: rgba(19,28,49,.06); }
+[data-theme="nova"] .direction-seg-btn { border-radius: var(--r-pill); }
+[data-theme="nova"] .direction-seg-btn.is-active { background: #fff; }
+
+/* ─── Floating dock: dark capsule, detached from the screen edge.
+   Same buttons, same routing — only surface + indicator language change.
+   The bottom offset already includes the safe area, so the base rule's
+   safe-area padding-bottom is folded into uniform padding. ───────────── */
+[data-theme="nova"] #bottom-nav {
+  left: 50%; right: auto;
+  bottom: calc(.75rem + var(--safe-b));
+  transform: translateX(-50%);
+  width: min(430px, calc(100% - 1.6rem));
+  padding: .35rem;
+  gap: .15rem;
+  border-radius: var(--r-pill);
+  background: linear-gradient(155deg, rgba(30,40,72,.92), rgba(14,20,38,.95));
+  border: 1px solid rgba(255,255,255,.1);
+  border-top: 1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: 0 18px 44px -14px rgba(14,20,38,.55), 0 2px 8px rgba(14,20,38,.18);
+}
+[data-theme="nova"] .nav-item {
+  min-height: 54px;
+  border-radius: var(--r-pill);
+  z-index: 0;
+  text-transform: none;
+  letter-spacing: .01em;
+  font-size: .63rem;
+  color: rgba(226,232,248,.62);
+  transition: color .2s ease;
+}
+/* Active pill morphs in behind icon+label (spring scale + fade). */
+[data-theme="nova"] .nav-item::before {
+  content: '';
+  position: absolute; inset: 5px 3px; z-index: -1;
+  border-radius: var(--r-pill);
+  background: var(--nv-grad);
+  opacity: 0; transform: scale(.7);
+  transition: opacity .2s ease, transform .34s cubic-bezier(.34, 1.56, .64, 1);
+}
+[data-theme="nova"] .nav-item .ic { transition: transform .28s cubic-bezier(.34, 1.56, .64, 1); }
+[data-theme="nova"] .nav-item.active { color: #fff; }
+[data-theme="nova"] .nav-item.active::before { opacity: 1; transform: scale(1); }
+[data-theme="nova"] .nav-item.active .ic { transform: translateY(-1px) scale(1.06); }
+[data-theme="nova"] .nav-item:active { background: transparent; }
+[data-theme="nova"] .nav-item:active .ic { transform: scale(.86); }
+[data-theme="nova"] #app { padding-bottom: calc(108px + var(--safe-b)); }
+[data-theme="nova"] #toast { bottom: calc(94px + var(--safe-b)); }
+
+/* Electron >=768px: the dock overrides above out-specify the base sidebar
+   rules, so the sidebar geometry is restored here (light glass reskin —
+   the dark capsule stays a mobile/web signature). */
+@media (min-width: 768px) {
+  [data-theme="nova"] .is-electron #bottom-nav {
+    left: 0; right: auto; top: 0; bottom: 0;
+    transform: none;
+    width: 220px;
+    padding: calc(var(--safe-t) + 1.5rem) .8rem 1rem;
+    gap: .3rem;
+    border-radius: 0;
+    background: var(--nv-glass);
+    border: none;
+    border-right: var(--bd) solid var(--line-soft);
+    box-shadow: none;
+  }
+  [data-theme="nova"] .is-electron #app { padding-bottom: 2rem; }
+  [data-theme="nova"] .is-electron .nav-item { color: var(--ink-soft); }
+  [data-theme="nova"] .is-electron .nav-item::before { display: none; }
+  [data-theme="nova"] .is-electron .nav-item.active { background: var(--sky-bg); color: var(--sky); }
+  [data-theme="nova"] .is-electron .nav-item.active .ic { transform: none; }
+}
+
+/* ─── Dashboard: hero panel + overlapping content sheet ─────────────── */
+[data-theme="nova"] #decks-top {
+  position: relative;
+  border-radius: 30px;
+  padding: 1.25rem 1.05rem 2.6rem;
+  background:
+    radial-gradient(120% 130% at 88% -20%, rgba(109,63,224,.2), transparent 55%),
+    radial-gradient(110% 110% at -10% -10%, rgba(36,88,223,.2), transparent 52%),
+    radial-gradient(90% 90% at 50% 125%, rgba(10,168,196,.15), transparent 60%),
+    linear-gradient(165deg, #fdfeff, #eaf0fd);
+  border: 1px solid var(--nv-glass-bd);
+  box-shadow: var(--sh-md);
+}
+[data-theme="nova"] #nv-decks-greeting { margin: 0 0 1.05rem; }
+[data-theme="nova"] .nv-date {
+  display: block;
+  font-size: 2.7rem;
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1.05;
+  color: var(--sky);
+}
+[data-theme="nova"] .nv-day { display: block; font-size: 1.02rem; font-weight: 600; color: var(--ink-soft); }
+[data-theme="nova"] #global-stats { gap: .5rem; margin-bottom: .9rem; }
+[data-theme="nova"] #global-stats .stat-box {
+  background: rgba(255,255,255,.62);
+  border-color: rgba(255,255,255,.85);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(19,28,49,.04);
+}
+/* Streak banner: the deliberate dark contrast piece inside the bright hero. */
+[data-theme="nova"] #decks-top .streak-card {
+  background: linear-gradient(150deg, #24325c, #101628);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  box-shadow: 0 14px 30px -14px rgba(16,22,40,.5);
+  color: #fff;
+  margin-bottom: 0;
+}
+[data-theme="nova"] #decks-top .streak-card .streak-sub,
+[data-theme="nova"] #decks-top .streak-card .streak-count .unit,
+[data-theme="nova"] #decks-top .streak-card .streak-day-label { color: rgba(226,232,248,.65); }
+[data-theme="nova"] #decks-top .streak-card .streak-flame.lvl-cold { color: rgba(226,232,248,.75); }
+[data-theme="nova"] #decks-top .streak-card .streak-day-dot {
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.2);
+}
+[data-theme="nova"] #decks-top .streak-card .streak-day-dot.is-active { background: var(--hanko); border-color: var(--hanko); }
+[data-theme="nova"] #decks-top .streak-card .streak-day-dot.is-shielded { background: var(--sky); border-color: var(--sky); }
+[data-theme="nova"] #decks-top .streak-card .streak-day.is-today .streak-day-label { color: #fff; }
+[data-theme="nova"] #decks-top .streak-card .streak-day.is-today .streak-day-dot {
+  box-shadow: 0 0 0 2px #101628, 0 0 0 3.5px rgba(255,255,255,.55);
+}
+/* Content sheet slides up over the hero's bottom edge. */
+[data-theme="nova"] #decks-body {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.4rem;
+  background: var(--card);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: 26px;
+  padding: .5rem .85rem 1rem;
+  box-shadow: var(--sh-md);
+}
+[data-theme="nova"] #decks-body .section-hd-row { margin-bottom: .2rem; }
+[data-theme="nova"] #decks-body .section-hd { margin: .9rem 0 .5rem; }
+
+/* ─── Deck & test cards → tile-led content rows ─────────────────────── */
+[data-theme="nova"] .nv-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: 0 0 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(36,88,223,.14), rgba(109,63,224,.16));
+  border: 1px solid rgba(255,255,255,.85);
+  color: var(--sky);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1;
+  overflow: hidden;
+}
+[data-theme="nova"] .card-title-btn { gap: .7rem; align-items: center; }
+[data-theme="nova"] .card-title-btn > span:not(.nv-tile) { flex: 1; min-width: 0; }
+
+[data-theme="nova"] #deck-list .card,
+[data-theme="nova"] #test-manager-content .card,
+[data-theme="nova"] #deck-detail-content .card-child {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border-color: transparent;
+  border-radius: 18px;
+  box-shadow: none;
+  padding: .9rem .95rem;
+  margin-bottom: .55rem;
+}
+/* Composition: header, then status badges, then the action row. */
+[data-theme="nova"] #deck-list .card .badge-row { order: 2; margin: .55rem 0 .1rem; }
+[data-theme="nova"] #deck-list .card .btn-row.card-actions,
+[data-theme="nova"] #test-manager-content .card .btn-row.card-actions,
+[data-theme="nova"] #deck-detail-content .card-child .btn-row.card-actions { order: 3; }
+/* Compact pill Study/Start action, right-aligned (title tap opens detail). */
+[data-theme="nova"] .card-actions .btn-primary {
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-height: 42px;
+  padding: 0 1.15rem;
+  font-size: .88rem;
+  border-radius: var(--r-pill);
+}
+[data-theme="nova"] .card-actions .action-note { font-size: .84rem; }
+/* Re-assert tree + drag affordances the row restyle above would swallow
+   (its scoped selectors out-specify the base .dragging/.drag-over rules). */
+[data-theme="nova"] #deck-list .card-child,
+[data-theme="nova"] #test-manager-content .card-child,
+[data-theme="nova"] #deck-detail-content .card-child { border-left: 3px solid var(--line); }
+[data-theme="nova"] #deck-list .card.dragging,
+[data-theme="nova"] #test-manager-content .card.dragging {
+  opacity: .4;
+  border: 2px dashed var(--ink-soft);
+  box-shadow: none;
+}
+[data-theme="nova"] #deck-list .card.drag-over,
+[data-theme="nova"] #test-manager-content .card.drag-over {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky) 35%, transparent);
+}
+[data-theme="nova"] .card-list-item {
+  background: var(--paper);
+  border-color: transparent;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+/* Tests live on the same sheet surface as decks. */
+[data-theme="nova"] #test-manager-content {
+  background: var(--card);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: 26px;
+  padding: .85rem .85rem .95rem;
+  box-shadow: var(--sh-md);
+}
+[data-theme="nova"] .test-actions-row { margin-bottom: .8rem; }
+[data-theme="nova"] .test-actions-row .btn { border-radius: var(--r-pill); }
+
+/* ─── Deck detail: hero panel over the card list ────────────────────── */
+[data-theme="nova"] .deck-detail-hero {
+  border-radius: 26px;
+  padding: 1.05rem 1rem .35rem;
+  margin-bottom: 1.1rem;
+  background:
+    radial-gradient(120% 140% at 90% -30%, rgba(109,63,224,.16), transparent 55%),
+    radial-gradient(120% 120% at -15% -15%, rgba(36,88,223,.16), transparent 52%),
+    linear-gradient(165deg, #fdfeff, #ecf1fd);
+  border: 1px solid var(--nv-glass-bd);
+  box-shadow: var(--sh-sm);
+}
+[data-theme="nova"] .deck-detail-hero .stats-grid { gap: .45rem; margin-bottom: .9rem; }
+[data-theme="nova"] .deck-detail-hero .stat-box {
+  background: rgba(255,255,255,.62);
+  border-color: rgba(255,255,255,.85);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(19,28,49,.04);
+}
+
+/* ─── Study scene ───────────────────────────────────────────────────── */
+[data-theme="nova"] .study-header {
+  background: rgba(255,255,255,.75);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: var(--r-pill);
+  padding: .5rem .55rem .5rem .95rem;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 1.2rem;
+}
+[data-theme="nova"] .study-progress { height: 7px; background: rgba(19,28,49,.08); box-shadow: none; }
+[data-theme="nova"] .study-progress-fill {
+  background: var(--nv-grad);
+  box-shadow: 0 0 8px rgba(36,88,223,.45);
+}
+[data-theme="nova"] .study-count {
+  background: var(--ink);
+  color: var(--card);
+  padding: .28rem .65rem;
+  border-radius: var(--r-pill);
+  font-size: .72rem;
+  font-weight: 700;
+}
+/* Hero card faces: glass with a gradient hairline + ambient aura. */
+[data-theme="nova"] .flashcard,
+[data-theme="nova"] .fc-flip-front,
+[data-theme="nova"] .fc-flip-back,
+[data-theme="nova"] .fc-preview-front,
+[data-theme="nova"] .fc-preview-back {
+  border: var(--bd) solid transparent;
+  background:
+    linear-gradient(165deg, rgba(255,255,255,.95), rgba(243,247,255,.9)) padding-box,
+    linear-gradient(150deg, rgba(255,255,255,1), rgba(170,190,235,.6)) border-box;
+  box-shadow: var(--sh-md), inset 0 1px 0 rgba(255,255,255,.8);
+  border-radius: 28px;
+}
+[data-theme="nova"] .fc-flip-container,
+[data-theme="nova"] .swipe-stage { position: relative; }
+[data-theme="nova"] .fc-flip-container::before,
+[data-theme="nova"] .swipe-stage::before {
+  content: '';
+  position: absolute; inset: -28px -14px; z-index: -1;
+  pointer-events: none;
+  border-radius: 56px;
+  background:
+    radial-gradient(55% 60% at 30% 25%, rgba(36,88,223,.17), transparent 70%),
+    radial-gradient(50% 55% at 75% 75%, rgba(109,63,224,.14), transparent 70%),
+    radial-gradient(40% 45% at 60% 20%, rgba(10,168,196,.11), transparent 70%);
+}
+/* Halo ring behind the prompt glyph (front faces only). */
+[data-theme="nova"] .fc-flip-front::before {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: min(240px, 72%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(36,88,223,.13), rgba(109,63,224,.08) 55%, transparent 72%);
+  pointer-events: none;
+}
+[data-theme="nova"] .fc-flip-inner { transition: transform .55s cubic-bezier(.3, .9, .3, 1); }
+@media (min-height: 760px) {
+  [data-theme="nova"] .flashcard,
+  [data-theme="nova"] .fc-flip-front,
+  [data-theme="nova"] .fc-flip-back { min-height: 330px; }
+}
+/* Back-face hierarchy: the example moves into its own frosted sub-panel,
+   replacing the hairline divider entirely (composition, not a restyle). */
+[data-theme="nova"] .fc-back .fc-divider { display: none; }
+[data-theme="nova"] .fc-example-wrap {
+  background: linear-gradient(135deg, rgba(36,88,223,.06), rgba(109,63,224,.06));
+  border: 1px solid rgba(36,88,223,.12);
+  border-radius: 18px;
+  padding: .7rem .85rem .6rem;
+  margin-top: .95rem;
+}
+[data-theme="nova"] .fc-example-wrap .fc-exampletr { margin-top: .25rem; }
+[data-theme="nova"] .fc-meaning { font-size: 1.28rem; }
+/* Hints become floating chips. */
+[data-theme="nova"] .fc-flip-hint,
+[data-theme="nova"] .swipe-hint {
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  background: rgba(255,255,255,.68);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: var(--r-pill);
+  padding: .26rem .85rem;
+  opacity: 1;
+  color: var(--ink-soft);
+}
+/* Reveal: gradient capsule with a slow sheen sweep (off under reduced motion). */
+[data-theme="nova"] #btn-show {
+  background: var(--nv-grad);
+  color: #fff;
+  border-radius: var(--r-pill);
+  min-height: 58px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px -10px rgba(36,88,223,.55), inset 0 1px 0 rgba(255,255,255,.28);
+  transition: transform .16s cubic-bezier(.3, 1.4, .6, 1), box-shadow .2s ease;
+}
+[data-theme="nova"] #btn-show:active {
+  background: var(--nv-grad);
+  filter: brightness(.93);
+  transform: scale(.96);
+  box-shadow: 0 4px 12px -8px rgba(36,88,223,.5);
+}
+[data-theme="nova"] #btn-show::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.3), transparent);
+  transform: skewX(-18deg);
+  animation: novaSheen 4.2s ease-in-out infinite;
+}
+@keyframes novaSheen {
+  0%, 62% { left: -60%; }
+  100%    { left: 130%; }
+}
+/* Answer card entrance; killed the instant a drag starts so the inline
+   drag transform is never fought by the animation. */
+[data-theme="nova"] .swipe-card { animation: nvCardIn .3s cubic-bezier(.22, 1, .36, 1); }
+@keyframes nvCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+[data-theme="nova"] .swipe-stage.is-dragging .swipe-card,
+[data-theme="nova"] .swipe-card.snapping,
+[data-theme="nova"] .swipe-card.flying { animation: none; }
+
+/* Grade grid: same 2x2, same semantic map as the swipe glow — presented as
+   premium tiles with a glowing color dot. */
+[data-theme="nova"] .answer-grid { gap: .7rem; }
+[data-theme="nova"] .ans-btn {
+  min-height: 70px;
+  border-radius: 20px;
+  box-shadow: 0 10px 22px -16px rgba(19,28,49,.4), inset 0 1px 0 rgba(255,255,255,.55);
+  transition: transform .16s cubic-bezier(.3, 1.4, .6, 1), box-shadow .2s ease;
+}
+[data-theme="nova"] .ans-btn::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
+  margin-bottom: .1rem;
+}
+[data-theme="nova"] .ans-again { background: color-mix(in srgb, var(--hanko-bg) 55%, #fff); }
+[data-theme="nova"] .ans-hard  { background: color-mix(in srgb, var(--gold-bg) 55%, #fff); }
+[data-theme="nova"] .ans-good  { background: color-mix(in srgb, var(--sky-bg) 55%, #fff); }
+[data-theme="nova"] .ans-easy  { background: color-mix(in srgb, var(--jade-bg) 55%, #fff); }
+[data-theme="nova"] .ans-again:active { background: var(--hanko-bg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hanko) 28%, transparent); }
+[data-theme="nova"] .ans-hard:active  { background: var(--gold-bg);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 28%, transparent); }
+[data-theme="nova"] .ans-good:active  { background: var(--sky-bg);   box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky) 28%, transparent); }
+[data-theme="nova"] .ans-easy:active  { background: var(--jade-bg);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--jade) 28%, transparent); }
+
+[data-theme="nova"] .done-title { color: var(--sky); }
+[data-theme="nova"] .done-stat { background: var(--nv-glass-2); border-color: var(--nv-glass-bd); border-radius: 20px; }
+
+/* ─── Modal: frosted sheet with grab handle + centered title ────────── */
+[data-theme="nova"] #modal-bg {
+  background: rgba(19,26,46,.35);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+}
+[data-theme="nova"] #modal {
+  background: rgba(252,253,255,.9);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid var(--nv-glass-bd);
+  border-bottom: none;
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -12px 50px rgba(19,28,49,.25);
+}
+[data-theme="nova"] #modal::before {
+  content: '';
+  display: block;
+  width: 44px; height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  margin: -.35rem auto 1rem;
+}
+[data-theme="nova"] #modal h3 { text-align: center; }
+/* Handle pushes the title down ~1rem; keep the drill-down back button on it. */
+[data-theme="nova"] .modal-back-btn { top: 2rem; }
+@media (min-width: 1024px) {
+  [data-theme="nova"] #modal { border-radius: 24px; border-bottom: 1px solid var(--nv-glass-bd); }
+  [data-theme="nova"] #modal::before { display: none; }
+  [data-theme="nova"] .modal-back-btn { top: 1.1rem; }
+}
+
+/* ─── Menus / popovers ──────────────────────────────────────────────── */
+[data-theme="nova"] .card-menu-pop,
+[data-theme="nova"] .update-popover {
+  background: rgba(252,253,255,.88);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-color: var(--nv-glass-bd);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px -18px rgba(19,28,49,.35);
+}
+[data-theme="nova"] .update-popover::before { background: rgba(252,253,255,.95); }
+[data-theme="nova"] .card-menu-pop {
+  transform-origin: top right;
+  animation: novaPopIn .16s cubic-bezier(.2, 1.1, .3, 1) both;
+}
+@keyframes novaPopIn {
+  from { opacity: 0; transform: scale(.9) translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─── Kanji / Word detail: layered panels ───────────────────────────── */
+[data-theme="nova"] .modal-glyph-head { position: relative; padding: 1.1rem 0 1.2rem; }
+[data-theme="nova"] .modal-glyph-head::before {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 138px; height: 138px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(36,88,223,.16), transparent 70%);
+  pointer-events: none;
+}
+[data-theme="nova"] .modal-glyph-head .fc-kanji,
+[data-theme="nova"] .modal-glyph-head .word-detail-head { color: var(--sky); position: relative; }
+[data-theme="nova"] .kanji-detail-rows { gap: .45rem; }
+[data-theme="nova"] .kanji-detail-row {
+  background: var(--nv-glass);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: var(--r-md);
+  padding: .6rem .8rem;
+  box-shadow: 0 1px 2px rgba(19,28,49,.04);
+}
+[data-theme="nova"] .kanji-detail-row:last-child { border-bottom: 1px solid var(--nv-glass-bd); }
+[data-theme="nova"] .kanji-detail-label {
+  background: var(--paper-2);
+  color: var(--ink-soft);
+  padding: .22rem .6rem;
+  border-radius: var(--r-pill);
+  font-size: .72rem;
+  font-weight: 700;
+}
+[data-theme="nova"] .word-ai-section {
+  background: linear-gradient(135deg, rgba(36,88,223,.07), rgba(109,63,224,.07));
+  border: 1px solid rgba(109,63,224,.18);
+  border-radius: 18px;
+  padding: .85rem .95rem;
+}
+[data-theme="nova"] .kanji-chip-row { gap: .55rem; }
+[data-theme="nova"] .kanji-chip {
+  width: 56px; height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.55rem;
+  border-radius: 16px;
+  background: var(--nv-glass-2);
+  border-color: var(--line-soft);
+  box-shadow: var(--sh-sm);
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .16s cubic-bezier(.3, 1.4, .6, 1);
+}
+
+/* ─── Community: marketplace composition ────────────────────────────── */
+/* Featured curated pack: gradient frame + level emblem block. */
+[data-theme="nova"] .pack-card {
+  position: relative;
+  border: var(--bd) solid transparent;
+  background:
+    linear-gradient(rgba(252,253,255,.94), rgba(252,253,255,.94)) padding-box,
+    linear-gradient(135deg, rgba(36,88,223,.55), rgba(109,63,224,.45), rgba(10,168,196,.5)) border-box;
+  box-shadow: 0 14px 34px -18px rgba(36,88,223,.4);
+}
+[data-theme="nova"] .nv-pack-emblem {
+  position: absolute; top: 1.05rem; right: 1.05rem;
+  width: 54px; height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: var(--nv-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  box-shadow: 0 10px 22px -10px rgba(36,88,223,.55);
+}
+[data-theme="nova"] .pack-card .card-title { font-size: 1.12rem; padding-right: 64px; }
+/* User-shared decks: avatar-led marketplace rows (distinct from curated). */
+[data-theme="nova"] .community-card:not(.pack-card) {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-areas: "tile title" "tile meta" "desc desc" "tags tags" "foot foot";
+  column-gap: .75rem;
+  align-items: center;
+  background: var(--paper);
+  border-color: transparent;
+  border-radius: 18px;
+  box-shadow: none;
+}
+[data-theme="nova"] .community-card:not(.pack-card) .nv-tile-user { grid-area: tile; }
+[data-theme="nova"] .community-card:not(.pack-card) .card-title { grid-area: title; align-self: end; }
+[data-theme="nova"] .community-card:not(.pack-card) > .deck-meta { grid-area: meta; margin-top: 0; align-self: start; }
+[data-theme="nova"] .community-card:not(.pack-card) .community-desc { grid-area: desc; }
+[data-theme="nova"] .community-card:not(.pack-card) .community-tags { grid-area: tags; }
+[data-theme="nova"] .community-card:not(.pack-card) .community-card-foot { grid-area: foot; }
+[data-theme="nova"] .nv-tile-user {
+  display: inline-flex;
+  width: 46px; height: 46px;
+  flex: 0 0 46px;
+  border-radius: 50%;
+  border: none;
+  background: var(--nv-grad);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+[data-theme="nova"] .community-card-foot .btn-primary { border-radius: var(--r-pill); min-height: 42px; }
+[data-theme="nova"] .head-actions .btn { border-radius: var(--r-pill); }
+
+/* ─── Tests: play + results on the same shell language ──────────────── */
+[data-theme="nova"] .tv-question-card {
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 140% at 90% -30%, rgba(109,63,224,.12), transparent 55%),
+    linear-gradient(165deg, #fdfeff, #eef2fd);
+}
+[data-theme="nova"] .tv-option {
+  background: var(--nv-glass-2);
+  border-color: var(--line-soft);
+  border-radius: 16px;
+  box-shadow: var(--sh-sm);
+}
+/* Re-assert feedback tints (the glass rule above is later in source). */
+[data-theme="nova"] .tv-option.correct { background: var(--jade-bg); border-color: var(--jade); }
+[data-theme="nova"] .tv-option.wrong { background: var(--hanko-bg); border-color: var(--hanko); }
+[data-theme="nova"] .tr-score-card {
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 140% at 50% -40%, rgba(36,88,223,.14), transparent 60%),
+    linear-gradient(165deg, #fdfeff, #eef2fd);
+}
+[data-theme="nova"] .tr-correct { border-left: none; box-shadow: inset 3px 0 0 var(--jade); }
+[data-theme="nova"] .tr-wrong { border-left: none; box-shadow: inset 3px 0 0 var(--hanko); }
+
+/* ─── Settings: control center ──────────────────────────────────────── */
+/* All SRS rows merge into one panel; per-row cards become divided rows. */
+[data-theme="nova"] #settings-fields {
+  background: var(--nv-glass-2);
+  border: 1px solid var(--nv-glass-bd);
+  border-radius: 24px;
+  padding: .3rem 1rem 1rem;
+  box-shadow: var(--sh-sm);
+}
+[data-theme="nova"] #settings-fields .settings-item {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+  padding: .85rem .1rem;
+}
+[data-theme="nova"] #settings-fields .settings-item:last-of-type { border-bottom: none; }
+[data-theme="nova"] .si-input { border-radius: var(--r-pill); }
+[data-theme="nova"] .danger-zone { border-radius: 24px; }
+/* Theme picker: swatch tiles instead of dots; Nova's own tile is framed. */
+[data-theme="nova"] .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+[data-theme="nova"] .theme-option {
+  background: var(--paper);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 16px;
+  padding: .6rem .5rem .55rem;
+  gap: .45rem;
+}
+[data-theme="nova"] .theme-swatch { width: 100%; height: 42px; border-radius: 10px; }
+[data-theme="nova"] .theme-option.is-active { border-color: var(--sky); box-shadow: 0 0 0 3px var(--nv-ring); }
+[data-theme="nova"] .theme-option.is-active .theme-swatch { border: var(--bd-ctrl) solid var(--line); box-shadow: none; }
+[data-theme="nova"] .theme-option[data-tid="nova"]:not(.is-active) {
+  border-color: transparent;
+  background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--nv-grad) border-box;
+}
+[data-theme="nova"] #theme-section .settings-item { background: transparent; box-shadow: none; padding-left: 0; padding-right: 0; }
+[data-theme="nova"] .lang-btn { border-radius: var(--r-pill); }
+[data-theme="nova"] .lang-btn.is-active {
+  border-color: var(--sky);
+  background: var(--sky-bg);
+  color: var(--sky);
+}
+
+/* ─── Empty / loading states ────────────────────────────────────────── */
+[data-theme="nova"] .empty-icon {
+  width: 84px; height: 84px;
+  margin: 0 auto .8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(36,88,223,.1), rgba(109,63,224,.12));
+  color: var(--sky);
+  opacity: 1;
+}
+[data-theme="nova"] .empty-icon .ic-lg { width: 38px; height: 38px; }
+[data-theme="nova"] .empty-sm .empty-icon { width: 60px; height: 60px; }
+
+/* ─── Toast ─────────────────────────────────────────────────────────── */
+[data-theme="nova"] #toast {
+  background: rgba(14,20,38,.9);
+  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px -10px rgba(14,20,38,.5);
+}
+
+/* ─── Nova reduced motion ───────────────────────────────────────────
+   Nova's animations out-specify the generic reduced-motion block above,
+   so they need their own opt-out. State changes stay intact. */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="nova"] .view.active,
+  [data-theme="nova"] #decks-top,
+  [data-theme="nova"] #decks-body,
+  [data-theme="nova"] .swipe-card,
+  [data-theme="nova"] .card-menu-pop { animation: none; }
+  [data-theme="nova"] #btn-show::after { animation: none; opacity: 0; }
+  [data-theme="nova"] .btn,
+  [data-theme="nova"] .ans-btn,
+  [data-theme="nova"] .kanji-chip,
+  [data-theme="nova"] .nav-item,
+  [data-theme="nova"] .nav-item .ic,
+  [data-theme="nova"] .nav-item::before,
+  [data-theme="nova"] #btn-show { transition: none; }
+  [data-theme="nova"] .nav-item.active .ic { transform: none; }
+  [data-theme="nova"] .btn-primary:hover,
+  [data-theme="nova"] .kanji-chip:hover { transform: none; }
+}

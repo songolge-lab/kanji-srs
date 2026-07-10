@@ -9,7 +9,7 @@ export function render() {
 
   const results = app.lastTestResults;
   if (!results) {
-    el.innerHTML = `<div class="empty"><p>No results</p></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">${app.icon('inbox', 'ic-lg')}</div><p>${app.t('test_no_results')}</p></div>`;
     return;
   }
 
@@ -43,7 +43,7 @@ export function render() {
     </div>
     <div class="section-hd">${app.t('test_answers_section')}</div>
     ${answersHTML}
-    <button class="btn btn-block btn-primary tap" style="margin-top:1rem" onclick="showView('tests')">
+    <button class="btn btn-block btn-primary tap mt-2" onclick="showView('tests')">
       ${app.icon('back')} ${app.t('test_return_manager')}
     </button>`;
 }

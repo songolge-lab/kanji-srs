@@ -126,3 +126,40 @@ export async function incrementDownloadCount(deckId) {
     throw err;
   }
 }
+
+// ─── CURATED STUDY PACKS (remote pack catalog) ───────────────────────
+// Metadata lives in the `curated_packs` table (see supabase-schema.sql);
+// the actual pack JSON lives in the public `study-packs` Storage bucket.
+// Both are read-only from the client — writes happen only via
+// scripts/upload_curated_pack.js using a service-role key.
+
+const CURATED_PACKS_TABLE = 'curated_packs';
+
+export async function fetchCuratedPackCatalog() {
+  try {
+    const query = `${CURATED_PACKS_TABLE}?select=*&is_active=eq.true&order=level.asc,language.asc,title.asc`;
+    const res = await sbFetch(query);
+    if (!res.ok) throw new Error(`Uzak paket kataloğu alınamadı: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('[studyPackService] fetchCuratedPackCatalog failed:', err);
+    throw err;
+  }
+}
+
+// `storagePath` is the bucket-inclusive path stored on the catalog row
+// (e.g. "study-packs/en/jlpt-n5-en-pilot-v1.json"), matching Supabase's
+// public object URL shape 1:1 — no separate bucket-name config needed.
+// Plain `fetch` is used (not sbFetch): this hits the Storage public-object
+// endpoint, not the PostgREST `rest/v1` API, and public buckets need no
+// auth headers at all.
+export async function fetchCuratedPackFile(storagePath) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${storagePath}`);
+    if (!res.ok) throw new Error(`Paket dosyası indirilemedi: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('[studyPackService] fetchCuratedPackFile failed:', err);
+    throw err;
+  }
+}
