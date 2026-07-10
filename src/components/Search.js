@@ -172,13 +172,13 @@ function executeSearch(uid, scope, deckId) {
 function searchResultHTML(c, deckId, deckName, rootDeckId) {
   const showBadge = deckId !== rootDeckId;
   return `
-  <div class="card-list-item clickable-row" onclick="showCardPreview('${deckId}','${c.id}')" role="button" tabindex="0">
-    <div class="cli-kanji" style="font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">
-      <div class="fc-ruby" style="font-size: 1rem; margin: 0;">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</div>
+  <div class="card-list-item clickable-row search-result" onclick="showCardPreview('${deckId}','${c.id}')" role="button" tabindex="0">
+    <div class="cli-kanji">
+      <div class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</div>
     </div>
     <div class="cli-info">
-      <div class="cli-meaning" style="font-size: 0.9rem; font-weight: 600; color: var(--ink);">${esc(c.meaningTr)}</div>
-      ${c.exampleJp ? `<div class="cli-furi" style="font-weight: normal; color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.15rem;">${esc(c.exampleJp)}</div>` : ''}
+      <div class="cli-meaning">${esc(c.meaningTr)}</div>
+      ${c.exampleJp ? `<div class="cli-furi">${esc(c.exampleJp)}</div>` : ''}
       ${showBadge ? `<div class="search-deck-badge">📁 ${esc(deckName)}</div>` : ''}
     </div>
     <div class="cli-actions">

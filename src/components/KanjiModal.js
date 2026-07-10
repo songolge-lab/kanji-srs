@@ -18,8 +18,8 @@ export function open(kanji, opts = {}) {
   if (!entry) {
     app.openModal(app.t('kanji_detail'), `
       ${backBtn}
-      <div style="text-align:center;padding:.5rem 0 0">
-        <div class="fc-kanji" style="font-size:3.5rem;line-height:1">${esc(kanji)}</div>
+      <div class="modal-glyph-head">
+        <div class="fc-kanji">${esc(kanji)}</div>
         <p class="text-muted mt-2">${app.t('kanji_not_found')}</p>
       </div>
       <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
@@ -32,8 +32,8 @@ export function open(kanji, opts = {}) {
 
   app.openModal(app.t('kanji_detail'), `
     ${backBtn}
-    <div style="text-align:center;margin-bottom:1.2rem">
-      <div class="fc-kanji" style="font-size:4rem;line-height:1">${esc(kanji)}</div>
+    <div class="modal-glyph-head">
+      <div class="fc-kanji">${esc(kanji)}</div>
     </div>
     <div class="kanji-detail-rows">
       <div class="kanji-detail-row">

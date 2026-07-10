@@ -1,10 +1,11 @@
 import { esc, uid, processImageToBase64 } from '../utils.js';
-import { addCustomTest, updateCustomTest } from '../store/appState.js';
+import { addCustomTest, updateCustomTest, getTestsInTreeOrder } from '../store/appState.js';
 
 let app;
 export function init(ctx) { app = ctx; }
 
 let editingTestId = null;
+let editingParentId = null; // folder a NEW test is created into (ignored when editing)
 let questions = [];
 
 function emptyQuestion() {
@@ -18,15 +19,35 @@ export function render(testId) {
 
   let title = '';
   questions = [];
+  editingParentId = null;
 
   if (editingTestId) {
-    const existing = (app.state.customTests || []).find(ct => ct.id === editingTestId);
+    // Folders never reach here (TestManager only wires showTestEditor(id) to
+    // leaf test items) — kind guard is a defensive backstop, not the primary path.
+    const existing = (app.state.customTests || []).find(ct => ct.id === editingTestId && ct.kind !== 'folder');
     if (existing) {
       title = existing.title || '';
       questions = (existing.questions || []).map(q => ({ ...q, options: [...(q.options || [])] }));
+      editingParentId = existing.parentId || null;
+    } else {
+      editingTestId = null; // id pointed at a folder or nothing — fall through to "new test"
     }
   }
   if (!questions.length) questions.push(emptyQuestion());
+
+  // New tests can be placed at root, under any existing parent item (test or
+  // legacy container), or into a brand-new group created inline. Editing keeps
+  // the test's current parent.
+  const locationHTML = editingTestId ? '' : `
+      <div class="form-group">
+        <label>${app.t('test_location_label')}</label>
+        <select id="te-folder-select">
+          <option value="">${app.t('move_top_level')}</option>
+          ${parentOptionsHTML()}
+          <option value="__new__">${app.t('create_folder')} …</option>
+        </select>
+        <input type="text" id="te-new-folder-name" placeholder="${esc(app.t('folder_name_placeholder'))}" style="display:none;margin-top:.5rem">
+      </div>`;
 
   el.innerHTML = `
     <div class="card">
@@ -34,18 +55,40 @@ export function render(testId) {
         <label>${app.t('test_title_label')}</label>
         <input type="text" id="te-title" value="${esc(title)}" placeholder="${esc(app.t('test_title_placeholder'))}">
       </div>
+      ${locationHTML}
     </div>
     <div class="section-hd">${app.t('questions_section')}</div>
     <div id="te-questions"></div>
     <button class="btn btn-ghost btn-block tap" style="margin:1rem 0" onclick="teAddQuestion()">
       ${app.icon('plus')} ${app.t('add_question')}
     </button>
-    <div style="display:flex;gap:.5rem">
-      <button class="btn btn-ghost tap" style="flex:1" onclick="teCancelEditor()">${app.t('cancel')}</button>
-      <button class="btn btn-primary tap" style="flex:2" onclick="teSaveTest()">${app.t('save')}</button>
+    <div class="btn-row">
+      <button class="btn btn-primary tap" onclick="teSaveTest()">${app.t('save')}</button>
+      <button class="btn btn-ghost tap" onclick="teCancelEditor()">${app.t('cancel')}</button>
     </div>`;
 
   renderQuestions();
+
+  const folderSelect = document.getElementById('te-folder-select');
+  if (folderSelect) {
+    const newNameInput = document.getElementById('te-new-folder-name');
+    folderSelect.addEventListener('change', () => {
+      const showNew = folderSelect.value === '__new__';
+      newNameInput.style.display = showNew ? 'block' : 'none';
+      if (showNew) newNameInput.focus();
+    });
+  }
+}
+
+// Any existing item can be a parent (deck-like hierarchy), so all items are
+// offered — a folder emoji marks legacy container items.
+function parentOptionsHTML() {
+  return getTestsInTreeOrder(app.state)
+    .map(({ item, depth }) => {
+      const label = (item.kind === 'folder' ? '📁 ' : '') + esc(item.title || app.t('untitled_test'));
+      return `<option value="${esc(item.id)}">${'　'.repeat(depth)}${label}</option>`;
+    })
+    .join('');
 }
 
 function renderQuestions() {
@@ -67,7 +110,7 @@ function questionBlockHTML(q, qi) {
         <div class="te-option-row">
           <input type="radio" name="correct-${qi}" value="${oi}" ${q.correctValue === opt && opt !== '' ? 'checked' : ''} data-qi="${qi}" data-oi="${oi}" class="te-correct-radio">
           <input type="text" class="te-option-input" value="${esc(opt)}" data-qi="${qi}" data-oi="${oi}" placeholder="${app.t('option_placeholder', { n: oi + 1 })}">
-          ${(q.options || []).length > 2 ? `<button class="icon-btn tap te-remove-opt" data-qi="${qi}" data-oi="${oi}">${app.icon('close')}</button>` : ''}
+          ${(q.options || []).length > 2 ? `<button class="icon-btn tap te-remove-opt" data-qi="${qi}" data-oi="${oi}" aria-label="${app.t('delete_btn')}">${app.icon('close')}</button>` : ''}
         </div>`).join('') +
       `<button class="btn btn-ghost btn-sm tap" style="margin-top:.4rem" data-qi="${qi}" onclick="teAddOption(${qi})">
         ${app.icon('plus')} ${app.t('add_option')}
@@ -97,7 +140,7 @@ function questionBlockHTML(q, qi) {
     <div class="card te-question-block" data-qi="${qi}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
         <span style="font-weight:700;font-size:.85rem">${app.t('question_n', { n: qi + 1 })}</span>
-        ${questions.length > 1 ? `<button class="icon-btn tap" onclick="teRemoveQuestion(${qi})" style="width:36px;height:36px;box-shadow:none">${app.icon('trash')}</button>` : ''}
+        ${questions.length > 1 ? `<button class="icon-btn tap" onclick="teRemoveQuestion(${qi})" style="width:36px;height:36px;box-shadow:none" aria-label="${app.t('delete_btn')}">${app.icon('trash')}</button>` : ''}
       </div>
       <div class="form-group">
         <label>${app.t('question_type')}</label>
@@ -227,7 +270,19 @@ export function saveTest() {
     updateCustomTest(app.state, editingTestId, { title, questions: cleanedQuestions });
     app.showToast(app.t('toast_test_updated'));
   } else {
-    addCustomTest(app.state, { id: uid(), title, questions: cleanedQuestions });
+    const now = Date.now();
+    let parentId = editingParentId;
+    const sel = document.getElementById('te-folder-select');
+    if (sel && sel.value === '__new__') {
+      const folderName = (document.getElementById('te-new-folder-name')?.value || '').trim();
+      if (!folderName) { app.showToast(app.t('warn_name_empty')); return; }
+      const folderId = uid();
+      addCustomTest(app.state, { id: folderId, kind: 'folder', title: folderName, parentId: null, createdAt: now, updatedAt: now });
+      parentId = folderId;
+    } else if (sel) {
+      parentId = sel.value || null;
+    }
+    addCustomTest(app.state, { id: uid(), kind: 'test', parentId, title, questions: cleanedQuestions, createdAt: now, updatedAt: now });
     app.showToast(app.t('toast_test_created'));
   }
   app.save();

@@ -25,7 +25,7 @@ export function open(word, sentence, cachedMeaningHtml = null) {
     : `<span class="text-muted">—</span>`;
 
   app.openModal(app.t('word_detail_title'), `
-    <div style="text-align:center;margin-bottom:1.1rem">
+    <div class="modal-glyph-head">
       <div class="word-detail-head">${esc(word)}</div>
     </div>
     <div class="word-ai-section">

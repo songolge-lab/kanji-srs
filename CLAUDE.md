@@ -4,7 +4,7 @@ Japonca kanji/kelime öğrenme uygulaması — SRS (Spaced Repetition System) ta
 
 ## Mimari
 
-- **Modüler Vanilla JS:** CSS `src/index.html`'de inline, JS `src/main.js`'de. Supabase, DB ve state katmanları ayrı modüllerde.
+- **Modüler Vanilla JS:** CSS `src/styles/app.css`'de (harici, `index.html`'e `<link>` ile bağlı), JS `src/main.js`'de. Supabase, DB ve state katmanları ayrı modüllerde.
 - **Vite:** Build aracı ve dev server. `vite-plugin-pwa` ile PWA (manifest + service worker) otomatik üretilir.
 - **Electron:** `electron/main.js` masaüstü sarmalayıcısı. Production'da `dist/index.html` yükler.
 - **Supabase:** Bulut senkronizasyonu için `supabase-schema.sql` şeması.
@@ -15,9 +15,11 @@ Japonca kanji/kelime öğrenme uygulaması — SRS (Spaced Repetition System) ta
 package.json              ← root (vite devDep)
 vite.config.js            ← Vite + PWA yapılandırması
 src/
-  index.html              ← HTML yapısı + inline CSS
+  index.html              ← HTML yapısı (CSS/JS ayrı dosyalarda)
   main.js                 ← Orkestrasyon: i18n, sync, state, router, boot
   utils.js                ← Saf yardımcılar (esc, uid, today, tarih, shuffle)
+  styles/
+    app.css                ← Uygulama genelindeki CSS (tokens, layout, bileşen stilleri, medya sorguları) — tek dosya, `index.html`'e `<link rel="stylesheet">` ile bağlı
   data/
     locales/
       kanji_base.json     ← Onyomi + kunyomi (statik import, her zaman yüklü)
@@ -615,3 +617,301 @@ Arama artık ayrı bir alt-nav sekmesi/view değil. Decks başlığında kompakt
 
 ### Doğrulama (Vite preview canlı)
 (1) Alt nav 5 öğe (Search yok); (2) Decks başlığında kompakt arama ikonu → tık → satır içi çubuk açılır (input+filter+sonuçlar doğru genişlikte, önceki select-genişlik bugı düzeltildi), tekrar tık → kapanır + ikon eski haline döner; (3) deste detayında "Search in this deck" → alt deste dahil arama (`漢文` alt destede bulundu, "📁 Verbs SubDeck" rozeti sadece alt deste sonucunda görünüyor, kök deste sonucunda gizli); (4) `setLang('tr')` sırasında açık Decks-arama çubuğu otomatik kapanıyor (eski dilde render kalmıyor), tekrar açılınca yeni dilde doğru render; (5) build temiz (`vite build` ✓, 52 modül), konsol hatası yok.
+
+## Card Direction (Reverse Study) — Deste Bazında Ön/Arka Yön Seçimi
+
+Kullanıcının bir desteyi **Normal** (ön→arka, mevcut davranış) ya da **Reverse** (arka→ön) yönünde çalışabildiği özellik. **Dilden bağımsız, jenerik tasarım** — "Japonca→Türkçe" gibi dile özgü etiketler YOK; sadece "front"/"back" terminolojisi kullanıldı (uygulama JP-JP, JP-TR, genel Soru/Cevap ve Japonca-olmayan desteleri de destekliyor). Şema alanları **yeniden adlandırılmadı**: `card.kanji` = front, `card.meaningTr` = back prompt, geri kalan alanlar (furigana/examples) = full back answer. Çekirdek FSRS matematiği (`src/core/srsEngine.js`) **dokunulmadı**.
+
+### Veri modeli (`src/store/appState.js`)
+- **`deck.studyDirection`:** `'normal' | 'reverse'`. `migrateDecks()` içine eklendi (mevcut deste migrasyon yoluna) — eksik/geçersiz değer `'normal'`a normalize edilir. `getStudyDirection(deck)` saf okuyucu (export).
+- **`card.srsReverse`:** Normal `card.srs`'ten **tamamen bağımsız** FSRS bloğu (aynı şema: `createSrsData()`). Recognition (ön→arka) ve recall (arka→ön) farklı bellek süreçleri olduğundan reverse ilerleme normal `srs`'i ASLA paylaşmaz/etkilemez. `migrateCardsToFSRS()` içine eklendi (mevcut FSRS migrasyon yoluna, `card.srs = migrateToFSRS(...)` satırının hemen yanına) → `state.settings.defaultEase`'i kullanarak eksik `srsReverse`'i additive+idempotent (`if (!c.srsReverse)`) doldurur; bu fonksiyon 5 ingestion noktasında (boot load + cloud-pull'lar + connectSyncCode + manualSync + migrateAndSave) zaten çağrıldığından v2.6 istemci yerel/uzak ne yüklerse normalize eder. `main.js → makeCard()` de artık **yeni kartlarda** `srsReverse: createSrsData(...)` ile birlikte üretir (migrasyonu beklemeden, sayfa yenilenmeden reverse çalışmaya hazır).
+- **`getCardSrsForDirection(card, direction)` / `setCardSrsForDirection(card, direction, nextSrs)`:** Saf okuma/yazma yardımcıları (export). `direction==='reverse'` ise `card.srsReverse`, aksi halde `card.srs`.
+
+### Yön-bağımsız kuyruk kurma — srsEngine.js'e DOKUNMADAN (`src/main.js`)
+- **`buildQueueFromCards` (srsEngine.js) `card.srs` alan adını hardcoded okur** — bu fonksiyonu değiştirmeden reverse deposunu kullandırmak için `cardForDirection(card, direction)` (main.js, modül-içi) eklendi: reverse'de gerçek kartın **prototipini** taşıyan (`Object.create(card, {...})`) bir görünüm objesi döner; bu objenin YALNIZCA `srs` özelliği getter/setter ile `card.srsReverse`'e yönlendirilir (`getCardSrsForDirection`/`setCardSrsForDirection` üzerinden), diğer TÜM alanlar (`kanji`, `furigana`, `meaningTr`, `id`, …) prototip zinciriyle gerçek karta düşer. Normal yönde bu sarmalama atlanır (`direction!=='reverse'` → kartın kendisi döner, sıfır ek yük).
+- Bu sayede `previewSRS`/`applySRS` (ikisi de `card.srs`'i hardcoded okur/yazar) reverse yönünde çağrıldığında **otomatik olarak** `card.srsReverse`'i okur/mutasyona uğratır — `srsEngine.js`'de TEK satır bile değişmedi.
+- **`_buildQueue(cards, masteredOnly=false, direction='normal')` / `buildQueue(deck, masteredOnly=false, direction='normal')`:** 3. parametre eklendi (geriye uyumlu varsayılan `'normal'` — mevcut çağrı yerleri değişmeden eski davranışı korur). `direction==='reverse'` iken `cards.map(c => cardForDirection(c,'reverse'))` ile sarmalanmış görünüm dizisi `buildQueueFromCards`'a geçirilir.
+- **`setStudyDirection(deckId, direction)`:** `deck.studyDirection`'ı günceller + `save()`. `app` context'ine `getStudyDirection`/`setStudyDirection` olarak eklendi.
+
+### Çalışma oturumu (`src/components/CardView.js`)
+- **`studyDirection` modül değişkeni:** Aktif oturumun yönünü tutar; `renderStudy()`'nin ön yüzü hangi alanı soracağını bilmesi için kullanılır.
+- **`startStudy(deckId, masteredOnly)`:** `direction = getStudyDirection(app.findDeck(deckId))` — çocuklu (üst) deste çalışılırken de **üst destenin** yönü kullanılır (çocukların kendi `studyDirection`'ı yalnızca o çocuk BAĞIMSIZ çalışılırsa devreye girer — basit/güvenli varsayım, ayrı bir "kalıtım" mekanizması eklenmedi). **RESUME koşuluna `activeSession.direction === direction` eklendi:** yön değiştiyse (deste detayından) eski kuyruk otomatik geçersiz sayılır ve taze kurulur — ayrıca bir "oturumu temizle" çağrısı GEREKMEZ, koşul kendiliğinden sağlar.
+- **`frontFaceHTML(card)` (yeni yardımcı):** Normal modda mevcut `card.kanji` render'ı (değişmedi). Reverse modda `card.meaningTr` (boşsa `card.kanji`'ye, o da yoksa `'—'`e düşer — asla çökmez/boş kalmaz) `.fc-kanji.fc-prompt${kanjiSizeClass}` ile basılır. **Back render'ı iki yönde de AYNI** — spec'e göre reverse'in cevabı zaten "kanji + furigana + meaning + examples" (mevcut `.fc-back` içeriğiyle birebir aynı alan seti) olduğundan back template'inde HİÇBİR dallanma gerekmedi; yalnızca ön yüz (`frontFaceHTML`) değişti.
+- **`gradeCard`/`stateBadgeCls`/`stateLabel`/`previewSRS` çağrıları DEĞİŞMEDİ:** `studyQueue` elemanları reverse'de zaten `cardForDirection` sarmalayıcısı olduğundan `card.srs` her yerde otomatik doğru depoya (srsReverse) işaret eder — CardView.js'de srs okuma/yazma noktalarında ayrıca dallanma eklemek GEREKMEDİ.
+- **Browse (`startReview`) ve Kart Önizleme Modalı (`DeckList.showCardPreviewModal`) KASITLI olarak normal-only bırakıldı:** İkisi de notlama yapmayan "göz atma" modları (mevcut proje kararlarıyla tutarlı — bkz. yukarıdaki "Kart Önizleme Modalı" bölümü); yön karmaşıklığı eklemek görevin "do not overcomplicate preview" talimatına aykırı olurdu.
+- **Deck-list/deck-detail rozetleri (`Analytics.deckStats`/`aggregateDeckStats`, mastered kart listesi) KASITLI olarak normal-only bırakıldı:** Bu sayaçlar/listeler yalnızca `card.srs`i okur; reverse-özel istatistik göstermek görev kapsamında istenmedi. Yalnızca **"Study (N)" buton sayacı** (`qLen`/`mLen`, hem `renderDeckList` hem `renderDeckDetail` hem de üst destenin alt-deste satırındaki `cq`) seçili yöne göre `_buildQueue`/`buildQueue`'ya 3. parametre olarak geçirilir — çünkü bu sayı doğrudan "Study" butonunun ne yapacağıyla eşleşmeli.
+
+### UI — Card Direction segmented control (`src/components/DeckList.js` + `src/index.html`)
+- **`renderDeckDetail()`:** stats-grid'in hemen altına, Study/Add/Delete satırından ÖNCE (Study butonuna basmadan önce yön görünür/seçilebilir olsun diye) `.direction-row` eklendi: etiket + 2 butonluk `.direction-seg` (Normal/Reverse) + `.direction-hint`. Aktif buton `.is-active`. `onclick="setCardDirection(deckId,'normal'|'reverse')"`.
+- **`setCardDirection(deckId, direction)` (export + `window` global):** `app.setStudyDirection(...)` + (deck view'daysa) `renderDeckDetail()` ile yeniden çiz.
+- **CSS:** `.direction-row/.direction-label/.direction-seg/.direction-seg-btn/.is-active/.direction-hint` — mevcut `--paper-2`/`--card`/`--r-md`/`--sh-sm` tema değişkenleriyle diğer segmented/pill bileşenleriyle tutarlı, kompakt (deste detayını doldurmuyor). `.fc-prompt`: `.fc-kanji`'nin boyut/overflow iskeletini (kanjiSizeClass, `overflow-wrap:anywhere`) korur ama CJK Mincho serif'i uygulamanın genel sans-serif yığınıyla override eder (meaningTr çoğunlukla UI dilinde düzyazı, kanji fontuyla basılmamalı) — aynı özgüllükte (`.fc-kanji` ile) olduğundan stylesheet'te SONRA tanımlanarak kazanır.
+
+### i18n (`src/main.js → LANG`)
+4 yeni anahtar 4 dile (`card_preview_title`'dan hemen sonra): `card_direction`, `card_direction_normal`, `card_direction_reverse`, `card_direction_hint`.
+
+### Sürüm
+`main.js APP_VERSION` + root `package.json` + `electron/package.json` → `2.6.0`.
+
+### Doğrulama (Vite preview canlı)
+(1) Deste detayında "CARD DIRECTION" segmented control render oluyor (Normal aktif varsayılan); (2) Reverse'e tık → aktif hâle geçiyor, sayfa yenilenince (`localStorage` → `deck.studyDirection:'reverse'`) KALICI; (3) Reverse modda Study → ön yüz `card.meaningTr` ("train", generic sans-serif font — Mincho DEĞİL), "Show answer" → arka yüz 電車/でんしゃ ruby + "train" + örnek cümle + çeviri (normal moddaki back'le birebir aynı yapı); (4) Reverse'de Good ile notlama → **yalnızca `card.srsReverse`** güncellendi (`state:'learning'`, `stepIndex:1`, `due` set), `card.srs` TAMAMEN dokunulmamış (`state:'new'`, `due:0`); (5) Normal'e geri dönüp Study → YENİ (farklı) bir kart sırayla geldi (kanji ön yüzde, Mincho font) → Good ile notlama → **yalnızca `card.srs`** güncellendi, `card.srsReverse` dokunulmamış → çift yönlü izolasyon doğrulandı; (6) `setLang('tr')` → "KART YÖNÜ" / "Normal: Ön yüz → Arka yüz" / "Ters: Arka yüz → Ön yüz" / hint metni doğru çevrildi, tüm deste detayı ekranı (Türkçe) hatasız; (7) üst deste (çocuklu, "Verbs SubDeck" alt destesi) ile yön değişimi ve çalışma crash'siz çalıştı; (8) konsol hatası yok; **build temiz** (`vite build` ✓, 52 modül).
+
+## Curated Study Packs (Supabase-backed, remote-only)
+
+Kullanıcıların Supabase'de barındırılan, önceden hazırlanmış JLPT çalışma paketlerini (şema: `docs/jlpt_pack_schema.md`) tek tıkla desteler + özel testler olarak içe aktarabildiği özellik. **Bundle'a gömülü/yerel paket verisi YOK — Supabase tek doğruluk kaynağı.** Paketler **furigana/reading/onyomi/kunyomi içermez** — bunlar mevcut offline kuromoji parser'ı ile import anında üretilir (kanji sözlüğü zaten ayrı, tıklanan kanji'ler için offline). Çekirdek FSRS motoru, Supabase şeması, Electron ve `vite.config.js` **dokunulmadı**.
+
+**Geçmiş not (remote-only'e geçiş):** Özellik başlangıçta bir built-in bundle paketi (`BUILTIN_PACKS`, `src/data/study-packs/en/jlpt_n5_pilot_pack.json`, dynamic-import chunk) ile Supabase remote kataloğunu birlikte gösteriyordu (aynı `packId` varsa remote tercih edilip built-in kart filtreleniyordu). Remote altyapı üretimde stabil hâle gelince (Supabase `curated_packs` + `study-packs` bucket dolduruldu), ürün kararıyla **built-in yol tamamen kaldırıldı**: `BUILTIN_PACKS`, `findBuiltInPack`, `importBuiltInPack` (`studyPackService.js`), built-in kart render/`importPack` (`CommunityHub.js`), `communityImportPack` window global (`main.js`) ve bundle JSON'un kendisi (`src/data/study-packs/en/jlpt_n5_pilot_pack.json`) silindi. Sebep: aynı paket iki kaynakta yaşadığından Community'de kısa süreli "iki kart" görünme/flicker riski vardı (remote yükleme tamamlanana kadar built-in kart görünüyordu); artık tek kaynak olduğundan bu risk yapısal olarak yok. `docs/jlpt_pack_schema.md` ve `src/data/study-packs/en/jlpt_n5_pilot_pack_audit.md` (dokümantasyon, uygulama kodu tarafından import edilmiyor) korundu.
+
+### Veri modeli (`src/store/appState.js`)
+- **`state.importedPacks`:** `createInitialState()`'e eklendi (`[]`). Her giriş: `{ packId, title, version, importedAt, deckId, cardCount, testCount, source, level, language }` (`source` her zaman `'remote'`).
+- **`migrateImportedPacks(state)`:** `migrateCustomTests` ile birebir aynı desende (yoksa `[]`), `main.js`'deki **5 migrasyon noktasında** (boot load + boot cloud-pull + connectSyncCode + manualSync + migrateAndSave) `migrateCustomTests(state)`'ten hemen sonra çağrılır.
+- **`isPackImported(state, packId)` / `addImportedPack(state, entry)`:** Saf sorgu/yazma yardımcıları (export), `addCustomTest` ile aynı desen.
+
+### Supabase şeması (`supabase-schema.sql`)
+- **`curated_packs` tablosu:** `pack_id`(unique) + `level`/`language`/`title`/`description`/`version`/`card_count`/`test_count`/`storage_path`/`checksum`/`size_bytes`/`is_active`. Yalnız **metadata** tutar — gerçek paket JSON'u Storage'da (`storage_path`).
+- **RLS:** Public **SELECT** yalnız `is_active=true` satırlar için bir policy ile açık. **INSERT/UPDATE/DELETE policy'si YOK** → anon key hiçbir yazma yapamaz (varsayılan RLS reddi). Admin yazma yalnız service-role script'i (`scripts/upload_curated_pack.js`) veya SQL console üzerinden — RLS'i bypass eder, herhangi bir policy'ye bağlı değildir.
+- **Storage bucket:** `study-packs`, **public** (`INSERT INTO storage.buckets ... public=true`). Public bucket'lar `/storage/v1/object/public/<bucket>/<path>` üzerinden **policy kontrolü olmadan** okunur → ayrı bir `storage.objects` SELECT policy'sine gerek yok. Yazma yine yalnız service-role (upload script).
+- **Path konvansiyonu:** `storage_path` **bucket-dahil** tam yol (ör. `study-packs/en/jlpt-n5-en-pilot-v1.json`) — client tarafında URL inşası tek bir string concat'i (`${SUPABASE_URL}/storage/v1/object/public/${storage_path}`), ayrı bucket-adı config'i GEREKMEZ.
+
+### `src/services/studyPackService.js`
+- **`dbService.js` (network/Supabase erişimi):** `fetchCuratedPackCatalog()` (PostgREST `curated_packs?is_active=eq.true`, `sbFetch` kullanır) + `fetchCuratedPackFile(storagePath)` (public Storage URL'ine düz `fetch`, `sbFetch` DEĞİL — Storage endpoint'i PostgREST değil, public bucket'ta auth header da gerekmez). İkisi de mevcut `community_decks` fonksiyonları gibi try/catch + `console.error` + re-throw.
+- **`importPackData(app, pack, sourceMeta)` (modül-içi paylaşılan çekirdek):** Doğrulanmış bir pack objesini `app.state`'e decks + custom tests olarak yazar. Tek çağıran `importRemotePack`.
+  - **Deste hiyerarşisi (3 katman):** Kök deste (`pack.title`) → kategori desteleri (paketteki `type`'lara göre `Vocabulary`/`Kanji`/`Grammar`/`Sentences`, İngilizce sabit) → paketin kendi destesi birebir yaprak deste olarak korunur.
+  - **Kart eşleme:** `card.front→kanji, card.back→meaningTr, card.exampleJp→exampleJp, card.exampleTranslation→exampleTr`. Mevcut şema alanları **yeniden adlandırılmadı**. `furigana=generateFurigana(front)`, `exampleFuriganaMap` = `exampleJp` doluysa `generateFuriganaMap(exampleJp)` — ikisi de import anında senkron üretilir, try/catch korumalı (`autoFurigana` ile aynı desen, parser hazır değilse import engellenmez).
+  - **Fresh SRS + reverse-study — SIFIR ek kod:** `app.makeCard(...)` zaten hem `srs` hem `srsReverse`'i taze `createSrsData(...)` ile üretiyor (v2.6'dan beri) → import edilen kartlar otomatik normal + ters çalışmaya hazır.
+  - **Test eşleme:** Her paket testi `addCustomTest`'e `{id, title, questions, sourcePackId}` olarak eklenir. `correctValue` **paketten geldiği gibi** korunur (TRUE_FALSE için JSON boolean) — bkz. aşağıdaki TestView düzeltmesi.
+  - **Tekrar-import koruması:** `isPackImported` fonksiyon başında kontrol edilir; `true` ise deste/test/metadata **hiç oluşturulmaz**, `{status:'already_imported'}` döner.
+- **`validatePackData(pack)` (export):** Sığ/kasıtlı-basit yapısal doğrulama — `packId`/`decks[]`/`tests[]` var mı, her kart `front`+`back` içeriyor mu, **yasak alanlar** (`furigana`, `reading`, `kanaReading`, `romaji`, `onyomi`, `kunyomi`, `kanjiMeaning`, `kanjiBreakdown` — `docs/jlpt_pack_schema.md`'deki tam liste) hiçbirinin kartta OLMADIĞI. Uzak paket için özellikle önemli (güvenilmeyen kaynak).
+- **`loadRemotePackCatalog()` (export):** `fetchCuratedPackCatalog()`'u sarar, **asla throw etmez** → `{status:'ok',packs}` / `{status:'error',message}`. CommunityHub bunu her zaman güvenle çağırabilir.
+- **`importRemotePack(app, catalogEntry)` (export):** `isPackImported` erken kontrol → `fetchCuratedPackFile` → `validatePackData` → `importPackData(..., {source:'remote'})`. Hata durumunda `reason:'download'` (fetch başarısız) veya `reason:'invalid'` (doğrulama başarısız) ile ayrıştırılmış döner → UI daha spesifik toast gösterebilir.
+
+### CommunityHub UI (`src/components/CommunityHub.js`)
+- **`_remoteState`/`_remotePacks`** modül-içi state (`idle|loading|ready|error`), community-decks state'inden (`_state`/`_decks`) bağımsız. `renderCommunityHub()` `paint()` → `load()` (community decks) → `loadRemote()` (curated pack kataloğu) sırasıyla başlatır; ikisi de kendi state'ini güncelleyip bağımsız `paint()` çağırır — biri başarısız olsa diğeri etkilenmez.
+- **`curatedPacksHTML()`:** Yalnız `_remoteState==='ready'` iken `_remotePacks.map(remotePackCardHTML)` render eder; `idle`/`loading` iken `pack_loading` notu, `error` iken `pack_remote_unavailable` notu gösterir — **hiçbir ara durumda yerel/fallback kart render edilmez**, bu yüzden flicker/duplicate riski yapısal olarak yok.
+- **`remotePackCardHTML(pack)` + `packBadges(pack)`:** Level/Language/Version/cardCount/testCount rozetleri. `isPackImported(app.state, pack.pack_id)` true ise buton yerine `✓ Imported` rozeti (badge-soft).
+- **`importRemotePackAction(packId, btnEl)` (export, `communityImportRemotePack` window global):** Butonu kilitleyip `pack_importing` yazar → `importRemotePack` çağırır → sonuca göre toast (`pack_import_success`/`pack_already_imported`/`pack_download_failed`/`pack_invalid`/genel `pack_import_failed`) → **`finally` içinde koşulsuz `paint()`**.
+
+### TestView/TestResults sağlamlaştırması — TRUE_FALSE boolean `correctValue` çökmesi (`src/components/TestView.js` + `src/utils.js`)
+- **Kök neden:** Şema, TRUE_FALSE `correctValue`'yu JSON **boolean** olarak tanımlıyor; mevcut `TestEditor.js` UI'dan oluşturulan testlerde ise bu alan hep **string** (`'true'`/`'false'`) idi. Eski `handleAnswer`, `(q.correctValue || '').trim()` yapıyordu — `correctValue` boolean `true` iken `.trim()` **throw eder**; `false` iken sessizce hep yanlış sayardı. `TestResults.js`'in `esc(a.correctValue)`'su da aynı sebeple boolean `true`'da throw ederdi.
+- **Düzeltme:** `handleAnswer` + `showFeedback`'in TRUE_FALSE dalı artık karşılaştırmadan önce **her iki tarafı da `String(...)` ile** normalize ediyor (`String(q.correctValue ?? '').trim().toLowerCase()`). `utils.js → esc(s)`'e tek satır savunma eklendi (`String(s).replace(...)`) — paylaşılan, 50+ çağrı yerli bu yardımcı artık boolean/number gibi string-olmayan truthy girdilerde çökmüyor.
+- **Mevcut string-tabanlı testler ETKİLENMEDİ:** `String('true') === 'true'` (no-op) olduğundan TestEditor'dan oluşturulan eski testler birebir eskisi gibi çalışıyor.
+
+### `scripts/upload_curated_pack.js` (admin-only, otomatik ÇALIŞMAZ)
+- CommonJS (`require`, `scripts/chunk_ko.js` ile aynı stil) — root `package.json`'a `"type":"module"` eklemek GEREKMEDİ. Hiçbir npm script'e/CI'a bağlı değil, yalnız elle `node scripts/upload_curated_pack.js` ile çalışır.
+- **Ortam değişkenleri (hepsi zorunlu, hiçbiri hardcode edilmedi):** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CURATED_PACK_FILE` (yerel JSON yolu), `CURATED_PACK_STORAGE_PATH` (bucket-dahil hedef yol). Opsiyonel `CURATED_PACK_ACTIVE=false` → yükle ama `is_active:false` (yayına almadan önce gizli tutmak için).
+- **Akış:** dosyayı oku → `card_count`/`test_count` hesapla (test_count = **toplam soru sayısı**, `studyPackService.js`'deki `testCount` ile aynı konvansiyon, test *objesi* sayısı DEĞİL) → SHA-256 checksum + byte boyutu → Storage'a `POST .../storage/v1/object/{bucket}/{path}` (`x-upsert:true`, service-role auth) → `curated_packs`'e `POST .../rest/v1/curated_packs?on_conflict=pack_id` (`Prefer: resolution=merge-duplicates`, service-role auth) ile upsert. Her adımda `!res.ok` → mesajlı throw, script exit code 1.
+- **Bağımlılık eklenmedi:** yalnız Node built-in `fs`/`path`/`crypto` + global `fetch` (Node ≥18).
+
+### i18n (`src/main.js → LANG`)
+4 dilde (en/tr/ko/mn) `curated_packs`, `import_pack`, `imported_pack`, `pack_importing`, `pack_already_imported`, `pack_import_success` (`{count}`,`{tests}`), `pack_import_failed` (`{msg}`), `pack_cards_count` (`{count}`), `pack_tests_count` (`{count}`), `pack_level` (`{level}`), `pack_language` (`{lang}`), `pack_version` (`{version}`), `pack_remote_unavailable`, `pack_loading`, `pack_download_failed` (`{msg}`), `pack_invalid` (`{msg}`). **Remote-only geçişte silindi** (4 dilden, artık hiçbir yerde kullanılmıyor): `jlpt_n5_pack_title`, `jlpt_n5_pack_desc` (built-in kartın statik başlık/açıklaması), `pack_offline_available` ("✓ Works offline" rozeti — yalnız built-in kartlarda vardı), `built_in_packs`/`remote_packs` (daha önceki iki-bölüm ayrımından kalan ölü anahtarlar).
+
+### Doğrulama (Vite preview canlı + build, remote-only geçiş sonrası)
+`vite build` ✓ (53 modül — built-in pack chunk'ı artık yok). Canlı (gerçek Supabase `curated_packs` kataloğu dolu): (1) Community açıldığında yalnız gerçek remote N5 paketi kart olarak render oldu (Level: N5 / Language: EN / Version: 0.1.0 / 300 cards / 100 test questions), built-in kopya/`✓ Works offline` rozeti **hiç görünmedi**; (2) Import → toast başarı → buton `✓ Imported`'a döndü; (3) Refresh (`communityRefresh()`) sonrası hâlâ tek kart, `Imported` durumu korunuyor — **duplicate/flicker yok**; (4) "COMMUNITY DECKS" (kullanıcı paylaşımlı desteler) bölümü ayrı ve normal render oluyor (boş durumda "No community decks yet."); (5) konsol hatası yok; test verisi (import edilen deste/testler/`importedPacks` girişi) localStorage'dan temizlendi.
+
+## Test Hiyerarşisi (Deck-benzeri Parent/Child Testler)
+
+Tests ekranı desteler gibi **parent-test / child-test** hiyerarşisi kullanır — ayrı bir "klasör app'i" değil. **Herhangi bir çalıştırılabilir test başka testlerin ebeveyni olabilir** (Test B'yi Test A'nın üstüne sürükle → B, A'nın çocuğu olur, A artık üst/parent test gibi davranır ve tüm alt ağacıyla birlikte başlatılabilir). `kind:'folder'` yalnızca **eski (legacy) container-only** öğeler için korunur (geriye dönük uyumluluk); bunlar da parent gibi görünür ve descendant'larıyla başlatılabilir. Çekirdek FSRS motoru, Electron dosyaları, Supabase şeması ve `package.json` **dokunulmadı**.
+
+**Tarihsel not (v1→v2→v3):** v1 = dosya-tarayıcı (breadcrumb + klasöre gir); v2 = inline accordion ama **yalnız folder'lar parent/drop-target**; v3 (bu bölüm) = **deck-benzeri: her test parent olabilir**, birleşik başlatma (own + descendants), her öğe drop-target.
+
+### Veri modeli (`src/store/appState.js`)
+- **Tek koleksiyon, `parentId` ağacı:** Tüm testler düz `state.customTests` dizisinde; `parentId` (null=kök) hiyerarşiyi kurar ve **her öğe çocuk sahibi olabilir** (deck-benzeri). `kind:'folder'` legacy container (kendi `questions`'ı yok ama descendant'ları üzerinden başlatılabilir geçerli bir parent). Alan adları `kind`/`parentId` bilerek seçildi (`type`/`parent` DEĞİL) — `question.type` (`MULTIPLE_CHOICE`/`TRUE_FALSE`/`FILL_BLANK`) ile çakışmasın.
+- **`migrateCustomTests(state)`:** 5 ingestion noktasında (değişmedi) idempotent. `kind` eksik/geçersizse `'test'`e normalize; `parentId` eksik/dangling/kendine-referans ise köke sıfırlanır (orphan kaybolmaz).
+- **CRUD + ağaç yardımcıları:** `addCustomTest`, `updateCustomTest` (`updatedAt` damgalar), `deleteCustomTest` **cascade-aware** (bir öğeyi silmek tüm alt ağacını siler — deck davranışıyla tutarlı). `getTestChildren(state, parentId)` (doğrudan çocuklar), `getTestsInTreeOrder(state)` (`[{item, depth}]` derinlik-öncelikli — **v3'te herhangi bir öğenin çocuklarına koşulsuz iner**, sadece folder'lara değil), `getTestDescendants(state, id)` (tüm alt ağaç, tree order), `countTreeQuestions(state, id)` (own + descendant soru sayısı — Start rozeti için), `buildRunnableTestFromTree(state, id)` (aşağıya bakın), `moveCustomTest(state, id, newParentId)` (**v3'te döngü koruması TÜM öğeler için**: bir öğe kendi descendant'ına/kendine taşınamaz — eski `kind==='folder'` koşulu kaldırıldı).
+- **`buildRunnableTestFromTree(state, id)` (birleşik çalıştırılabilir test — YENİ):** `{ id, title, questions }` döner: **önce öğenin kendi soruları, sonra her descendant'ın soruları tree order'da** (her öğe bir kez ziyaret → duplikasyon yok). Soru objeleri **klonlanmadan** taze bir diziye referanslanır (TestView yalnız okur; büyük base64 image data URL'lerini kopyalamaz). `state`'i ASLA mutasyona uğratmaz. Legacy folder 0 own soru katkısı verir. Kötü id → `null`.
+
+### UI — Deck-benzeri parent/child kartlar (`src/components/TestManager.js`)
+Tests ekranı `DeckList` ile aynı **inline accordion** UX'i (breadcrumb/ayrı ekran YOK). Kök seviyede öğeler `getTestsInTreeOrder` ile derinlik girintili (`margin-left: depth*1.2rem` + `border-left`) tek listede. **Tek birleşik `itemRowHTML(item, depth)`** hem çalıştırılabilir testleri hem legacy folder'ları render eder (ikisi de parent olabilir).
+- **Collapse/expand:** Modül-içi `collapsedItems` Set (oturum-içi; herhangi bir parent id'siyle keyed — artık sadece folder değil). `hasCollapsedAncestor` alt ağacı gizler. Çocuğu olan HER öğede chevron (`deck-collapse-btn`); `testToggleCollapse` window global.
+- **Kart yapısı (deck kartının aynası):** `[chevron?] [başlık butonu + "N sub-tests" rozeti + own soru sayısı] [kebab menü]` sonra `.btn-row [Start (total)] [Details]`.
+  - **Başlık tıklaması:** çalıştırılabilir testte → **Details** (`showTestEditor` — kendi sorularını düzenleme editörü, deck başlığı→detay aynası); legacy folder'da → collapse toggle (folder editörde açılamaz).
+  - **Start butonu:** `countTreeQuestions` (own + descendant). total>0 ise `Start ({total})` (`start_test` anahtarı) → `playTest(id)`; aksi halde muted `no_questions_to_start`. **Own soru 0 ama descendant'ta soru varsa yine başlatılır** (legacy folder / boş parent senaryosu). Örnek: A(10)→B(20)→C(15) ağacında A kartı `Start (45)`.
+  - **Details butonu (`detail` anahtarı):** eski **"Edit"/"Düzenle" YERİNE** — çalıştırılabilir testlerde `showTestEditor(id)` (düzenleme hâlâ oradan yapılır). Legacy folder'da Details butonu **yok** (editörde açılamaz).
+  - **Rozetler:** `sub_tests_count` ("{count} alt test", `sub_decks_count` aynası, doğrudan çocuk sayısı) + `question_count` (own soru, deck-meta satırı).
+- **Kompakt aksiyon menüsü (`.card-menu` popover):** kebab (`more` ikonu). Folder menüsü: Rename Folder / Move / Delete; test menüsü: Move / Delete (test rename → Details/editör). Tek seferde bir menü (`toggleMenu`); `init`'teki tek document-click listener dışarı tıklamada kapatır. **Büyük "Move Test"/"Export" butonları YOK** (`exportTestToJson` utils'te dokunulmadan duruyor, UI yok).
+- **Silme (birleşik `deleteItem`):** cascade-aware (deck davranışı). Descendant varsa `confirm_delete_folder_nested` (folder) / `confirm_delete_test_nested` (test); yoksa `confirm_delete_folder`/`confirm_delete_test`. `deleteTest` window global her iki kind için kullanılıyor.
+- **Move (`moveItemModal`):** **Her öğe her öğeye taşınabilir** — geçerli parent'lar `getTestsInTreeOrder`'dan self+descendant hariç (folder emoji legacy container'ı işaretler) + kök (`move_top_level`). `moveCustomTest` döngü koruması evrensel.
+- **Sürükle-bırak (`DeckList` aynası): HER `.test-draggable` drop hedefi** (folder kısıtı KALDIRILDI — B'yi A'nın üstüne bırak → B, A'nın çocuğu, A parent olur; tam decks davranışı). `#test-drop-top-level` köke taşır. Mobilde `_attachLongPress` → move modal. Tümü `_moveTestDirect` (no-op + cycle guard + `render()` + toast). CSS `.deck-draggable`/`.deck-drop-top-level` selektörleri `.test-draggable`/`.test-drop-top-level`'ı da kapsar.
+- **Toolbar:** sadece **Create New Test + Import JSON** (ayrı "Create Folder" butonu YOK). Import edilen test köke yerleşir.
+
+### `TestEditor.js` — konum seçici (create-test akışında parent seçimi)
+- `render(testId)`: `existing` araması `ct.kind !== 'folder'` (savunma; folder id → taze "yeni test" formu, çökme yok — çalıştırılabilir **parent test** normal açılır ve kendi sorularını düzenler).
+- **Konum seçici (yalnız YENİ test):** `test_location_label` + `<select id="te-folder-select">` → Kök (`move_top_level`) / **mevcut TÜM öğeler** (`parentOptionsHTML` — herhangi bir öğe parent olabilir, folder emoji ile işaretli) / **"Create Folder …" (`__new__`, yeni grup)**. `__new__` seçilince `#te-new-folder-name` görünür.
+- `saveTest()`: yeni test → `parentId` select'ten; `__new__` ise önce kök seviyede yeni grup (`addCustomTest`, `kind:'folder'`; boş ad → `warn_name_empty`), sonra test o gruba konur.
+
+### `TestView.js` — birleşik çalıştırılabilir test
+`render(testId)` artık `buildRunnableTestFromTree(app.state, testId)` ile birleşik testi kurar (own + descendant soruları, tree order, state mutasyonsuz). Bir parent test/legacy folder başlatınca tüm alt ağacı çalışır; `test.title` = parent başlığı, `test.questions` = birleşik dizi. `TestResults` değişmeden bu başlığı/skoru gösterir.
+
+### Study pack import — testler klasör ağacına yerleşiyor (`src/services/studyPackService.js`)
+- **Paket başına bir kök test klasörü:** `importPackData` artık paketin `tests[]`'i boş değilse `pack.title` adında bir kök klasör (`kind:'folder'`, `sourcePackId` damgalı — deste kökündeki `rootDeck.sourcePackId` deseniyle tutarlı) oluşturuyor. Kategori alt klasörleri (`Vocabulary`/`Kanji`/`Grammar`/`Sentences`/`Mixed`) **lazy** oluşturuluyor — yalnız o kategoriye eşleşen en az bir test varsa.
+- **`normalizeTestCategory(packTest)`:** `packTest.category` → `tags[]` → `type` sırasıyla, küçük harfe çevrilip `vocabulary`/`kanji`/`grammar`/`sentence`/`mixed` anahtar kelimeleriyle eşleşme aranıyor (`docs/jlpt_pack_schema.md`'nin Test Object alanları). Eşleşme yoksa test doğrudan paketin kök klasörüne düşüyor (spec: "If metadata is not enough, put tests under the pack root folder").
+- **Gerçek Supabase N5 pilot paketiyle canlı doğrulama (aşağıya bakın):** paketteki tüm testlerin `category` alanı `"Quiz"` (içerik kategorisi değil, format bilgisi) ve `tags` alanı yok → **hiçbiri** alt klasöre eşleşmiyor, 5 test de doğrudan kök pakete düşüyor. Bu **kod hatası değil**, spec'in kastettiği fallback'in tam olarak çalıştığının kanıtı — paket yazarları `category:"Vocabulary"` gibi bir alan doldurursa alt klasörleme otomatik devreye girer.
+- **`addImportedPack` girişine yeni (opsiyonel) `testFolderId` alanı eklendi** — pakete ait kök test klasörünün id'si, `deckId` alanının test-tarafı eşleniği. Var olan tüketiciler bilinmeyen alanı yok sayar, geriye dönük uyumluluk bozulmadı.
+- **Tekil-import ve toplu-import davranışları dokunulmadı:** `isPackImported`/`addImportedPack` imzaları, duplicate-import engelleme mantığı, `validatePackData`, Community remote-only mimarisi (built-in fallback YOK) **aynen korundu**. **v3 not:** `studyPackService.js` **değiştirilmedi** — mevcut pack-root(folder)→kategori(folder)→test ağacı yeni model altında zaten parent olarak render olur ve pack-root `buildRunnableTestFromTree` ile tüm import edilmiş testleri birleşik çalıştırır. Pack root `kind:'folder'` legacy container olarak kalır ama descendant'larıyla **başlatılabilir**.
+
+### i18n (`src/main.js → LANG`)
+- **v3 (parent/child) eklenenler** (4 dil): `start_test` (`{count}` — "Start ({count})", Play'in yerine), `sub_tests_count` (`{count}` — "{count} alt test"), `no_questions_to_start` (own+descendant 0 iken muted), `confirm_delete_test_nested` (`{name}`,`{count}` — descendant'ı olan çalıştırılabilir testin cascade-silme uyarısı).
+- **v3 kaldırılanlar** (4 dil, artık kullanılmıyor): `play_test` (→ `start_test`), `folder_item_count` (→ `sub_tests_count`).
+- **v2 eklenenler (korundu):** `test_location_label`, `move_label`, `card_actions`.
+- **v2 kaldırılanlar (korundu):** `export_test`, `toast_test_exported`, `folder_empty`.
+- Yeniden kullanılan mevcut anahtarlar: `detail` (Details butonu — deck ile aynı), `question_count` (own soru), `create_folder` ("Create Folder …" yeni-grup seçeneği), `folder_name_placeholder`, `rename_folder`, `move_test`(+`move_test_to_label`), `move_top_level`, `confirm_delete_folder`(+`_nested`), `confirm_delete_test`, `toast_folder_*`/`toast_test_*`, `warn_name_empty`, `warn_move_cycle`, `delete_btn`, `untitled_test`. (`edit_label` artık Tests'te kullanılmıyor ama DeckList/Search'te kullanıldığından korundu.)
+
+### Doğrulama (v3 parent/child)
+`vite build` ✓ (53 modül, hatasız). Vite preview canlı (seeded ağaç A(10)→B(20)→C(15) + legacy folder+child(5) + flat(3), DOM-tabanlı): (1) inline accordion doğru girinti — Test A d0 "10 questions"/`Start (45)`/"1 sub-tests"/chevron/Details, Test B d1 `Start (35)`, Test C d2 `Start (15)`, Legacy Folder d0 meta-yok/`Start (5)`/Details-YOK/chevron, Flat `Start (3)`; (2) **birleşik başlatma**: `playTest(A)` → TestView "1 / 45", ilk soru "A-Q1" (own-first, tüm alt ağaç, duplikasyon yok = 10+20+15); (3) collapse A → B & C gizlendi; (4) **test-to-test drag**: B'yi Flat'in üstüne bırak → B, Flat'in çocuğu, Flat `Start (38)` = 3+20+15 (grandchild C, B ile taşındı); (5) **cycle guard**: Flat'i (ata) descendant C'nin üstüne drag → engellendi (Flat kökte kaldı); (6) move modal (Flat): seçenekler self+descendant (B,C) hariç, çalıştırılabilir testler (Test A, Folder Child Test) parent olarak listelendi; (7) B'yi drop-top-level'a bırak → köke döndü; (8) **Details**: Test A'da Details → editör kendi 10 sorusuyla açıldı, düzenlenirken konum seçici gizli; (9) yeni-test konum seçici TÜM öğeleri (testler+folder) parent olarak + "Create Folder …" listeledi; (10) folder-guard: `showTestEditor(folderId)` → boş "yeni test" formu (çökme yok); (11) konsol hatası **yok**; seed temizlendi. **NOT:** screenshot port-proxy uyuşmazlığından alınamadı (ortam artefaktı) — DOM doğrulaması kapsamlı.
+
+## P0 Profesyonel UI Cila Pası (docs/ui_polish_roadmap.md — Stage P0)
+
+`docs/product_ui_quality_profile.md` + `docs/ui_polish_roadmap.md` baz alınarak yapılan ilk cila pası. Davranış/veri/SRS/sync **dokunulmadı**; yalnız markup/CSS/i18n. Build temiz (`vite build` ✓, 53 modül), Vite preview'da canlı doğrulandı (sumi + washi, 375px, en + tr).
+
+### 1. Deck aksiyonları → kebab deseni (`DeckList.js` + `app.css` + `main.js`)
+- **Deck list kartı:** Tekil `deck-move-btn` ikon butonu kaldırıldı → TestManager'daki `.card-menu` kebabının aynası eklendi: **Rename (`modal_rename`) / Move (`move_label`) / Delete (danger)**. `.deck-move-btn` CSS'i silindi (ölü).
+- **Deck detail:** Eski 3 satır (Study+Add+**inline Delete danger** / tam-genişlik Browse / tam-genişlik Search) → **tek satır**: `Start studying (N)` primary + `Add card` ghost + kebab [**Browse / Search in this deck / Delete(danger)**]. `#deck-scoped-search-bar` yerinde kaldı; `toggleDeckScopedSearch` kebab menü öğesinden çağrılır (canlı doğrulandı).
+- **Altyapı:** `toggleDeckMenu(menuId)` / `closeDeckMenus()` export + window global (`main.js`). Detail menüsü id çakışmasın diye `detail-${deckId}` önekli. `DeckList.init`'e TestManager'la aynı dış-tık kapatma listener'ı eklendi (guard'lı; iki listener birlikte zararsız). Menü öğeleri `event.stopPropagation();closeDeckMenus();<aksiyon>` kalıbı kullanır (dış-tık listener'ı menü İÇİ tıklarda tetiklenmez → açık kapama şart).
+- **`deleteDeck` view guard'ı:** Artık liste kebabından da çağrılabildiğinden navigasyon `app.currentView === 'deck'` ile korunur — detail'den silme eski davranış (parent'a/decks'e git), listeden silme yerinde `renderDeckList()+renderGlobalStats()`.
+- **CSS:** `.btn-row .card-menu { align-self:center }` (kebab btn-row içinde ortalanır).
+
+### 2. Ayarlar dil seçici (`Settings.js` + `app.css` + `index.html`)
+- Tanımsız `.theme-btn` sınıfı (stilsiz metin butonları) → **`.lang-btn`** gerçek sınıfı: `--card` zemin + `--bd-ctrl` `--line` kenar + `--r-md` + `--tap` min yükseklik. Aktif (`.is-active`): `--hanko-bg` zemin + `--hanko` metin/kenar + check ikonu + `aria-pressed` (tema seçicinin hanko aktif diliyle tutarlı). `index.html`'deki `#lang-section` inline flex stili → `.lang-grid` sınıfı.
+- Ölü `.form-input` sınıfı AI bölümünden kaldırıldı (base input stili zaten geçerli).
+
+### 3. Curated pack kartları premium (`CommunityHub.js` + `app.css`)
+- **5 özdeş gri `badge-soft` çip düzeni kaldırıldı** (`packBadges` fonksiyonu silindi). Yeni hiyerarşi: üstte `.pack-card-head` [**`badge-sky` ★ Curated** (yeni `pack_curated_badge` anahtarı) + **`badge-jade` seviye** (ham değer, ör. N5) + `badge-soft` dil kodu] → başlık → açıklama → **tek `.deck-meta` satırı** ("300 cards · 100 test questions · Version: 0.1.0" — mevcut `pack_cards_count`/`pack_tests_count`/`pack_version` anahtarları ' · ' ile birleşik, her parça `esc()`li).
+- `.pack-card { border-color: var(--sky) }` — kullanıcı destelerinden sessizce ayrışan sky saç çizgisi (tüm temalarda token'dan). "Imported" rozeti `badge-soft` → **`badge-jade`** (başarı semantiği).
+- **Empty/loading/error birleşimi:** `paint()` durumları `.community-state` (düz metin) → **`.empty` şekline** (ikon + satır [+retry]): loading = dönen `sync` ikonu (`.spin` artık `display:inline-flex` — global CSS), error = `alert` ikonu + retry ghost, boş = `community` ikonu. `.community-state` CSS'i silindi (ölü). Curated katalog yükleme notuna küçük spinner eklendi.
+- **i18n:** tek yeni anahtar `pack_curated_badge` 4 dile (en 'Curated' / tr 'Küratörlü' / ko '큐레이션' / mn 'Түүвэр'), `curated_packs`'ten hemen sonra.
+
+### 4. Google Fonts kaldırıldı (`index.html`)
+5 kullanılmayan Google Font linki (**Libre Baskerville, Pacifico, Righteous, Permanent Marker, Lato**) silindi — hiçbir CSS/JS referansı yoktu (gövde sistem sans yığını, Japonca Mincho sistem fontu). İlk boyamadaki ağ bağımlılığı kalktı (offline-first PWA'ya uygun). Ayrıca `bulk_format` statik fallback metni LANG anahtarıyla eşitlendi (eski 5-alanlı format yazıyordu).
+
+### 5. Genel tutarlılık (app.css)
+- **Klavye odak halkası (app geneli):** `:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px }`; input/textarea/select hariç (onlar sky kenarlık odağını korur).
+- **Hover:** `@media (hover:hover)` altında `.btn-ghost:hover`/`.icon-btn:hover` → `--paper-2` (dokunmatikte etkisiz).
+
+### Doğrulama
+Canlı preview (DOM-tabanlı; screenshot yine port-proxy artefaktı nedeniyle alınamadı): deck list kebabı açılır/dış-tıkla kapanır (Rename deck/Move/Delete); deck detail = 1 `.btn-primary` + 0 inline danger + kebabdan Search bar açma & Browse modalı çalışır; `align-self:center` uygulanır; dil butonları 4×48px, aktif=hanko-bg/hanko (washi'de `#f3dcd6`/`#a8362a`, sumi'de tema karşılıkları), taşma yok; pack kartı sky kenarlıklı + Curated/N5/EN rozet hiyerarşisi + tek meta satırı (en+tr), Import primary; community boş durumu `.empty` ikonlu; `setLang('tr')` tüm yeni yüzeylerde doğru; study girişi + scroll kilidi + çıkışta kilit kalkması sağlam; konsol hatası/uyarısı yok.
+
+## Stage 2 UI Cila Pası (docs/ui_polish_roadmap.md — Stage 2: Cards/Buttons/Forms/Menu Consistency)
+
+P0 sonrası ikinci pas. Davranış/veri/SRS/sync **dokunulmadı**; yalnız markup/CSS/i18n. Build temiz (`vite build` ✓, 53 modül), Vite preview'da canlı doğrulandı (computed-style karşılaştırmalı, 375px, en + tr).
+
+### 1. One-primary-action — 3 fazla primary demote edildi
+- **`index.html` → `#btn-ai-deck`:** `btn-primary` → **`btn-ghost`**. Sebep: yalnız AI modalını açan tetikleyici (asıl primary Generate modalın içinde); view-add'in form primary'leri Save + bulk Import olarak kaldı (her biri kendi form bölümünün submit'i — profil §4 Forms kuralı).
+- **`TestManager.js` toolbar → "Create New Test":** `btn-primary` → **`btn-ghost`**. Test kartlarındaki `Start (N)` görünümün tek primary'si (Decks aynası: deste oluşturma da sessiz topbar ikon butonu).
+- **`CommunityHub.js` header → "Publish":** `btn-primary btn-sm` → **`btn-ghost btn-sm`**. Görünümün asıl aksiyonu kart-başına Download/Import primary'si; başlık yanındaki paylaş/yenile sessiz kalır.
+- Kart-başına tek primary (deck Study / test Start / community Download / pack Import) korundu — profil §9 onaylı desen.
+
+### 2. Tekrarlanan inline stiller → paylaşılan sınıflar (`app.css`)
+GENERIC CARD bölümüne eklenen yeni sınıflar (Decks & Tests satır yapısı artık birebir aynı markup):
+- **`.card-title-btn`** (+ `.card-title-btn .card-title { display:block }`): kart satırındaki görünmez tam-genişlik başlık butonu — eski `style="text-align:left;justify-content:flex-start;flex:1;min-width:0;padding:0"` (DeckList ×2 + TestManager ×1) yerine.
+- **`.card-child`**: ağaçta girintili çocuk kartın `border-left:3px solid var(--line)` saç çizgisi (DeckList satır + alt-deste kartı + TestManager `indentStyle`). Dinamik `margin-left` inline kaldı (depth'e bağlı). NOT: `.drag-over`/`.dragging` sınıf kuralları artık sol kenarı da ezebiliyor (eski inline stil ezilemiyordu) — sürükleme vurgusu bütünleşik, kasıtlı iyileşme.
+- **`.btn-row.card-actions`**: kart içi kompakt aksiyon satırı `margin-top:.6rem` (eski `.6rem`/`.4rem` inline karışımı tek değerde birleşti; alt-deste satırındaki `btn-sm` küçük Study/Detail butonları da kaldırılıp tam boy yapıldı — liste/test satırlarıyla tutarlı).
+- **`.action-note`**: primary yerine geçen soluk not (`display:flex;align-items:center;flex:1`) — "No cards to study"/"no questions" span'leri.
+- **`.badge-row`**: deck kartındaki rozet satırı (eski `btn-row` + inline margin yerine; flex+wrap+gap .5rem).
+- **`.modal-glyph-head`** (+ `.modal-glyph-head .fc-kanji { font-size:4rem; line-height:1 }`): Kanji/Word modallarının ortalanmış glif başlığı — KanjiModal (bulunan + bulunamayan dallar) ve WordModal'daki 3 farklı inline center bloğu tek sınıfta birleşti.
+- **`.head-actions`** + **`.community-hub-head .section-hd { margin:0 }`**: Community başlık aksiyon grubu; iki `style="margin:0"` inline'ı silindi.
+- **`.deck-pick-list` / `.deck-pick-btn`** (+ `.deck-pick-btn .text-muted { font-size:.8rem }`): publish modalındaki deste seçici satırları (inline width/align/justify temizlendi; dinamik `padding-left` girintisi inline kaldı).
+- **`.search-result .cli-kanji/.cli-meaning/.cli-furi` kuralları:** `Search.js → searchResultHTML` satır şablonundaki tüm inline stiller (ruby küçültme, anlam terfisi, örnek cümle demote) `search-result` sınıfı altında CSS'e taşındı — computed değerler birebir korundu (19.2px/16px/.9rem 600/.8rem 400, canlı doğrulandı). Base `.cli-info .cli-*` kurallarından SONRA tanımlı (eşit özgüllük → kaynak sırası kazanır).
+
+### 3. Form tutarlılığı
+- **`Settings.js`:** 4 `<select class="si-input">`'taki `style="text-align:left"` inline'ları silindi → `app.css`'e `select.si-input { text-align:left }` (input'lar sağa hizalı kalır). `.form-input`/`.theme-btn` P0'da zaten temizlenmişti — kod tabanında sıfır referans doğrulandı.
+- **`TestEditor.js` alt aksiyon satırı:** `<div style="display:flex;gap:.5rem">` + Cancel(flex:1)/Save(flex:2) **ters sırası** → standart `.btn-row` + **Save primary önce, Cancel ghost sonra** (modal aksiyon sıralamasıyla tutarlı, profil §4 Modals).
+
+### 4. Microcopy / i18n (2 yeni anahtar × 4 dil + 2 hardcoded string düzeltmesi)
+- **`test_no_results`** (en 'No test results yet.' / tr 'Henüz test sonucu yok.' / ko '아직 테스트 결과가 없습니다.' / mn 'Тестийн үр дүн алга.', `test_no_questions`'tan hemen sonra): `TestResults.js`'deki hardcoded `"No results"` yerine.
+- **`info_label`** (en 'Info' / tr 'Bilgi' / ko '정보' / mn 'Мэдээлэл', `srs_haptics_hint`'ten hemen sonra): `Settings.js → settingItemHTML`'deki hardcoded `aria-label="Bilgi"` yerine.
+- **`CommunityHub.showPublishPicker`:** hardcoded `"${count} cards"` → mevcut `pack_cards_count` anahtarı (tr'de "8 kart" canlı doğrulandı).
+- `bulk_format` bayat 5-alanlı format P0'da zaten düzeltilmişti (4 dilde 4-alanlı, index.html fallback + placeholder dahil) — değişiklik gerekmedi.
+- `TestResults` dönüş butonu `style="margin-top:1rem"` → mevcut `.mt-2` utility.
+- **Bilinen boşluk (kapsam dışı bırakıldı):** `index.html`'deki statik `aria-label`'lar ("Geri", "Yeni deste", "Ara", "Güncelleme mevcut") hâlâ hardcoded Türkçe — `data-t` yalnız metin düğümlerini çevirdiğinden JS wiring gerektirir; ayrı bir pasa bırakıldı.
+
+### Doğrulama (Vite preview canlı, DOM/computed-style tabanlı)
+(1) Deck kartı: `.card-title-btn` computed = eski inline birebir (left/flex-start/0/flex:1), badge-row 8px gap, actions margin 9.6px, kart+view başına 1 primary; (2) deck detail: 1 primary + 1 ghost + 1 kebab; (3) Tests: toolbar 0 primary/2 ghost, seeded parent→`Start` primary + child `.card-child` (3px border-left + 1.2rem inline indent); (4) TestEditor: [primary:Save, ghost:Cancel]; (5) test-results boş → "No test results yet." (tr: "Henüz test sonucu yok."); (6) Settings: `cfg-fuzz` text-align left, info aria "Info"/"Bilgi"; (7) Community: 2 head, head-actions [ghost, ghost], section-hd margin 0, durum `.empty` şekli; (8) publish picker: space-between + "8 cards"/"8 kart"; (9) arama sonucu computed stiller birebir; (10) Word→Kanji modal drill-down + geri butonu sağlam, glyph head 4rem/lh1; (11) 375px'te yatay taşma yok, konsol hatası yok, seed temizlendi. (Screenshot yine ortam artefaktı nedeniyle alınamadı — DOM doğrulaması kapsamlı.)
+
+## Stage 3 UI Cila Pası (docs/ui_polish_roadmap.md — Stage 3: Decks/Tests Hiyerarşi Paritesi)
+
+Dar kapsamlı parite pası — hiyerarşi mantığı, drag/drop davranışı, veri modeli **dokunulmadı**; yalnız markup/CSS/i18n. Build temiz (`vite build` ✓, 53 modül), Vite preview'da canlı doğrulandı (seeded iç içe deste + test ağacı, 375px, en + tr, washi + sumi).
+
+### Bulunan tutarsızlıklar & düzeltmeler
+1. **Tests chevron etiketleri deste dilindeydi:** `TestManager.js` collapse butonu `collapse_decks`/`expand_decks` ("Collapse sub-decks") anahtarlarını kullanıyordu. Yeni **`collapse_tests`/`expand_tests`** anahtarları 4 dile eklendi (`sub_tests_count`'tan hemen sonra; tr 'Alt testleri gizle/göster', ko '하위 테스트 접기/펼치기', mn 'Дэд тест хураах/дэлгэх') ve TestManager'a bağlandı.
+2. **`aria-expanded` yoktu:** Her iki collapse butonuna da (`DeckList.js` + `TestManager.js`) `aria-expanded="${!isCollapsed}"` eklendi — toggle'da canlı doğrulandı (true↔false).
+3. **Folder ikonu paritesi:** Deste satırları çocuğu olunca 📁 ikonu alıyordu; test satırlarında ikon yalnız legacy `kind:'folder'` öğelerdeydi → **çocuğu olan runnable parent test** ikonsuzdu. `folderIcon = (isFolder || hasChildren)` yapıldı — ikon artık iki tarafta da "alt ağacı var" demek.
+4. **Legacy folder satırında meta satırı yoktu:** Deste satırları hep 2 satırlı başlık bloğu (başlık + meta) taşırken folder satırları tek satırdı. Folder'lar artık `question_count` ile **alt ağaç toplamını** meta olarak gösterir (Start (N) sayacıyla eşleşir; boş folder → "0 questions" + muted not — deck'in "0 cards · 0 mastered" + "No cards to study" davranışının aynası).
+5. **Drag/drop hardcoded renk:** `.drag-over` halkası `rgba(100,160,255,.35)` ve drop-zone zemini `rgba(100,160,255,.08)` **hardcoded maviydi** (token disiplinine aykırı, sumi'de yanlış). → `color-mix(in srgb, var(--sky) 35%/8%, transparent)` (swipe-glow/heatmap'le aynı teknik). Canlı doğrulama: halka washi'de `#2c5d80`, sumi'de `#7fb0d6` @%35 — tema-duyarlı.
+
+### Zaten tutarlı olduğu doğrulananlar (değişiklik YOK)
+Girinti matematiği (1.2rem × depth, inline margin) + `.card-child` saç çizgisi (Stage 2'den), chevron boyut/konumu (30×30 `.deck-collapse-btn`, card-row başında), `deck-sub-badge` rozet stili + paralel "{count} sub-decks"/"{count} sub-tests" metinleri (4 dil), kebab CSS/tek-menü-açık/dışarı-tık kapatma, drop-to-top-level bölgesi (ortak selektörler), long-press → move modal.
+
+### KASITLI ayrılıklar (dokunulmadı — daha önce belgelenmiş kararlar)
+Test kebabında Rename yok (runnable test adı Details/editörden değişir); legacy folder başlığı collapse toggle'lar (detayı yok); deck satırındaki SRS rozet satırı (`badge-row`) testlerde yok (SRS durumu yok). Deck dragover'daki işlevsiz `types.includes` kontrolü ve test drop'taki geç `preventDefault` görsel soruna yol açmadığından mantığa dokunulmadı.
+
+### Doğrulama
+Seeded ağaç (deste: parent+child; test: parent→child, legacy folder→child, boş folder) ile canlı: iki tarafta chevron 30×30 + doğru dil etiketleri + aria-expanded senkron; parent test 📁 ikonlu; child indent 19.2px + 3px sol çizgi iki tarafta birebir; folder meta "1 questions", boş folder "0 questions"/"No questions to start"/chevron'suz; collapse→child gizlenir/expand→döner (iki taraf); 375px'te decks+tests yatay taşma yok; tr'de "Alt testleri gizle"/"1 alt test"/"1 soru"; konsol hatası yok; seed temizlendi.
+
+## Stage 4–8 UI Cila Pası (docs/ui_polish_roadmap.md — Study/Community/States/Mobile/A11y/Reduced-Motion, tek sınırlı pas)
+
+Kalan yol haritası kalemleri tek pasta tamamlandı. Davranış/veri/SRS/sync/hiyerarşi mantığı **dokunulmadı**; yalnız markup/CSS/i18n/aria. Build temiz (`vite build` ✓, 53 modül), Vite preview'da canlı doğrulandı (sumi, 375px + 320px, en + tr; swipe/flip/grade/kebab/scroll-lock davranış kilitleri eval ile test edildi, konsol hatası yok).
+
+### Study ekranı (Stage 4)
+- **Grade grid:** `.ans-again/hard/good/easy` artık `color-mix` ile %22 token-türevi ince kenarlık + `:active`'de %12 koyulaşan tint alır. **Renk haritası değişmedi** ve CSS'e kilit yorumu eklendi: Again=hanko(glow-left), Hard=gold(glow-down), Good=sky(glow-right), Easy=jade(glow-up) — swipe glow ile birebir.
+- **`.fc-divider` kısa/ortalanmış** (`min(140px,44%)`, `margin:.9rem auto`) → arka yüz hiyerarşisi (ruby→anlam→örnek) kartı ikiye bölmeden ayrışır; `.fc-preview .fc-divider` yalnız margin override eder (genişliği miras alır). `.fc-meaning` alt boşluğu .6rem'e çekildi.
+- **Progress:** `.study-progress(-fill)` radius `var(--r-pill)`; `.study-count`'a `font-variant-numeric:tabular-nums` (sayı değişiminde zıplama yok). `.swipe-hint` `.72rem` (fc-flip-hint ile aynı).
+- **Hardcoded `#000` aktif durum düzeltmesi (gerçek sumi bugı):** `.btn-primary:active` ve `#btn-show:active` `#000` fill kullanıyordu → sumi'de (açık ink) basılı butonda metin okunmaz oluyordu. → `color-mix(in srgb, var(--ink) 86%, var(--paper))`. `.btn-danger:active` `#ecc6bf` → `color-mix(hanko 12%, hanko-bg)`.
+
+### Tamamlama / no-due durumları (Stage 4)
+- **`renderStudy` boş-kuyruk dalına `studied === 0` guard'ı eklendi:** hiç kart çalışılmadan boş/bitmiş kuyrukla girilirse kutlama yerine sakin `.empty` durumu ("All caught up — no cards due right now." + Back to deck primary). Konfeti/`animateCountUp` bu dalda hiç çalışmaz; kutlama yine oturum başına bir kez (`celebrated` guard dokunulmadı). Yeni anahtar `study_all_caught_up` 4 dile (`Object.assign(LANG.xx, …)` bloklarında).
+- **`animateCountUp`'a reduced-motion guard'ı:** `matchMedia('(prefers-reduced-motion: reduce)')` → hedef değer anında basılır (sayaç animasyonu yok).
+
+### Reduced motion (P2 → kapandı)
+`app.css` sonuna `@media (prefers-reduced-motion: reduce)` bloğu: view `fadeIn`, `update-pulse`, `donePop`/`doneRise`/`fireFlicker` animasyonları kapatılır; `.streak-flame` transition + `lvl-hot/lvl-blaze` statik scale sıfırlanır; flip/preview-flip/swipe snap-fly/glow/progress-fill/modal/toast geçişleri `.01ms`'e indirilir (durum değişimleri — flip sonucu, snap-back, uçuş sonrası grade — **aynen gerçekleşir**, yalnız anlık olur; `setTimeout` tabanlı grade akışı etkilenmez). Confetti zaten opt-out'tu (confetti.js), sayaç yukarıda. Spinner (`.spin`) kasıtlı korundu (yükleme durumunu ileten temel geri bildirim).
+
+### Community / curated pack ikinci pas (Stage 5–6)
+- **`curatedPacksHTML` loading/error durumları `.empty.empty-sm` şekline geçti** (ikon + tek satır; error'da `communityRefresh` retry ghost butonu — eskiden retry'sız düz metindi). Yeni `.empty-sm` kompakt varyantı (`padding:1.5rem`, 36px ikon) app.css'e eklendi — bölüm-içi async durumlar sayfayı itmez.
+- Pack grid'indeki inline `style="margin-bottom:1.4rem"` → `.pack-grid` sınıfı. Ready+boş katalog davranışı (bölüm tamamen gizli) değişmedi; remote-only mimari dokunulmadı.
+
+### Empty/loading/error birleştirme (Stage 6)
+- `TestView` (soru yok) ve `TestResults` (sonuç yok) empty durumlarına `.empty-icon` (inbox) eklendi — artık tüm empty'ler ikonlu ortak şekilde.
+- **Decks boş durumuna tek CTA:** `#deck-list-empty`'ye `#btn-empty-create-deck` primary butonu (`modal_create_deck` anahtarı yeniden kullanıldı, statik + ikonlu); `main.js`'de `DeckList.showAddDeckModal`'a bağlandı. Boş durumda görünen tek primary — "one primary per view" korunur.
+- `.empty-icon` hardcoded `#c4b99c` → `var(--ink-soft)` + `opacity:.5` (tüm temalarda türetilir).
+
+### Mobil (Stage 7)
+- **Gerçek yatay taşma düzeltildi:** swipe-glow halosu (`inset:-22px`) 375px'te 6px yana taşıyor ve sayfa yatay kaydırılabiliyordu (v2.5.0'dan beri). → `html` **ve** `body`'ye `overflow-x: clip` (`hidden` DEĞİL — clip scroll container oluşturmaz, `position:sticky` önizleme kartı bozulmaz; viewport kaydırması kök elemanın overflow'unu izlediğinden yalnız body yetmez, canlı testte doğrulandı: scrollX 6.4→0).
+- Decks başlığı arama butonu: inline 34px stil → `.section-hd-row .icon-btn` (40×40, CSS'te). Deck-detail topbar rename butonu 30→34px. 320px'te decks+study taşmasız; grade grid 2×2 64px yükseklik, tr etiketleri sığar; alt nav 5 öğe sağlam; study scroll-lock çalışır.
+
+### Erişilebilirlik (Stage 8)
+- **Hardcoded Türkçe aria-label'lar i18n'e bağlandı:** `updateStaticTexts`'e `data-ta` desteği (aria-label ← `t(key)`); `index.html`'de btn-back/btn-update/btn-add-deck/btn-toggle-deck-search `data-ta` aldı (İngilizce fallback + mevcut `back`/`update_available`/`new_deck` anahtarları; yeni `search_label` anahtarı 4 dile). `title="Ara"` kaldırıldı.
+- **Kebab menüler:** `.card-menu-btn`'e `aria-haspopup` + `aria-expanded` (DeckList + TestManager `toggle*/close*` fonksiyonları senkron tutar — canlı doğrulandı false↔true).
+- **Settings info butonları:** `id="info-btn-{key}"` + `aria-expanded` + `aria-controls`; `toggleSettingInfo` panel aç/kapa ile senkron tutar.
+- Update popover kapatma (`up-close`) butonlarına `aria-label=t('close')`; TestEditor'daki ikon-only seçenek-sil/soru-sil butonlarına `aria-label=t('delete_btn')`.
+
+### Token temizliği (Stage 8 çevresi)
+`app.css`'te kalan hardcoded renkler token-türevi yapıldı: `update-pulse` keyframe rgba → `color-mix(hanko)`, `.streak-flame.lvl-blaze` drop-shadow rgba → `color-mix(hanko 45%)`, `.fm-token.fm-kanji` rgba → `color-mix(hanko 10/22%)`. **`.search-input:focus` hanko → `var(--sky)`** (diğer tüm inputlarla tutarlı bilgi/odak rengi). Kasıtlı bırakılanlar: `#modal-bg` scrim, `--sh-*` tokenlarının kendi rgba'ları, tema swatch'larındaki literal renkler, `.cal-day.is-active`/nav'daki beyaz-on-saturated (yerleşik strong-fill bağlamları).
+
+### KASITLI atlananlar
+Brand adı ("Stacks" vs Kanji-SRS, P3 — kullanıcı onayı gerekir); loading skeleton'ları (mevcut spinner'lı `.empty` şekli yeterli, skeleton karmaşıklığı gereksiz); study ekranında alt nav'ın gizlenmesi (navigasyon davranışı değişikliği olurdu); breadcrumb uzun-isim sarması (mevcut ellipsis yeterli, canlıda taşma üretmedi); Electron çok-sütun yoğunluk iyileştirmeleri (P3).
+
+## Nova Teması (v2) — Tema-Kapsamlı Alternatif Ürün Kabuğu (6. tema)
+
+5 kağıt-temasının yanına eklenen, seçildiğinde uygulamayı **kompozisyon düzeyinde farklı bir ürün** gibi gösteren parlak/fütüristik kabuk. İlk (v1) Nova pası "recolor" kaldığı için kullanıcı talebiyle v2'de **yapısal** hâle getirildi. Davranış/routing/FSRS/sync'e sıfır dokunuş; eski temalar canlı regression ile birebir doğrulandı.
+
+### Mimari — 3 yapısal kanca + CSS kompozisyonu (JS'te TEMA DALI YOK)
+Tema-koşullu JS yoktur; tema değişimi anında (re-render'sız) uygulanır. Tüm yapı şu kancalarla kurulur:
+1. **`.nv-only` elemanlar:** Bileşenler HER temada render eder; base `.nv-only { display:none }` (app.css MISC) gizler, yalnız `[data-theme="nova"]` gösterir. Örnekler: `#nv-decks-greeting` (hero tarih/gün — `DeckList.fillNovaGreeting`, `weekdays_full` i18n anahtarı 4 dile eklendi), `.nv-tile` (deste/test kartlarında ismin ilk grafemi, Mincho gradient karo — `DeckList.novaTile()` + TestManager satırı), `.nv-pack-emblem` (curated pack N5 seviye bloğu), `.nv-tile-user` (community satır avatarı). Hepsi `aria-hidden` (a11y adını kirletmez).
+2. **`.nv-hide` elemanlar:** Nova'nın kompozisyonda kaldırdığı (işlevi başka yoldan zaten var olan) elemanlar — deck/test kartlarındaki **Detail ghost butonu** (başlık tap'i aynı `openDeck`/`showTestEditor`'ı çağırır) ve pack head'deki küçük seviye rozeti (emblem'e taşındı). Yalnız Nova'da `display:none`.
+3. **Nötr sarmalayıcılar:** `index.html` → `#decks-top` / `#decks-body`; `DeckList.renderDeckDetail` → `.deck-detail-hero`; üç arka yüz şablonu (CardView study×2 + review, DeckList kart önizleme) → `.fc-example-wrap`. Standart temalarda stilsiz (görünmez, blok akışı birebir) — canlıda `wrapperInert:true` doğrulandı.
+
+### Kompozisyon farkları (Nova aktifken)
+- **Dashboard:** `#decks-top` = 30px gradient **hero paneli** (büyük `07.03 / Friday` tarih tipografisi + buzlu stat çipleri + **koyu lacivert streak banner'ı** — parlak kabuğun kasıtlı kontrast parçası); `#decks-body` = hero'nun üstüne -1.4rem bindirmeli **beyaz içerik sheet'i** (26px). Deste kartları sheet içinde **karo-öncülü satırlara** dönüşür: 44px gradient glif karosu + başlık/meta + kebab; rozetler başlığın altına (flex `order`), Study sağa hizalı **gradient pill** (Detail gizli). Drag/drop + `.card-child` ağaç çizgisi scoped re-assert'lerle korunur (satır stilinin özgüllüğü base `.dragging/.drag-over`ı ezdiğinden — bilinçli).
+- **Bottom nav:** **koyu cam kapsül dock** — ekrandan kopuk (alt .75rem+safe, yan 12.8px), `#101628` gradient + blur, aktif öğe **gradient dolgulu pill morph** (spring `::before`) + beyaz ikon/etiket. `#app` 108px, `#toast` 94px offset. Electron ≥768 sidebar geometrisi media bloğunda restore (açık cam; koyu kapsül mobil/web imzası).
+- **Study:** progress **cam kapsül header** (koyu sayaç pili) + 28px gradient-hairline cam yüzler + glif arkasında halo + sahne aurası; arka yüzde `.fc-divider` GİZLİ → örnek cümle **buzlu alt-panele** (`.fc-example-wrap`) taşınır (kompozisyon değişimi); `#btn-show` 58px gradient kapsül + `novaSheen`; cevap kartı `nvCardIn` girişi (drag başlar başlamaz `animation:none` — inline transform'la çatışmaz); grade grid **70px premium karolar + parlayan renk noktası** (`::before`, currentColor) — **semantik harita AYNEN**: Again=hanko/Hard=gold/Good=sky/Easy=jade, swipe glow eşleşmesi değişmedi.
+- **Tests:** `#test-manager-content` beyaz sheet; test satırları deck satırlarıyla aynı karo/pill sistemi (paylaşılan selektörler); tv-question-card/tr-score-card gradient hero panelleri; correct/wrong tintleri re-assert.
+- **Settings — kontrol merkezi:** `#settings-fields` tek cam panel, `.settings-item`'lar kart yerine **çizgiyle ayrılmış satırlar**; tema seçici **3 sütun karo grid** (swatch tam-genişlik 42px tile; `data-tid` attr'ı Settings.js şablonuna eklendi — Nova seçeneği gradient çerçeveli "featured").
+- **Community — marketplace:** pack kartı gradient çerçeve + sağ üst **N5 emblem bloğu**; kullanıcı desteleri **avatar-öncülü grid satırları** (`grid-template-areas: tile/title/meta/desc/tags/foot`).
+- **Global doku:** `.section-hd` uppercase+hairline imzası Nova'da **modern headline** stiline döner (`::after` yok); aurora fixed `body::before`; modal buzlu sheet + tutma sapı + ortalanmış başlık; Kanji/Word modal glif halosu + cam detay satırları + pill etiket çipleri + 56px çipler; empty ikonları gradient daire.
+
+### Reduced motion
+Nova animasyonları (novaViewIn/novaRise/nvCardIn/novaSheen/novaPopIn + spring transitionlar) genel RM bloğundan yüksek özgüllüklü olduğundan dosya sonunda **Nova'ya özel ikinci `prefers-reduced-motion` bloğu** hepsini kapatır; durum değişimleri korunur. Nova'ya animasyon eklerken bu bloğa opt-out eklenmeli.
+
+### Dosyalar
+`app.css` (tokenlar + `.nv-only` base + dosya sonunda ~700 satır v2 kabuk katmanı — dosya SONUNDA olması eşit-özgüllük çakışmalarını Nova lehine çözer), `index.html` (dashboard sarmalayıcıları + greeting), `main.js` (yalnız `weekdays_full` ×4 dil), `Settings.js` (THEMES nova girişi + `swatch` gradient + `data-tid`), `DeckList.js` (greeting fill, novaTile, nv-hide, deck-detail-hero, örnek-wrap), `CardView.js` (3 arka yüzde `.fc-example-wrap`), `TestManager.js` (karo + nv-hide), `CommunityHub.js` (emblem + avatar karo, boş yazar guard'lı).
+
+### Doğrulama
+`vite build` ✓. Canlı (375px, computed-style + a11y-tree; screenshot aracı ortam sorunundan kilitliydi): hero/sheet/karo/pill/dock/study sahnesi/grade dotları/Word→Kanji geri-nav/marketplace/kontrol merkezi ✓; grading + kuyruk akışı ✓; kebab `novaPopIn` + arama pill ✓; yatay taşma yok; konsol hatası yok. **Washi+Sumi regression:** sarmalayıcılar inert, nv-only gizli, Detail görünür, nav tam-genişlik köşesiz, kart 14px/token renkleri, section-hd uppercase, `#app` 96px — birebir eski görünüm.

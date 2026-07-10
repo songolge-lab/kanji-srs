@@ -1,4 +1,5 @@
 import { esc } from '../utils.js';
+import { buildRunnableTestFromTree } from '../store/appState.js';
 
 let app;
 let session = null;
@@ -9,9 +10,11 @@ export function render(testId) {
   const el = document.getElementById('test-play-content');
   if (!el) return;
 
-  const test = (app.state.customTests || []).find(ct => ct.id === testId);
+  // Combined runnable test: the item's own questions + all descendants' (parent
+  // tests / legacy folders run their whole subtree). Never mutates state.
+  const test = buildRunnableTestFromTree(app.state, testId);
   if (!test || !test.questions.length) {
-    el.innerHTML = `<div class="empty"><p>${app.t('test_no_questions')}</p>
+    el.innerHTML = `<div class="empty"><div class="empty-icon">${app.icon('inbox', 'ic-lg')}</div><p>${app.t('test_no_questions')}</p>
       <button class="btn btn-primary tap" onclick="showView('tests')">${app.icon('back')} ${app.t('back')}</button></div>`;
     return;
   }
@@ -86,14 +89,19 @@ function handleAnswer(userAnswer) {
   session.answered = true;
 
   const q = session.test.questions[session.currentIndex];
-  const isCorrect = userAnswer.trim().toLowerCase() === (q.correctValue || '').trim().toLowerCase();
+  // String()-coerce before trimming: TRUE_FALSE correctValue may be a JSON
+  // boolean (see docs/jlpt_pack_schema.md), which has no .trim() of its own
+  // and would throw here otherwise. Coercing also covers the FILL_BLANK
+  // trim requirement on both sides uniformly.
+  const correctStr = String(q.correctValue ?? '').trim().toLowerCase();
+  const isCorrect = String(userAnswer ?? '').trim().toLowerCase() === correctStr;
 
   if (isCorrect) session.score++;
 
   session.userAnswers.push({
     prompt: q.prompt,
     userAnswer,
-    correctValue: q.correctValue,
+    correctValue: String(q.correctValue ?? ''),
     isCorrect,
     type: q.type,
   });
@@ -122,9 +130,10 @@ function showFeedback(userAnswer, isCorrect) {
       if (opt === userAnswer && !isCorrect) btn.classList.add('wrong');
     });
   } else if (q.type === 'TRUE_FALSE') {
+    const correctStr = String(q.correctValue); // may be a JSON boolean in imported packs
     document.querySelectorAll('.tv-option').forEach(btn => {
       btn.disabled = true;
-      if (btn.dataset.val === q.correctValue) btn.classList.add('correct');
+      if (btn.dataset.val === correctStr) btn.classList.add('correct');
       if (btn.dataset.val === userAnswer && !isCorrect) btn.classList.add('wrong');
     });
   } else {

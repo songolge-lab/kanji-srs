@@ -11,6 +11,8 @@ const THEMES = [
   { id: 'matcha', label: 'Matcha', paper: '#eef0e1', accent: '#3c7048' },
   { id: 'sakura', label: 'Sakura', paper: '#f7eee8', accent: '#b5495f' },
   { id: 'indigo', label: 'Indigo', paper: '#e9edf3', accent: '#2456a3' },
+  // swatch: optional gradient preview (Nova's identity is a gradient, not a flat paper).
+  { id: 'nova',   label: 'Nova',   paper: '#edf1fa', accent: '#2458df', swatch: 'linear-gradient(135deg, #f6f9ff 0%, #dce6fc 45%, #e9e0fc 100%)' },
 ];
 const THEME_STORAGE_KEY = 'stacks-theme';
 const THEME_FOLLOW_SYSTEM_KEY = 'stacks-theme-follow-system';
@@ -47,8 +49,8 @@ function renderThemeSection() {
   const swatchesHTML = THEMES.map(th => {
     const isActive = current === th.id;
     return `
-      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" onclick="setTheme('${th.id}')">
-        <span class="theme-swatch" style="background:${th.paper}">
+      <button type="button" class="theme-option${isActive ? ' is-active' : ''} tap" data-tid="${th.id}" onclick="setTheme('${th.id}')">
+        <span class="theme-swatch" style="background:${th.swatch || th.paper}">
           ${isActive ? `<span class="theme-swatch-check" style="color:${th.accent}">${app.icon('check')}</span>` : `<span style="width:14px;height:14px;border-radius:50%;background:${th.accent}"></span>`}
         </span>
         <span class="theme-label">${esc(th.label)}</span>
@@ -59,7 +61,7 @@ function renderThemeSection() {
     <div class="theme-grid">${swatchesHTML}</div>
     <div class="settings-item" style="border-top:var(--bd) solid var(--line);padding-top:.8rem">
       <div class="si-label">${app.t('follow_system')}<small>${app.t('follow_system_desc')}</small></div>
-      <select class="si-input" id="cfg-follow-system" style="text-align:left" onchange="setFollowSystemTheme(this.value === '1')">
+      <select class="si-input" id="cfg-follow-system" onchange="setFollowSystemTheme(this.value === '1')">
         <option value="1" ${followSystem ? 'selected' : ''}>${app.t('on')}</option>
         <option value="0" ${!followSystem ? 'selected' : ''}>${app.t('off')}</option>
       </select>
@@ -115,11 +117,11 @@ function renderAiSection() {
     <p class="text-muted" style="margin-bottom:.8rem">${app.t('ai_section_desc')}</p>
     <div class="form-group">
       <label>${app.t('ai_api_key')}</label>
-      <input type="password" class="form-input" id="cfg-gemini-key" value="${key}" placeholder="${app.t('ai_api_key_placeholder')}" autocomplete="off">
+      <input type="password" id="cfg-gemini-key" value="${key}" placeholder="${app.t('ai_api_key_placeholder')}" autocomplete="off">
     </div>
     <div class="form-group">
       <label>${app.t('ai_model')}</label>
-      <select class="form-input" id="cfg-gemini-model">${modelOptions}</select>
+      <select id="cfg-gemini-model">${modelOptions}</select>
     </div>
     <button class="btn btn-primary btn-block tap" onclick="saveAiSettings()">${app.t('save_settings')}</button>
   `;
@@ -149,7 +151,11 @@ export function toggleSettingInfo(key) {
   if (!panel) return;
   const isShowing = panel.classList.contains('show');
   document.querySelectorAll('.si-info-panel.show').forEach(p => p.classList.remove('show'));
-  if (!isShowing) panel.classList.add('show');
+  document.querySelectorAll('.si-info-btn[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  if (!isShowing) {
+    panel.classList.add('show');
+    document.getElementById('info-btn-' + key)?.setAttribute('aria-expanded', 'true');
+  }
 }
 
 function settingItemHTML(key, label, smallText, inputHTML) {
@@ -157,7 +163,7 @@ function settingItemHTML(key, label, smallText, inputHTML) {
     <div class="settings-item">
       <div class="si-row">
         <div class="si-label">${label}<small>${smallText}</small></div>
-        <button class="si-info-btn tap" type="button" onclick="toggleSettingInfo('${key}')" aria-label="Bilgi">${app.icon('info')}</button>
+        <button class="si-info-btn tap" type="button" id="info-btn-${key}" onclick="toggleSettingInfo('${key}')" aria-label="${app.t('info_label')}" aria-expanded="false" aria-controls="info-${key}">${app.icon('info')}</button>
         ${inputHTML}
       </div>
       <div class="si-info-panel" id="info-${key}">${getSettingInfo()[key]}</div>
@@ -179,21 +185,23 @@ export function renderSettings() {
     settingItemHTML('mastery', app.t('srs_mastery'), app.t('srs_mastery_hint'), `<input class="si-input" id="cfg-mastery" type="number" min="7" value="${s.masteryDays}">`) +
     settingItemHTML('daily', app.t('srs_daily'), app.t('srs_daily_hint'), `<input class="si-input" id="cfg-daily" type="number" min="0" value="${s.dailyNewLimit}">`) +
     settingItemHTML('fuzz', app.t('srs_fuzz'), app.t('srs_fuzz_hint'),
-      `<select class="si-input" id="cfg-fuzz" style="text-align:left"><option value="1" ${s.fuzz?'selected':''}>${app.t('on')}</option><option value="0" ${!s.fuzz?'selected':''}>${app.t('off')}</option></select>`) +
+      `<select class="si-input" id="cfg-fuzz"><option value="1" ${s.fuzz?'selected':''}>${app.t('on')}</option><option value="0" ${!s.fuzz?'selected':''}>${app.t('off')}</option></select>`) +
     settingItemHTML('shield', app.t('srs_shield'), app.t('srs_shield_hint'),
-      `<select class="si-input" id="cfg-shield" style="text-align:left"><option value="1" ${s.autoUseShield?'selected':''}>${app.t('on')}</option><option value="0" ${!s.autoUseShield?'selected':''}>${app.t('off')}</option></select>`) +
+      `<select class="si-input" id="cfg-shield"><option value="1" ${s.autoUseShield?'selected':''}>${app.t('on')}</option><option value="0" ${!s.autoUseShield?'selected':''}>${app.t('off')}</option></select>`) +
     settingItemHTML('haptics', app.t('srs_haptics'), app.t('srs_haptics_hint'),
-      `<select class="si-input" id="cfg-haptics" style="text-align:left"><option value="1" ${s.enableHaptics!==false?'selected':''}>${app.t('on')}</option><option value="0" ${s.enableHaptics===false?'selected':''}>${app.t('off')}</option></select>`) +
+      `<select class="si-input" id="cfg-haptics"><option value="1" ${s.enableHaptics!==false?'selected':''}>${app.t('on')}</option><option value="0" ${s.enableHaptics===false?'selected':''}>${app.t('off')}</option></select>`) +
     `<button class="btn btn-primary btn-block tap mt-2" onclick="saveSettings()">${app.t('save_settings')}</button>
     <div class="version-tag">${app.t('version_tag', {version: app.APP_VERSION})}<br><span class="version-motto">${app.t('keep_stacking')}</span></div>`;
   const langSection = document.getElementById('lang-section');
   if (langSection) {
     const langs = [{code:'en',label:'English'},{code:'tr',label:'Türkçe'},{code:'ko',label:'한국어'},{code:'mn',label:'Монгол'}];
-    langSection.innerHTML = langs.map(l => `
-      <button class="theme-btn tap${l.code === app.currentLang ? ' active' : ''}" onclick="setLang('${l.code}')">
-        ${l.label}
-      </button>
-    `).join('');
+    langSection.innerHTML = langs.map(l => {
+      const isActive = l.code === app.currentLang;
+      return `
+      <button type="button" class="lang-btn tap${isActive ? ' is-active' : ''}" onclick="setLang('${l.code}')" aria-pressed="${isActive}">
+        ${isActive ? app.icon('check') : ''}${esc(l.label)}
+      </button>`;
+    }).join('');
   }
 }
 

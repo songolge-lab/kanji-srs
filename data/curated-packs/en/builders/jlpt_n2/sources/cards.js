@@ -1,0 +1,25209 @@
+const CATEGORY_ORDER = {
+  vocabulary: 1,
+  kanji: 2,
+  grammar: 3,
+  sentence: 4,
+};
+
+const ALLOWED_CATEGORIES = new Set(Object.keys(CATEGORY_ORDER));
+const FORBIDDEN_FIELDS = ['furigana', 'reading', 'romaji', 'onyomi', 'kunyomi'];
+
+// Static cleaned source cards for the JLPT N2 English Full Pack.
+// These are the builder-owned source records; release JSON is generated from this file plus sources/tests.js.
+const CARD_SOURCES = [
+  {
+    "category": "vocabulary",
+    "front": "違反",
+    "back": "violation, offense",
+    "exampleJp": "駐車違反の罰金が引き上げられたことについて、様々な意見が出ている。",
+    "exampleTranslation": "Various opinions have been expressed regarding the increase in parking violation fines.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "rules"
+    ],
+    "sourceIds": [
+      "n2-vocab-0001"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1
+  },
+  {
+    "category": "vocabulary",
+    "front": "提出",
+    "back": "submission, presentation",
+    "exampleJp": "明日の正午までに、経費の精算書を提出してください。",
+    "exampleTranslation": "Please submit your expense reports by noon tomorrow.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "procedures"
+    ],
+    "sourceIds": [
+      "n2-vocab-0002"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 2
+  },
+  {
+    "category": "vocabulary",
+    "front": "要求",
+    "back": "demand, request",
+    "exampleJp": "労働組合は経営陣に対し、労働環境の改善を要求した。",
+    "exampleTranslation": "The labor union demanded that management improve working conditions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0003"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 3
+  },
+  {
+    "category": "vocabulary",
+    "front": "請求",
+    "back": "claim, charge, billing",
+    "exampleJp": "今月のサーバー使用料の請求書は、すでに経理部に回してあります。",
+    "exampleTranslation": "The invoice for this month's server usage fee has already been forwarded to the accounting department.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "money"
+    ],
+    "sourceIds": [
+      "n2-vocab-0004"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 4
+  },
+  {
+    "category": "vocabulary",
+    "front": "申請",
+    "back": "application, request",
+    "exampleJp": "パスポートの更新を申請するには、六ヶ月以内に撮影した写真が必要です。",
+    "exampleTranslation": "To apply for a passport renewal, you need a photo taken within the last six months.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-services",
+      "procedures"
+    ],
+    "sourceIds": [
+      "n2-vocab-0005"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 5
+  },
+  {
+    "category": "vocabulary",
+    "front": "登録",
+    "back": "registration",
+    "exampleJp": "サイトの利用にあたっては、事前にメールアドレスの登録が求められる。",
+    "exampleTranslation": "Prior registration of an email address is required to use the site.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-services",
+      "procedures"
+    ],
+    "sourceIds": [
+      "n2-vocab-0006"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 6
+  },
+  {
+    "category": "vocabulary",
+    "front": "更新",
+    "back": "renewal, update",
+    "exampleJp": "ウイルス対策ソフトのライセンス更新を忘れないようにしてください。",
+    "exampleTranslation": "Please don't forget to renew your antivirus software license.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "procedures"
+    ],
+    "sourceIds": [
+      "n2-vocab-0007"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 7
+  },
+  {
+    "category": "vocabulary",
+    "front": "警告",
+    "back": "warning",
+    "exampleJp": "気象庁から、大雨に関する警戒レベル４の警告が出された。",
+    "exampleTranslation": "A level 4 warning regarding heavy rain was issued by the Meteorological Agency.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0008"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 8
+  },
+  {
+    "category": "vocabulary",
+    "front": "標識",
+    "back": "sign, mark",
+    "exampleJp": "霧で道路の標識がよく見えず、道を間違えてしまった。",
+    "exampleTranslation": "I couldn't see the road signs well because of the fog and ended up taking the wrong way.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "transportation"
+    ],
+    "sourceIds": [
+      "n2-vocab-0009"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 9
+  },
+  {
+    "category": "vocabulary",
+    "front": "混雑",
+    "back": "congestion, crowding",
+    "exampleJp": "開店直後のデパートは、福袋を求める客で大変な混雑だった。",
+    "exampleTranslation": "Right after opening, the department store was extremely crowded with customers seeking lucky bags.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0010"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 10
+  },
+  {
+    "category": "vocabulary",
+    "front": "苦情",
+    "back": "complaint",
+    "exampleJp": "騒音に関する苦情が住民から相次ぎ、工事が一時中断された。",
+    "exampleTranslation": "Following a series of noise complaints from residents, construction was temporarily suspended.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0011"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 11
+  },
+  {
+    "category": "vocabulary",
+    "front": "謝罪",
+    "back": "apology",
+    "exampleJp": "社長は記者会見を開き、今回の不祥事について深く謝罪した。",
+    "exampleTranslation": "The company president held a press conference and deeply apologized for the recent scandal.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0012"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 12
+  },
+  {
+    "category": "vocabulary",
+    "front": "感謝",
+    "back": "gratitude, appreciation",
+    "exampleJp": "プロジェクトが無事に完了したのは、皆様のご協力のおかげと心より感謝申し上げます。",
+    "exampleTranslation": "I would like to express my sincere gratitude for your cooperation, which allowed the project to be completed successfully.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0013"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 13
+  },
+  {
+    "category": "vocabulary",
+    "front": "寄付",
+    "back": "donation, contribution",
+    "exampleJp": "彼女は毎月、自分の給料の一部を動物保護団体に寄付している。",
+    "exampleTranslation": "Every month, she donates a portion of her salary to an animal protection organization.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "money"
+    ],
+    "sourceIds": [
+      "n2-vocab-0014"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 14
+  },
+  {
+    "category": "vocabulary",
+    "front": "貯蓄",
+    "back": "savings",
+    "exampleJp": "不景気に備えて、今のうちから少しでも貯蓄を増やしておきたい。",
+    "exampleTranslation": "To prepare for an economic downturn, I want to increase my savings even a little bit while I can.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0015"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 15
+  },
+  {
+    "category": "vocabulary",
+    "front": "費用",
+    "back": "cost, expense",
+    "exampleJp": "家をリフォームするには、予想以上の費用がかかることがわかった。",
+    "exampleTranslation": "I realized that renovating the house will incur higher costs than expected.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "money",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0016"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 16
+  },
+  {
+    "category": "vocabulary",
+    "front": "料金",
+    "back": "fee, charge",
+    "exampleJp": "スマートフォンの通信料金を見直すことで、毎月の支出を減らせるかもしれない。",
+    "exampleTranslation": "Reviewing your smartphone data plan charges might help reduce your monthly expenses.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "money",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0017"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 17
+  },
+  {
+    "category": "vocabulary",
+    "front": "運賃",
+    "back": "fare, freight rates",
+    "exampleJp": "ガソリン価格の高騰により、タクシーの運賃が値上げされる見込みだ。",
+    "exampleTranslation": "Taxi fares are expected to rise due to soaring gasoline prices.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "transportation",
+      "money"
+    ],
+    "sourceIds": [
+      "n2-vocab-0018"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 18
+  },
+  {
+    "category": "vocabulary",
+    "front": "給与",
+    "back": "salary, wages",
+    "exampleJp": "残業代が支払われないなど、給与に関するトラブルが絶えない。",
+    "exampleTranslation": "Troubles regarding wages, such as unpaid overtime, are seemingly endless.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "money"
+    ],
+    "sourceIds": [
+      "n2-vocab-0019"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 19
+  },
+  {
+    "category": "vocabulary",
+    "front": "収入",
+    "back": "income, receipts",
+    "exampleJp": "副業を始めたおかげで、毎月の収入が少し安定してきた。",
+    "exampleTranslation": "Thanks to starting a side job, my monthly income has stabilized a little.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "money"
+    ],
+    "sourceIds": [
+      "n2-vocab-0020"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 20
+  },
+  {
+    "category": "vocabulary",
+    "front": "支出",
+    "back": "expenditure, expenses",
+    "exampleJp": "家計簿をつけて、無駄な支出をどこまで減らせるか分析してみよう。",
+    "exampleTranslation": "Let's keep a household account book and analyze how much we can reduce unnecessary expenditures.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "money",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0021"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 21
+  },
+  {
+    "category": "vocabulary",
+    "front": "課税",
+    "back": "taxation",
+    "exampleJp": "輸入品に対する課税が強化され、一部の高級品が値上がりした。",
+    "exampleTranslation": "Taxation on imported goods was strengthened, causing some luxury items to rise in price.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0022"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 22
+  },
+  {
+    "category": "vocabulary",
+    "front": "規定",
+    "back": "regulation, provision",
+    "exampleJp": "会社の就業規定に従い、有給休暇の申請は一週間前に行う必要がある。",
+    "exampleTranslation": "According to the company's employment regulations, paid leave applications must be submitted one week in advance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "rules"
+    ],
+    "sourceIds": [
+      "n2-vocab-0023"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 23
+  },
+  {
+    "category": "vocabulary",
+    "front": "憲法",
+    "back": "constitution",
+    "exampleJp": "表現の自由は、国の憲法によって保障されている基本的な権利だ。",
+    "exampleTranslation": "Freedom of expression is a fundamental right guaranteed by the country's constitution.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0024"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 24
+  },
+  {
+    "category": "vocabulary",
+    "front": "組織",
+    "back": "organization",
+    "exampleJp": "大企業のような巨大な組織では、意思決定に時間がかかることが多い。",
+    "exampleTranslation": "In massive organizations like large corporations, decision-making often takes time.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0025"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 25
+  },
+  {
+    "category": "vocabulary",
+    "front": "企業",
+    "back": "enterprise, corporation",
+    "exampleJp": "地球環境に配慮した取り組みを行う企業が、消費者から支持されている。",
+    "exampleTranslation": "Enterprises that engage in environmentally friendly initiatives are supported by consumers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0026"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 26
+  },
+  {
+    "category": "vocabulary",
+    "front": "産業",
+    "back": "industry",
+    "exampleJp": "自動車産業は、この国の経済を支える重要な柱の一つだ。",
+    "exampleTranslation": "The automotive industry is one of the important pillars supporting this country's economy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0027"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 27
+  },
+  {
+    "category": "vocabulary",
+    "front": "農業",
+    "back": "agriculture",
+    "exampleJp": "高齢化が進み、この地域の農業を担う後継者が不足している。",
+    "exampleTranslation": "With the aging population, there is a shortage of successors to take over agriculture in this region.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "industry"
+    ],
+    "sourceIds": [
+      "n2-vocab-0028"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 28
+  },
+  {
+    "category": "vocabulary",
+    "front": "商業",
+    "back": "commerce, trade",
+    "exampleJp": "昔は商業の中心地として栄えたこの街も、今は静かになってしまった。",
+    "exampleTranslation": "This town, which once flourished as a center of commerce, has now become quiet.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0029"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 29
+  },
+  {
+    "category": "vocabulary",
+    "front": "貿易",
+    "back": "international trade",
+    "exampleJp": "両国間の自由貿易協定が結ばれれば、関税が大幅に引き下げられる。",
+    "exampleTranslation": "If a free trade agreement is signed between the two countries, tariffs will be significantly reduced.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0030"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 30
+  },
+  {
+    "category": "vocabulary",
+    "front": "生産",
+    "back": "production, manufacture",
+    "exampleJp": "最新の機械を導入したことで、工場の生産効率が飛躍的に向上した。",
+    "exampleTranslation": "By introducing the latest machinery, the factory's production efficiency has dramatically improved.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "industry"
+    ],
+    "sourceIds": [
+      "n2-vocab-0031"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 31
+  },
+  {
+    "category": "vocabulary",
+    "front": "経営",
+    "back": "management, administration",
+    "exampleJp": "社長の経営方針に納得できず、多くの社員が会社を去っていった。",
+    "exampleTranslation": "Unable to accept the president's management policy, many employees left the company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0032"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 32
+  },
+  {
+    "category": "vocabulary",
+    "front": "営業",
+    "back": "business, sales",
+    "exampleJp": "彼は入社以来、営業部門でトップの成績を維持し続けている。",
+    "exampleTranslation": "Since joining the company, he has consistently maintained the top sales record in the business department.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0033"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 33
+  },
+  {
+    "category": "vocabulary",
+    "front": "就職",
+    "back": "finding employment, getting a job",
+    "exampleJp": "大学三年生の秋ごろから、多くの学生が就職活動を始める。",
+    "exampleTranslation": "Around the fall of their junior year of college, many students begin their job hunting.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0034"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 34
+  },
+  {
+    "category": "vocabulary",
+    "front": "退職",
+    "back": "retirement, resignation",
+    "exampleJp": "長年勤めた会社を退職し、念願だったカフェをオープンすることにした。",
+    "exampleTranslation": "I retired from the company I worked at for many years and decided to open the cafe I'd always dreamed of.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0035"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 35
+  },
+  {
+    "category": "vocabulary",
+    "front": "採用",
+    "back": "hiring, adoption",
+    "exampleJp": "今年の新入社員採用では、語学力だけでなくコミュニケーション能力も重視された。",
+    "exampleTranslation": "In hiring new employees this year, emphasis was placed not only on language skills but also on communication abilities.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0036"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 36
+  },
+  {
+    "category": "vocabulary",
+    "front": "面接",
+    "back": "interview",
+    "exampleJp": "最終面接では、役員からかなり厳しい質問を投げかけられた。",
+    "exampleTranslation": "During the final interview, the board members threw some pretty tough questions at me.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0037"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 37
+  },
+  {
+    "category": "vocabulary",
+    "front": "履歴書",
+    "back": "resume, curriculum vitae",
+    "exampleJp": "履歴書には、これまでの職歴や取得した資格を正確に記入してください。",
+    "exampleTranslation": "Please fill out your resume accurately with your past work experience and qualifications obtained.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "procedures"
+    ],
+    "sourceIds": [
+      "n2-vocab-0038"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 38
+  },
+  {
+    "category": "vocabulary",
+    "front": "条件",
+    "back": "condition, terms",
+    "exampleJp": "このマンションは駅からの距離や家賃など、すべての条件が理想的だ。",
+    "exampleTranslation": "This apartment is ideal in all conditions, including the distance from the station and the rent.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0039"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 39
+  },
+  {
+    "category": "vocabulary",
+    "front": "経験",
+    "back": "experience",
+    "exampleJp": "海外での留学経験は、彼女の視野を大きく広げるきっかけとなった。",
+    "exampleTranslation": "Her experience studying abroad served as an opportunity to greatly broaden her horizons.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0040"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 40
+  },
+  {
+    "category": "vocabulary",
+    "front": "実績",
+    "back": "actual results, achievements",
+    "exampleJp": "過去の実績が評価され、彼は新しいプロジェクトのリーダーに抜擢された。",
+    "exampleTranslation": "His past achievements were highly evaluated, and he was selected as the leader of the new project.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0041"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 41
+  },
+  {
+    "category": "vocabulary",
+    "front": "能力",
+    "back": "ability, capacity",
+    "exampleJp": "語学力だけでなく、状況に応じて柔軟に対応できる能力が求められる。",
+    "exampleTranslation": "Not only language skills but also the ability to respond flexibly depending on the situation is required.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0042"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 42
+  },
+  {
+    "category": "vocabulary",
+    "front": "才能",
+    "back": "talent, ability",
+    "exampleJp": "彼女の音楽的な才能は、幼い頃からすでに開花していたそうだ。",
+    "exampleTranslation": "I heard her musical talent had already blossomed since she was a young child.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0043"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 43
+  },
+  {
+    "category": "vocabulary",
+    "front": "知識",
+    "back": "knowledge, information",
+    "exampleJp": "専門的な知識を持ったスタッフが、お客様のご相談に応じます。",
+    "exampleTranslation": "Staff members with specialized knowledge will be available for customer consultations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0044"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 44
+  },
+  {
+    "category": "vocabulary",
+    "front": "教養",
+    "back": "culture, education, refinement",
+    "exampleJp": "歴史や文学について学ぶことは、人としての教養を深めるのに役立つ。",
+    "exampleTranslation": "Learning about history and literature helps deepen one's general education as a person.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0045"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 45
+  },
+  {
+    "category": "vocabulary",
+    "front": "専攻",
+    "back": "major subject, specialty",
+    "exampleJp": "大学では経済学を専攻し、特に国際金融について研究していました。",
+    "exampleTranslation": "In college, I majored in economics, specifically researching international finance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "school"
+    ],
+    "sourceIds": [
+      "n2-vocab-0046"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 46
+  },
+  {
+    "category": "vocabulary",
+    "front": "講義",
+    "back": "lecture",
+    "exampleJp": "あの教授の講義はいつもユーモアに溢れていて、学生から非常に人気がある。",
+    "exampleTranslation": "That professor's lectures are always full of humor and are extremely popular with the students.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "school"
+    ],
+    "sourceIds": [
+      "n2-vocab-0047"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 47
+  },
+  {
+    "category": "vocabulary",
+    "front": "教授",
+    "back": "professor",
+    "exampleJp": "担当の教授に推薦状を書いてもらい、海外の大学院に提出した。",
+    "exampleTranslation": "I had my supervising professor write a letter of recommendation and submitted it to an overseas graduate school.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "school"
+    ],
+    "sourceIds": [
+      "n2-vocab-0048"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 48
+  },
+  {
+    "category": "vocabulary",
+    "front": "論文",
+    "back": "thesis, paper, essay",
+    "exampleJp": "締め切り直前まで徹夜して、ようやく卒業論文を書き上げた。",
+    "exampleTranslation": "I stayed up all night until right before the deadline and finally finished writing my graduation thesis.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "school"
+    ],
+    "sourceIds": [
+      "n2-vocab-0049"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 49
+  },
+  {
+    "category": "vocabulary",
+    "front": "学歴",
+    "back": "academic background",
+    "exampleJp": "最近では、採用において学歴よりも実務経験を重視する企業が増えている。",
+    "exampleTranslation": "Recently, more companies are placing greater emphasis on practical experience rather than academic background in hiring.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0050"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 50
+  },
+  {
+    "category": "vocabulary",
+    "front": "実験",
+    "back": "experiment",
+    "exampleJp": "科学雑誌に掲載された新しい理論を証明するため、チームで実験を繰り返した。",
+    "exampleTranslation": "The team repeated experiments to prove the new theory published in the science journal.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0051"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 51
+  },
+  {
+    "category": "vocabulary",
+    "front": "視察",
+    "back": "inspection, observation",
+    "exampleJp": "市長は新しいリサイクル施設を視察し、環境保護の取り組みをアピールした。",
+    "exampleTranslation": "The mayor inspected the new recycling facility, highlighting the city's environmental protection efforts.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-vocab-0052"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 52
+  },
+  {
+    "category": "vocabulary",
+    "front": "分析",
+    "back": "analysis",
+    "exampleJp": "アンケート結果のデータを詳細に分析したところ、意外な事実が判明した。",
+    "exampleTranslation": "A detailed analysis of the questionnaire data revealed an unexpected fact.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0053"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 53
+  },
+  {
+    "category": "vocabulary",
+    "front": "議論",
+    "back": "discussion, argument",
+    "exampleJp": "環境問題についての議論が白熱し、予定時間を大幅に超過してしまった。",
+    "exampleTranslation": "The discussion on environmental issues became heated, exceeding the scheduled time significantly.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0054"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 54
+  },
+  {
+    "category": "vocabulary",
+    "front": "見解",
+    "back": "view, opinion",
+    "exampleJp": "この問題については、専門家の間でも見解が大きく分かれている。",
+    "exampleTranslation": "Regarding this issue, views are sharply divided even among experts.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0055"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 55
+  },
+  {
+    "category": "vocabulary",
+    "front": "表現",
+    "back": "expression, presentation",
+    "exampleJp": "彼の描く絵は、色彩の表現が非常に豊かで見る人を引きつける。",
+    "exampleTranslation": "The paintings he draws attract viewers with their extremely rich expression of colors.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "art"
+    ],
+    "sourceIds": [
+      "n2-vocab-0056"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 56
+  },
+  {
+    "category": "vocabulary",
+    "front": "説得",
+    "back": "persuasion",
+    "exampleJp": "両親を説得して、ようやく念願の海外留学の許可をもらうことができた。",
+    "exampleTranslation": "I finally managed to persuade my parents and got permission for the study abroad program I'd always wanted.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0057"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 57
+  },
+  {
+    "category": "vocabulary",
+    "front": "納得",
+    "back": "consent, understanding, agreement",
+    "exampleJp": "担当者からの詳しい説明を聞いて、ようやく請求金額に納得がいった。",
+    "exampleTranslation": "After hearing a detailed explanation from the person in charge, I finally understood and accepted the billed amount.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0058"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 58
+  },
+  {
+    "category": "vocabulary",
+    "front": "妥協",
+    "back": "compromise",
+    "exampleJp": "交渉を成立させるためには、お互いにある程度の妥協が必要だろう。",
+    "exampleTranslation": "In order to reach an agreement in the negotiation, some degree of compromise will likely be necessary from both sides.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0059"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 59
+  },
+  {
+    "category": "vocabulary",
+    "front": "誤解",
+    "back": "misunderstanding",
+    "exampleJp": "メールの文面が冷たく感じられたせいで、彼に誤解を与えてしまったようだ。",
+    "exampleTranslation": "It seems I caused a misunderstanding with him because the tone of my email felt cold.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0060"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 60
+  },
+  {
+    "category": "vocabulary",
+    "front": "皮肉",
+    "back": "irony, sarcasm",
+    "exampleJp": "彼はいつも皮肉めいた言い方をするので、周囲から敬遠されがちだ。",
+    "exampleTranslation": "He always speaks in a sarcastic manner, so people around him tend to keep their distance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0061"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 61
+  },
+  {
+    "category": "vocabulary",
+    "front": "効率",
+    "back": "efficiency",
+    "exampleJp": "リモートワークの導入によって、通勤時間が省かれ業務の効率が上がった。",
+    "exampleTranslation": "The introduction of remote work has eliminated commuting time and improved operational efficiency.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0062"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 62
+  },
+  {
+    "category": "vocabulary",
+    "front": "基準",
+    "back": "standard, basis",
+    "exampleJp": "新しいビルの耐震基準は、過去の地震のデータに基づいて厳しく設定されている。",
+    "exampleTranslation": "The seismic standards for the new building are strictly set based on data from past earthquakes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "rules",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0063"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 63
+  },
+  {
+    "category": "vocabulary",
+    "front": "限界",
+    "back": "limit, bound",
+    "exampleJp": "徹夜での作業が三日続き、ついに体力の限界を感じて倒れ込んでしまった。",
+    "exampleTranslation": "After working all night for three days straight, I finally felt the limits of my physical strength and collapsed.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0064"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 64
+  },
+  {
+    "category": "vocabulary",
+    "front": "傾向",
+    "back": "tendency, trend",
+    "exampleJp": "最近の若者は、車を所有するよりもシェアリングサービスを利用する傾向がある。",
+    "exampleTranslation": "Recent young people have a tendency to use sharing services rather than owning cars.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0065"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 65
+  },
+  {
+    "category": "vocabulary",
+    "front": "事情",
+    "back": "circumstances, reasons",
+    "exampleJp": "家庭の事情により、しばらくの間プロジェクトの進行から外れることになった。",
+    "exampleTranslation": "Due to family circumstances, I will be stepping away from the project's progress for a while.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0066"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 66
+  },
+  {
+    "category": "vocabulary",
+    "front": "訴訟",
+    "back": "litigation, lawsuit",
+    "exampleJp": "特許の侵害をめぐって、二つの巨大企業間で大規模な訴訟が起きている。",
+    "exampleTranslation": "A large-scale lawsuit is taking place between two giant corporations over patent infringement.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "law",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0067"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 67
+  },
+  {
+    "category": "vocabulary",
+    "front": "災害",
+    "back": "disaster, calamity",
+    "exampleJp": "自然災害が発生した際に備えて、非常用の食料や水を備蓄しておくべきだ。",
+    "exampleTranslation": "You should stockpile emergency food and water in preparation for when a natural disaster occurs.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0068"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 68
+  },
+  {
+    "category": "vocabulary",
+    "front": "障害",
+    "back": "obstacle, hindrance, failure",
+    "exampleJp": "サーバーに障害が発生し、一時的にウェブサイトにアクセスできなくなった。",
+    "exampleTranslation": "A failure occurred on the server, making it temporarily impossible to access the website.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0069"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 69
+  },
+  {
+    "category": "vocabulary",
+    "front": "手配",
+    "back": "arrangement, preparation",
+    "exampleJp": "会議室の予約や宿泊先の手配は、すべて秘書が事前に済ませてくれた。",
+    "exampleTranslation": "The secretary had already completed all the arrangements, such as booking the meeting room and accommodations, in advance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0070"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 70
+  },
+  {
+    "category": "vocabulary",
+    "front": "確保",
+    "back": "securing, obtaining",
+    "exampleJp": "新規事業を成功させるためには、まず優秀な人材の確保が最優先課題となる。",
+    "exampleTranslation": "To make the new business a success, securing excellent talent is the top priority.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "management"
+    ],
+    "sourceIds": [
+      "n2-vocab-0071"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 71
+  },
+  {
+    "category": "vocabulary",
+    "front": "管理",
+    "back": "management, control",
+    "exampleJp": "個人情報の管理がずさんだったため、顧客データが外部に流出してしまった。",
+    "exampleTranslation": "Due to sloppy management of personal information, customer data was leaked to the outside.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0072"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 72
+  },
+  {
+    "category": "vocabulary",
+    "front": "設備",
+    "back": "equipment, facilities",
+    "exampleJp": "このスポーツジムは最新のトレーニング設備が整っており、利用者の満足度が高い。",
+    "exampleTranslation": "This sports gym is equipped with the latest training equipment and has high user satisfaction.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0073"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 73
+  },
+  {
+    "category": "vocabulary",
+    "front": "施設",
+    "back": "facility, institution",
+    "exampleJp": "駅の周辺には、図書館や病院などの公共施設が集中して建てられている。",
+    "exampleTranslation": "Public facilities such as libraries and hospitals are built in a concentrated area around the station.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0074"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 74
+  },
+  {
+    "category": "vocabulary",
+    "front": "建築",
+    "back": "architecture, construction",
+    "exampleJp": "彼はヨーロッパの古い教会の建築様式に魅了され、専門的に研究している。",
+    "exampleTranslation": "He is fascinated by the architectural styles of old European churches and researches them professionally.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0075"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 75
+  },
+  {
+    "category": "vocabulary",
+    "front": "建設",
+    "back": "construction, establishment",
+    "exampleJp": "新しいスタジアムの建設に向けて、地元住民との意見交換会が開催された。",
+    "exampleTranslation": "A meeting to exchange views with local residents was held regarding the construction of the new stadium.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "infrastructure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0076"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 76
+  },
+  {
+    "category": "vocabulary",
+    "front": "運輸",
+    "back": "transportation",
+    "exampleJp": "ネット通販の拡大により、運輸業界ではドライバーの負担が増加している。",
+    "exampleTranslation": "With the expansion of online shopping, the burden on drivers in the transportation industry is increasing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0077"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 77
+  },
+  {
+    "category": "vocabulary",
+    "front": "伝達",
+    "back": "transmission, communication",
+    "exampleJp": "現場の混乱を防ぐため、本社からの指示は正確かつ迅速に伝達されなければならない。",
+    "exampleTranslation": "To prevent confusion on site, instructions from headquarters must be transmitted accurately and swiftly.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0078"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 78
+  },
+  {
+    "category": "vocabulary",
+    "front": "報告",
+    "back": "report, information",
+    "exampleJp": "出張から戻ったら、なるべく早く結果をまとめた報告書を提出してください。",
+    "exampleTranslation": "Once you return from your business trip, please submit a report summarizing the results as soon as possible.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0079"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 79
+  },
+  {
+    "category": "vocabulary",
+    "front": "交渉",
+    "back": "negotiation",
+    "exampleJp": "取引先との価格交渉が難航しており、契約の締結は来週に持ち越された。",
+    "exampleTranslation": "Price negotiations with the client are facing difficulties, and the signing of the contract has been postponed to next week.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0080"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 80
+  },
+  {
+    "category": "vocabulary",
+    "front": "動員",
+    "back": "mobilization",
+    "exampleJp": "祭りの警備のため、周辺の警察署から多数の警察官が動員された。",
+    "exampleTranslation": "A large number of police officers were mobilized from surrounding police stations for security at the festival.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0081"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 81
+  },
+  {
+    "category": "vocabulary",
+    "front": "滞在",
+    "back": "stay, sojourn",
+    "exampleJp": "パリでの一週間の滞在中に、有名な美術館をいくつも見て回った。",
+    "exampleTranslation": "During my one-week stay in Paris, I visited many famous art museums.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "travel"
+    ],
+    "sourceIds": [
+      "n2-vocab-0082"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 82
+  },
+  {
+    "category": "vocabulary",
+    "front": "誘導",
+    "back": "guidance, leading",
+    "exampleJp": "火災報知器が鳴ったため、スタッフが客を非常口へと安全に誘導した。",
+    "exampleTranslation": "Because the fire alarm went off, the staff safely guided the customers to the emergency exits.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "public-life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0083"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 83
+  },
+  {
+    "category": "vocabulary",
+    "front": "仲介",
+    "back": "agency, mediation",
+    "exampleJp": "不動産会社に仲介を依頼して、条件に合う新しいオフィスを探してもらった。",
+    "exampleTranslation": "We asked a real estate agency to mediate and find us a new office that met our conditions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0084"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 84
+  },
+  {
+    "category": "vocabulary",
+    "front": "推薦",
+    "back": "recommendation",
+    "exampleJp": "教授からの強力な推薦があり、彼は奨学金の受給候補者に選ばれた。",
+    "exampleTranslation": "With a strong recommendation from his professor, he was selected as a candidate to receive the scholarship.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "school"
+    ],
+    "sourceIds": [
+      "n2-vocab-0085"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 85
+  },
+  {
+    "category": "vocabulary",
+    "front": "提案",
+    "back": "proposal, suggestion",
+    "exampleJp": "業務の無駄を省くための新しいシステムの導入を、会議で提案するつもりだ。",
+    "exampleTranslation": "At the meeting, I plan to propose introducing a new system to eliminate operational waste.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0086"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 86
+  },
+  {
+    "category": "vocabulary",
+    "front": "決定",
+    "back": "decision, determination",
+    "exampleJp": "役員会での長時間の議論の末、ついに新工場の建設場所が決定した。",
+    "exampleTranslation": "After a long discussion at the board meeting, the location for the construction of the new factory was finally decided.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0087"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 87
+  },
+  {
+    "category": "vocabulary",
+    "front": "賛成",
+    "back": "approval, agreement",
+    "exampleJp": "社内の完全禁煙化についてアンケートをとったところ、大半が賛成だった。",
+    "exampleTranslation": "When a survey was conducted on making the office completely smoke-free, the vast majority approved.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0088"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 88
+  },
+  {
+    "category": "vocabulary",
+    "front": "反対",
+    "back": "opposition, objection",
+    "exampleJp": "住民の強い反対運動により、そのマンションの建設計画は白紙に戻された。",
+    "exampleTranslation": "Due to strong opposition campaigns by residents, the apartment construction plan was sent back to the drawing board.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0089"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 89
+  },
+  {
+    "category": "vocabulary",
+    "front": "品種",
+    "back": "variety, kind (of plant/animal)",
+    "exampleJp": "この農園では、寒さに強く甘みの強い新しい品種のリンゴを栽培している。",
+    "exampleTranslation": "At this farm, they are cultivating a new variety of apple that is highly resistant to cold and very sweet.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "industry"
+    ],
+    "sourceIds": [
+      "n2-vocab-0090"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 90
+  },
+  {
+    "category": "vocabulary",
+    "front": "分類",
+    "back": "classification, grouping",
+    "exampleJp": "図書館の本は、ジャンルや著者名の五十音順に従って細かく分類されている。",
+    "exampleTranslation": "The library's books are finely classified according to genre and the alphabetical order of the authors' names.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0091"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 91
+  },
+  {
+    "category": "vocabulary",
+    "front": "類似",
+    "back": "resemblance, similarity",
+    "exampleJp": "今回起きた事件の手口は、過去に別の地域で起きた事件と非常に類似している。",
+    "exampleTranslation": "The modus operandi of the incident that occurred this time closely resembles a case that happened in another area in the past.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "crime"
+    ],
+    "sourceIds": [
+      "n2-vocab-0092"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 92
+  },
+  {
+    "category": "vocabulary",
+    "front": "独特",
+    "back": "peculiar, unique",
+    "exampleJp": "彼の描くデザインは色使いが独特で、他の誰にも真似できない魅力がある。",
+    "exampleTranslation": "The designs he draws feature unique color schemes, possessing a charm that no one else can imitate.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "art",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0093"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 93
+  },
+  {
+    "category": "vocabulary",
+    "front": "特徴",
+    "back": "characteristic, feature",
+    "exampleJp": "このスマートフォンの最大の特徴は、バッテリーが数日間持つことだ。",
+    "exampleTranslation": "The biggest characteristic of this smartphone is that its battery lasts for several days.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0094"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 94
+  },
+  {
+    "category": "vocabulary",
+    "front": "偶然",
+    "back": "coincidence, by chance",
+    "exampleJp": "旅先のヨーロッパの小さな町で、高校時代の同級生に偶然再会した。",
+    "exampleTranslation": "I coincidentally reunited with a high school classmate in a small European town during my trip.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0095"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 95
+  },
+  {
+    "category": "vocabulary",
+    "front": "必然",
+    "back": "inevitability, necessity",
+    "exampleJp": "彼があの失敗から立ち直って成功を収めたのは、単なる運ではなく必然だったと言える。",
+    "exampleTranslation": "It can be said that his recovering from that failure and achieving success was not just luck, but an inevitability.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0096"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 96
+  },
+  {
+    "category": "vocabulary",
+    "front": "運命",
+    "back": "fate, destiny",
+    "exampleJp": "困難な状況に直面しても、彼女はそれを自分の運命として静かに受け入れた。",
+    "exampleTranslation": "Even when faced with difficult situations, she quietly accepted it as her fate.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0097"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 97
+  },
+  {
+    "category": "vocabulary",
+    "front": "奇跡",
+    "back": "miracle",
+    "exampleJp": "飛行機が墜落したにもかかわらず、乗客全員が無事だったのはまさに奇跡だ。",
+    "exampleTranslation": "It's a sheer miracle that all the passengers were safe despite the plane crashing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0098"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 98
+  },
+  {
+    "category": "vocabulary",
+    "front": "現実",
+    "back": "reality",
+    "exampleJp": "理想ばかりを追い求めるのではなく、厳しい現実を直視する必要がある。",
+    "exampleTranslation": "You need to face the harsh reality rather than just chasing after ideals.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0099"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 99
+  },
+  {
+    "category": "vocabulary",
+    "front": "理想",
+    "back": "ideal",
+    "exampleJp": "自分が思い描く理想の家庭を築くために、夫婦でよく話し合うことが大切だ。",
+    "exampleTranslation": "To build the ideal family you envision, it is important for the married couple to communicate well.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0100"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 100
+  },
+  {
+    "category": "vocabulary",
+    "front": "想像",
+    "back": "imagination, guess",
+    "exampleJp": "子供たちの豊かな想像力を育むために、たくさんの絵本を読んであげたい。",
+    "exampleTranslation": "I want to read many picture books to children to nurture their rich imaginations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0101"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 101
+  },
+  {
+    "category": "vocabulary",
+    "front": "記憶",
+    "back": "memory, recollection",
+    "exampleJp": "事故のショックで、彼はその日の出来事についての記憶を完全に失っていた。",
+    "exampleTranslation": "Due to the shock of the accident, he had completely lost his memory of the events of that day.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0102"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 102
+  },
+  {
+    "category": "vocabulary",
+    "front": "記録",
+    "back": "record, document",
+    "exampleJp": "陸上競技大会で、彼は十年ぶりに百メートル走の全国記録を更新した。",
+    "exampleTranslation": "At the track and field meet, he broke the national record for the 100-meter dash for the first time in ten years.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "sports"
+    ],
+    "sourceIds": [
+      "n2-vocab-0103"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 103
+  },
+  {
+    "category": "vocabulary",
+    "front": "記念",
+    "back": "commemoration, memory",
+    "exampleJp": "創立五十周年を記念して、学校の中庭に桜の木が植えられた。",
+    "exampleTranslation": "To commemorate the 50th anniversary of its founding, cherry trees were planted in the school courtyard.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0104"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 104
+  },
+  {
+    "category": "vocabulary",
+    "front": "象徴",
+    "back": "symbol",
+    "exampleJp": "平和の象徴として、その広場には白い鳩の銅像が建てられている。",
+    "exampleTranslation": "As a symbol of peace, a bronze statue of a white dove is erected in the square.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "public-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0105"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 105
+  },
+  {
+    "category": "vocabulary",
+    "front": "代表",
+    "back": "representative, representation",
+    "exampleJp": "クラスの代表として、卒業式で感謝の言葉を述べる大役を任された。",
+    "exampleTranslation": "As the representative of the class, I was entrusted with the important role of giving a speech of gratitude at the graduation ceremony.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0106"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 106
+  },
+  {
+    "category": "vocabulary",
+    "front": "当たり前",
+    "back": "natural, reasonable, obvious",
+    "exampleJp": "健康でいられることを当たり前だと思わず、日頃から生活習慣に気をつけるべきだ。",
+    "exampleTranslation": "You shouldn't take being healthy for granted; you should pay attention to your lifestyle habits on a daily basis.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0107"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 107
+  },
+  {
+    "category": "vocabulary",
+    "front": "確実",
+    "back": "certainty, reliability",
+    "exampleJp": "締め切りに間に合わせるためには、より確実な方法で作業を進める必要がある。",
+    "exampleTranslation": "In order to meet the deadline, we need to proceed with the work using a more reliable method.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0108"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 108
+  },
+  {
+    "category": "vocabulary",
+    "front": "曖昧",
+    "back": "ambiguous, vague",
+    "exampleJp": "彼からの返答はいつも曖昧で、結局どうしたいのかが全くわからない。",
+    "exampleTranslation": "His replies are always ambiguous, and in the end, I have no idea what he wants to do.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0109"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 109
+  },
+  {
+    "category": "vocabulary",
+    "front": "複雑",
+    "back": "complex, complicated",
+    "exampleJp": "このソフトの初期設定は非常に複雑なので、マニュアルをよく読んでください。",
+    "exampleTranslation": "The initial setup for this software is extremely complex, so please read the manual carefully.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-vocab-0110"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 110
+  },
+  {
+    "category": "vocabulary",
+    "front": "簡潔",
+    "back": "concise, brief",
+    "exampleJp": "プレゼンテーションでは、伝えたい要点をできるだけ簡潔にまとめることが重要だ。",
+    "exampleTranslation": "In a presentation, it is important to summarize the points you want to convey as concisely as possible.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0111"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 111
+  },
+  {
+    "category": "vocabulary",
+    "front": "公平",
+    "back": "fairness, justice",
+    "exampleJp": "試験の採点は、個人の感情を挟まずに厳格かつ公平に行われなければならない。",
+    "exampleTranslation": "The grading of exams must be conducted strictly and with fairness, without bringing in personal feelings.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "education",
+      "rules"
+    ],
+    "sourceIds": [
+      "n2-vocab-0112"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 112
+  },
+  {
+    "category": "vocabulary",
+    "front": "不満",
+    "back": "dissatisfaction, displeasure",
+    "exampleJp": "消費者からの不満の声を真摯に受け止め、商品の改良に生かすべきだ。",
+    "exampleTranslation": "We should sincerely listen to the voices of dissatisfaction from consumers and utilize them for product improvement.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0113"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 113
+  },
+  {
+    "category": "vocabulary",
+    "front": "勇気",
+    "back": "courage, bravery",
+    "exampleJp": "間違いを素直に認めて謝罪するには、案外大きな勇気が必要なものだ。",
+    "exampleTranslation": "Admitting one's mistakes honestly and apologizing actually requires a surprising amount of courage.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0114"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 114
+  },
+  {
+    "category": "vocabulary",
+    "front": "欠陥",
+    "back": "defect, flaw",
+    "exampleJp": "発売直後の自動車のブレーキシステムに重大な欠陥が見つかり、全台回収となった。",
+    "exampleTranslation": "A serious defect was found in the brake system of the car immediately after its release, leading to a recall of all units.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "business",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0115"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 115
+  },
+  {
+    "category": "vocabulary",
+    "front": "意図",
+    "back": "intention, aim",
+    "exampleJp": "著者がこの本を通して読者に伝えたかった真の意図は、別のところにあるのかもしれない。",
+    "exampleTranslation": "The true intention the author wanted to convey to readers through this book might lie elsewhere.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "communication",
+      "art"
+    ],
+    "sourceIds": [
+      "n2-vocab-0116"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 116
+  },
+  {
+    "category": "vocabulary",
+    "front": "目標",
+    "back": "goal, target",
+    "exampleJp": "今年の目標は、資格試験で高得点を取り、海外の企業に転職することだ。",
+    "exampleTranslation": "My goal this year is to get a high score on a certification exam and change jobs to an overseas company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "work",
+      "life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0117"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 117
+  },
+  {
+    "category": "vocabulary",
+    "front": "過程",
+    "back": "process, course",
+    "exampleJp": "最終的な結果も大事だが、そこに至るまでの努力の過程こそが人を成長させる。",
+    "exampleTranslation": "The final result is important, but the process of effort leading up to it is exactly what makes a person grow.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "life",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0118"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 118
+  },
+  {
+    "category": "vocabulary",
+    "front": "根拠",
+    "back": "basis, foundation",
+    "exampleJp": "その理論には科学的な根拠が乏しく、学会でも広くは認められていない。",
+    "exampleTranslation": "That theory lacks scientific basis and is not widely accepted even in the academic community.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "science",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0119"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 119
+  },
+  {
+    "category": "vocabulary",
+    "front": "解釈",
+    "back": "interpretation, explanation",
+    "exampleJp": "法律の条文は非常に難解であり、専門家によっても解釈が異なる場合がある。",
+    "exampleTranslation": "The text of the law is extremely difficult to understand, and interpretations may differ depending on the expert.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "law",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-vocab-0120"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 120
+  },
+  {
+    "category": "vocabulary",
+    "front": "与える",
+    "back": "to give, to provide",
+    "exampleJp": "子供たちに平等な教育の機会を与えるべきだ。",
+    "exampleTranslation": "We should provide children with equal educational opportunities.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0121"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 121
+  },
+  {
+    "category": "vocabulary",
+    "front": "扱う",
+    "back": "to handle, to deal with",
+    "exampleJp": "この機械は精密なので、慎重に扱ってください。",
+    "exampleTranslation": "This machine is delicate, so please handle it with care.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0122"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 122
+  },
+  {
+    "category": "vocabulary",
+    "front": "余る",
+    "back": "to remain, to be left over",
+    "exampleJp": "予算が少し余ったので、新しいソフトウェアを導入した。",
+    "exampleTranslation": "Since we had a little budget left over, we introduced some new software.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0123"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 123
+  },
+  {
+    "category": "vocabulary",
+    "front": "編む",
+    "back": "to knit, to compile",
+    "exampleJp": "祖母は冬に向けてセーターを編んでくれている。",
+    "exampleTranslation": "My grandmother is knitting a sweater for the winter.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0124"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 124
+  },
+  {
+    "category": "vocabulary",
+    "front": "争う",
+    "back": "to dispute, to compete",
+    "exampleJp": "二つの企業が市場シェアを巡って激しく争っている。",
+    "exampleTranslation": "The two companies are competing fiercely over market share.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0125"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 125
+  },
+  {
+    "category": "vocabulary",
+    "front": "改める",
+    "back": "to change, to revise, to correct",
+    "exampleJp": "来月から社内の評価制度を改める方針だ。",
+    "exampleTranslation": "We plan to revise the company's evaluation system starting next month.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0126"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 126
+  },
+  {
+    "category": "vocabulary",
+    "front": "表す",
+    "back": "to express, to represent",
+    "exampleJp": "彼の表情は現在の複雑な心境を表していた。",
+    "exampleTranslation": "His expression represented his current complex state of mind.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0127"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 127
+  },
+  {
+    "category": "vocabulary",
+    "front": "現す",
+    "back": "to show, to reveal",
+    "exampleJp": "ようやく太陽が雲の間から姿を現した。",
+    "exampleTranslation": "The sun finally revealed itself from between the clouds.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0128"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 128
+  },
+  {
+    "category": "vocabulary",
+    "front": "著す",
+    "back": "to write, to publish",
+    "exampleJp": "彼女は長年の研究成果を一冊の本に著した。",
+    "exampleTranslation": "She published the results of her years of research in a book.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0129"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 129
+  },
+  {
+    "category": "vocabulary",
+    "front": "合わせる",
+    "back": "to match, to unite, to combine",
+    "exampleJp": "周囲のペースに合わせて作業を進めるのは意外と難しい。",
+    "exampleTranslation": "It's surprisingly difficult to proceed with the work while matching the pace of those around you.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0130"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 130
+  },
+  {
+    "category": "vocabulary",
+    "front": "慌てる",
+    "back": "to panic, to rush",
+    "exampleJp": "急な仕様変更にも慌てることなく、チームは冷静に対応した。",
+    "exampleTranslation": "The team responded calmly to the sudden specification change without panicking.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0131"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 131
+  },
+  {
+    "category": "vocabulary",
+    "front": "言い出す",
+    "back": "to start talking, to propose",
+    "exampleJp": "会議の終盤になって、彼が突然新しいアイデアを言い出した。",
+    "exampleTranslation": "Toward the end of the meeting, he suddenly proposed a new idea.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0132"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 132
+  },
+  {
+    "category": "vocabulary",
+    "front": "至る",
+    "back": "to reach, to lead to",
+    "exampleJp": "度重なる協議の末、ついに合意に至った。",
+    "exampleTranslation": "After repeated discussions, we finally reached an agreement.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0133"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 133
+  },
+  {
+    "category": "vocabulary",
+    "front": "抱く",
+    "back": "to harbor, to hold",
+    "exampleJp": "多くの市民が現在の経済状況に対して不安を抱いている。",
+    "exampleTranslation": "Many citizens harbor anxiety about the current economic situation.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0134"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 134
+  },
+  {
+    "category": "vocabulary",
+    "front": "威張る",
+    "back": "to boast, to act arrogant",
+    "exampleJp": "彼は昇進したからといって威張るような人間ではない。",
+    "exampleTranslation": "He is not the kind of person to act arrogant just because he got promoted.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0135"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 135
+  },
+  {
+    "category": "vocabulary",
+    "front": "嫌がる",
+    "back": "to dislike, to hate (doing)",
+    "exampleJp": "子供が野菜を食べるのを嫌がって困っている。",
+    "exampleTranslation": "I'm having trouble because my child dislikes eating vegetables.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0136"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 136
+  },
+  {
+    "category": "vocabulary",
+    "front": "伺う",
+    "back": "to ask, to visit (humble)",
+    "exampleJp": "来週の火曜日にそちらのオフィスへ伺ってもよろしいでしょうか。",
+    "exampleTranslation": "Would it be alright if I visited your office next Tuesday?",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0137"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 137
+  },
+  {
+    "category": "vocabulary",
+    "front": "浮かべる",
+    "back": "to float, to show (on one's face)",
+    "exampleJp": "彼女は昔のアルバムを見ながら、懐かしそうな笑みを浮かべた。",
+    "exampleTranslation": "She showed a nostalgic smile while looking at the old photo album.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0138"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 138
+  },
+  {
+    "category": "vocabulary",
+    "front": "受け持つ",
+    "back": "to take charge of",
+    "exampleJp": "今学期から三年生の英語のクラスを受け持つことになった。",
+    "exampleTranslation": "Starting this semester, I will be taking charge of the third-year English class.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0139"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 139
+  },
+  {
+    "category": "vocabulary",
+    "front": "動かす",
+    "back": "to move, to operate",
+    "exampleJp": "このプロジェクトを動かすには、さらに多くの資金が必要だ。",
+    "exampleTranslation": "We need more funds to get this project moving.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0140"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 140
+  },
+  {
+    "category": "vocabulary",
+    "front": "失う",
+    "back": "to lose",
+    "exampleJp": "顧客からの信頼を一度失うと、回復するのは容易ではない。",
+    "exampleTranslation": "Once you lose the trust of your customers, it is not easy to recover.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0141"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 141
+  },
+  {
+    "category": "vocabulary",
+    "front": "疑う",
+    "back": "to doubt, to suspect",
+    "exampleJp": "自分の目を疑うほど、信じられない光景が広がっていた。",
+    "exampleTranslation": "An unbelievable scene spread out before me, to the point where I doubted my own eyes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0142"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 142
+  },
+  {
+    "category": "vocabulary",
+    "front": "撃つ",
+    "back": "to shoot",
+    "exampleJp": "警官は警告のために空に向かって銃を撃った。",
+    "exampleTranslation": "The police officer shot his gun into the air as a warning.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0143"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 143
+  },
+  {
+    "category": "vocabulary",
+    "front": "移す",
+    "back": "to move, to transfer",
+    "exampleJp": "本社を都心から郊外へ移す計画が進行中だ。",
+    "exampleTranslation": "A plan to move the headquarters from the city center to the suburbs is underway.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0144"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 144
+  },
+  {
+    "category": "vocabulary",
+    "front": "訴える",
+    "back": "to appeal, to complain of",
+    "exampleJp": "一部の住民が建設工事の騒音被害を訴えている。",
+    "exampleTranslation": "Some residents are complaining about the noise damage from the construction work.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0145"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 145
+  },
+  {
+    "category": "vocabulary",
+    "front": "奪う",
+    "back": "to snatch away, to steal",
+    "exampleJp": "その美しい景色は、一瞬にして観光客の心を奪った。",
+    "exampleTranslation": "That beautiful scenery instantly stole the hearts of the tourists.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0146"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 146
+  },
+  {
+    "category": "vocabulary",
+    "front": "埋める",
+    "back": "to bury, to fill up",
+    "exampleJp": "今年の赤字をどうやって埋めるかが最大の課題だ。",
+    "exampleTranslation": "How to fill up this year's deficit is our biggest challenge.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0147"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 147
+  },
+  {
+    "category": "vocabulary",
+    "front": "敬う",
+    "back": "to respect, to honor",
+    "exampleJp": "年長者を敬うという文化は、今でも大切にされている。",
+    "exampleTranslation": "The culture of respecting one's elders is still valued today.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0148"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 148
+  },
+  {
+    "category": "vocabulary",
+    "front": "裏切る",
+    "back": "to betray",
+    "exampleJp": "消費者の期待を裏切るような製品は、すぐに市場から消えていく。",
+    "exampleTranslation": "Products that betray consumers' expectations quickly disappear from the market.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0149"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 149
+  },
+  {
+    "category": "vocabulary",
+    "front": "占う",
+    "back": "to forecast, to tell fortunes",
+    "exampleJp": "来年の経済動向を占う上で、この指標は非常に重要だ。",
+    "exampleTranslation": "This indicator is very important in forecasting next year's economic trends.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0150"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 150
+  },
+  {
+    "category": "vocabulary",
+    "front": "恨む",
+    "back": "to resent, to hold a grudge",
+    "exampleJp": "失敗は自分の責任であり、他人を恨むのは筋違いだ。",
+    "exampleTranslation": "The failure is my own responsibility, and holding a grudge against others is unreasonable.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0151"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 151
+  },
+  {
+    "category": "vocabulary",
+    "front": "羨む",
+    "back": "to envy",
+    "exampleJp": "他人の成功を羨む前に、自分自身の努力を見直すべきだ。",
+    "exampleTranslation": "Before envying the success of others, you should review your own efforts.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0152"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 152
+  },
+  {
+    "category": "vocabulary",
+    "front": "売り切れる",
+    "back": "to be sold out",
+    "exampleJp": "人気アーティストのコンサートチケットは、発売開始から数分で売り切れた。",
+    "exampleTranslation": "The popular artist's concert tickets sold out within minutes of going on sale.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0153"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 153
+  },
+  {
+    "category": "vocabulary",
+    "front": "追いかける",
+    "back": "to chase, to run after",
+    "exampleJp": "警察は逃走した犯人の車をパトカーで追いかけた。",
+    "exampleTranslation": "The police chased the fleeing suspect's car in a patrol car.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0154"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 154
+  },
+  {
+    "category": "vocabulary",
+    "front": "追い越す",
+    "back": "to pass, to overtake",
+    "exampleJp": "高速道路でトラックを追い越す際は、周囲の状況に十分注意してください。",
+    "exampleTranslation": "When overtaking a truck on the highway, please pay close attention to your surroundings.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0155"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 155
+  },
+  {
+    "category": "vocabulary",
+    "front": "追い付く",
+    "back": "to catch up",
+    "exampleJp": "競合他社の技術力に追い付くため、研究開発への投資を増やす。",
+    "exampleTranslation": "We will increase investment in research and development to catch up with our competitors' technological capabilities.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0156"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 156
+  },
+  {
+    "category": "vocabulary",
+    "front": "応じる",
+    "back": "to respond, to accept",
+    "exampleJp": "お客様の多様なニーズに応じるため、新サービスを立ち上げた。",
+    "exampleTranslation": "We launched a new service to respond to the diverse needs of our customers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0157"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 157
+  },
+  {
+    "category": "vocabulary",
+    "front": "終える",
+    "back": "to finish, to complete",
+    "exampleJp": "すべての検査を終えるまで、あと一週間ほどかかります。",
+    "exampleTranslation": "It will take about another week until we finish all the inspections.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0158"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 158
+  },
+  {
+    "category": "vocabulary",
+    "front": "覆う",
+    "back": "to cover, to hide",
+    "exampleJp": "山頂は厚い雲に覆われており、景色を全く楽しめなかった。",
+    "exampleTranslation": "The summit was covered in thick clouds, and we couldn't enjoy the view at all.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0159"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 159
+  },
+  {
+    "category": "vocabulary",
+    "front": "補う",
+    "back": "to compensate for, to supplement",
+    "exampleJp": "労働力不足を補うために、AIやロボットの導入が進められている。",
+    "exampleTranslation": "The introduction of AI and robots is being promoted to compensate for the labor shortage.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0160"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 160
+  },
+  {
+    "category": "vocabulary",
+    "front": "贈る",
+    "back": "to give (as a gift), to present",
+    "exampleJp": "長年会社に貢献してくれた彼に、感謝の記念品を贈った。",
+    "exampleTranslation": "We presented a commemorative gift of appreciation to him, who has contributed to the company for many years.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0161"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 161
+  },
+  {
+    "category": "vocabulary",
+    "front": "怠る",
+    "back": "to neglect, to fail to do",
+    "exampleJp": "日々のメンテナンスを怠ると、深刻な機械トラブルにつながる。",
+    "exampleTranslation": "Neglecting daily maintenance leads to serious machine trouble.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0162"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 162
+  },
+  {
+    "category": "vocabulary",
+    "front": "押さえる",
+    "back": "to hold down, to suppress",
+    "exampleJp": "イベントの企画書を作る前に、まずは要点を押さえておきましょう。",
+    "exampleTranslation": "Before creating the event proposal, let's nail down the main points first.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0163"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 163
+  },
+  {
+    "category": "vocabulary",
+    "front": "収める",
+    "back": "to achieve, to obtain, to supply",
+    "exampleJp": "今回のプロジェクトで、私たちのチームは大きな成功を収めた。",
+    "exampleTranslation": "Our team achieved great success with this project.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0164"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 164
+  },
+  {
+    "category": "vocabulary",
+    "front": "納める",
+    "back": "to pay (taxes), to deliver",
+    "exampleJp": "期限までにしっかりと税金を納めるのは国民の義務である。",
+    "exampleTranslation": "Paying taxes properly by the deadline is a citizen's duty.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0165"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 165
+  },
+  {
+    "category": "vocabulary",
+    "front": "治める",
+    "back": "to govern, to manage",
+    "exampleJp": "新しい市長は、荒れていた市政を見事に治めた。",
+    "exampleTranslation": "The new mayor splendidly governed the chaotic municipal administration.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0166"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 166
+  },
+  {
+    "category": "vocabulary",
+    "front": "恐れる",
+    "back": "to fear, to be afraid of",
+    "exampleJp": "失敗を恐れていては、新しいことに挑戦することはできない。",
+    "exampleTranslation": "If you fear failure, you won't be able to challenge yourself with new things.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0167"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 167
+  },
+  {
+    "category": "vocabulary",
+    "front": "教わる",
+    "back": "to be taught, to learn from",
+    "exampleJp": "新人時代に先輩から教わった仕事の基本は、今でも役立っている。",
+    "exampleTranslation": "The basics of work I learned from my seniors during my rookie days are still useful today.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0168"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 168
+  },
+  {
+    "category": "vocabulary",
+    "front": "落ち込む",
+    "back": "to feel down, to decline",
+    "exampleJp": "先月の売上が大幅に落ち込んでしまい、対策を急いでいる。",
+    "exampleTranslation": "Last month's sales declined significantly, and we are rushing to take countermeasures.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0169"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 169
+  },
+  {
+    "category": "vocabulary",
+    "front": "驚かす",
+    "back": "to surprise, to frighten",
+    "exampleJp": "彼の突然の引退発表は、世界中のファンを驚かせた。",
+    "exampleTranslation": "His sudden retirement announcement surprised fans all over the world.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0170"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 170
+  },
+  {
+    "category": "vocabulary",
+    "front": "溺れる",
+    "back": "to drown, to indulge in",
+    "exampleJp": "海で溺れかけていた子供が、偶然通りかかった人に救助された。",
+    "exampleTranslation": "A child who was almost drowning in the sea was rescued by a passerby.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0171"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 171
+  },
+  {
+    "category": "vocabulary",
+    "front": "思い込む",
+    "back": "to be under the impression, to assume",
+    "exampleJp": "ずっと自分の責任だと思い込んでいたが、実はシステムのエラーだった。",
+    "exampleTranslation": "I had assumed all along that it was my fault, but it was actually a system error.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0172"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 172
+  },
+  {
+    "category": "vocabulary",
+    "front": "思いつく",
+    "back": "to think of, to hit upon",
+    "exampleJp": "散歩をしている途中で、新しいビジネスのアイデアを思いついた。",
+    "exampleTranslation": "I hit upon a new business idea while I was taking a walk.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0173"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 173
+  },
+  {
+    "category": "vocabulary",
+    "front": "及ぼす",
+    "back": "to exert, to cause, to affect",
+    "exampleJp": "この法律の改正は、業界全体に大きな影響を及ぼすだろう。",
+    "exampleTranslation": "This revision of the law will likely have a major impact on the entire industry.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0174"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 174
+  },
+  {
+    "category": "vocabulary",
+    "front": "折る",
+    "back": "to fold, to break",
+    "exampleJp": "強風で庭の木の枝が折れてしまった。",
+    "exampleTranslation": "The branches of the tree in the garden were broken by the strong wind.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0175"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 175
+  },
+  {
+    "category": "vocabulary",
+    "front": "降ろす",
+    "back": "to drop off, to take down",
+    "exampleJp": "駅の南口で客を降ろした後、タクシーは走り去った。",
+    "exampleTranslation": "After dropping off the passenger at the south exit of the station, the taxi drove away.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0176"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 176
+  },
+  {
+    "category": "vocabulary",
+    "front": "代える",
+    "back": "to replace, to substitute",
+    "exampleJp": "資源の枯渇を防ぐため、プラスチックを別の素材に代える動きが加速している。",
+    "exampleTranslation": "To prevent resource depletion, the movement to replace plastic with other materials is accelerating.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0177"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 177
+  },
+  {
+    "category": "vocabulary",
+    "front": "抱える",
+    "back": "to hold, to have (problems)",
+    "exampleJp": "その企業は多額の負債を抱えており、経営再建が急務となっている。",
+    "exampleTranslation": "That company is burdened with substantial debt, so rebuilding management has become urgent.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0178"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 178
+  },
+  {
+    "category": "vocabulary",
+    "front": "限る",
+    "back": "to restrict, to limit",
+    "exampleJp": "この割引キャンペーンは、初めて当店をご利用のお客様に限ります。",
+    "exampleTranslation": "This discount campaign is limited to customers using our store for the first time.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0179"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 179
+  },
+  {
+    "category": "vocabulary",
+    "front": "隠れる",
+    "back": "to hide, to be hidden",
+    "exampleJp": "太陽が雲の陰に隠れ、急に辺りが暗くなった。",
+    "exampleTranslation": "The sun hid behind the clouds, and the surroundings suddenly grew dark.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0180"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 180
+  },
+  {
+    "category": "vocabulary",
+    "front": "嗅ぐ",
+    "back": "to sniff, to smell",
+    "exampleJp": "ガス漏れのような不審な臭いを嗅いだら、すぐに通報してください。",
+    "exampleTranslation": "If you smell a suspicious odor like a gas leak, please report it immediately.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0181"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 181
+  },
+  {
+    "category": "vocabulary",
+    "front": "欠ける",
+    "back": "to lack, to be missing, to chip",
+    "exampleJp": "彼の提案は斬新だが、実現性に欠ける部分がある。",
+    "exampleTranslation": "His proposal is innovative, but there are parts where it lacks feasibility.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0182"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 182
+  },
+  {
+    "category": "vocabulary",
+    "front": "囲む",
+    "back": "to surround, to encircle",
+    "exampleJp": "大きなテーブルを家族全員で囲んで、夕食を楽しんだ。",
+    "exampleTranslation": "The whole family surrounded the large table and enjoyed dinner.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0183"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 183
+  },
+  {
+    "category": "vocabulary",
+    "front": "重なる",
+    "back": "to overlap, to pile up",
+    "exampleJp": "不運なトラブルが重なり、納品が予定より遅れてしまった。",
+    "exampleTranslation": "Due to overlapping unfortunate troubles, the delivery was delayed beyond the schedule.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0184"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 184
+  },
+  {
+    "category": "vocabulary",
+    "front": "飾る",
+    "back": "to decorate",
+    "exampleJp": "オフィスのエントランスに、季節の花を飾ることにした。",
+    "exampleTranslation": "We decided to decorate the office entrance with seasonal flowers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0185"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 185
+  },
+  {
+    "category": "vocabulary",
+    "front": "偏る",
+    "back": "to be unbalanced, to lean",
+    "exampleJp": "情報収集が一部のメディアに偏ると、客観的な判断ができなくなる。",
+    "exampleTranslation": "If your information gathering leans toward certain media, you won't be able to make objective judgments.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0186"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 186
+  },
+  {
+    "category": "vocabulary",
+    "front": "語る",
+    "back": "to talk, to narrate",
+    "exampleJp": "社長は創業当時の苦労について、社員たちに熱く語った。",
+    "exampleTranslation": "The president talked passionately to the employees about the hardships when the company was founded.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0187"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 187
+  },
+  {
+    "category": "vocabulary",
+    "front": "悲しむ",
+    "back": "to be sad, to mourn",
+    "exampleJp": "ペットの突然の死を、家族全員が深く悲しんでいる。",
+    "exampleTranslation": "The entire family is deeply mourning the sudden death of their pet.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0188"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 188
+  },
+  {
+    "category": "vocabulary",
+    "front": "通う",
+    "back": "to commute, to go to and from",
+    "exampleJp": "語学力を維持するために、週に二回英会話スクールに通っている。",
+    "exampleTranslation": "To maintain my language skills, I commute to an English conversation school twice a week.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0189"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 189
+  },
+  {
+    "category": "vocabulary",
+    "front": "枯れる",
+    "back": "to wither, to dry up",
+    "exampleJp": "夏の厳しい暑さで、庭の植物がすっかり枯れてしまった。",
+    "exampleTranslation": "Due to the severe summer heat, the plants in the garden have completely withered.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0190"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 190
+  },
+  {
+    "category": "vocabulary",
+    "front": "かわいがる",
+    "back": "to love, to show affection to",
+    "exampleJp": "彼は新入社員をとてもかわいがり、熱心に仕事を教えている。",
+    "exampleTranslation": "He shows a lot of affection to the new employees and eagerly teaches them the job.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0191"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 191
+  },
+  {
+    "category": "vocabulary",
+    "front": "乾かす",
+    "back": "to dry",
+    "exampleJp": "雨に濡れたコートを、ストーブの近くで乾かした。",
+    "exampleTranslation": "I dried my rain-soaked coat near the stove.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0192"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 192
+  },
+  {
+    "category": "vocabulary",
+    "front": "代わる",
+    "back": "to take the place of, to replace",
+    "exampleJp": "体調不良の彼に代わって、私がプレゼンテーションを行います。",
+    "exampleTranslation": "I will give the presentation in place of him, who is feeling unwell.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0193"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 193
+  },
+  {
+    "category": "vocabulary",
+    "front": "気付く",
+    "back": "to notice, to realize",
+    "exampleJp": "書類を提出した後になって、重大な入力ミスに気付いた。",
+    "exampleTranslation": "I realized a major input error after I had already submitted the document.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0194"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 194
+  },
+  {
+    "category": "vocabulary",
+    "front": "気に入る",
+    "back": "to be pleased with, to like",
+    "exampleJp": "新しく買ったパソコンのデザインがとても気に入っている。",
+    "exampleTranslation": "I am very pleased with the design of my newly bought computer.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0195"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 195
+  },
+  {
+    "category": "vocabulary",
+    "front": "着替える",
+    "back": "to change clothes",
+    "exampleJp": "汗をかいたので、シャワーを浴びてから清潔な服に着替えた。",
+    "exampleTranslation": "Since I sweat a lot, I took a shower and changed into clean clothes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0196"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 196
+  },
+  {
+    "category": "vocabulary",
+    "front": "効く",
+    "back": "to be effective, to work",
+    "exampleJp": "この薬は頭痛によく効くが、眠くなる副作用がある。",
+    "exampleTranslation": "This medicine is very effective for headaches, but it has the side effect of making you sleepy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0197"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 197
+  },
+  {
+    "category": "vocabulary",
+    "front": "腐る",
+    "back": "to rot, to spoil",
+    "exampleJp": "冷蔵庫に入れ忘れたため、買ってきた肉が腐ってしまった。",
+    "exampleTranslation": "Because I forgot to put it in the refrigerator, the meat I bought spoiled.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0198"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 198
+  },
+  {
+    "category": "vocabulary",
+    "front": "組み立てる",
+    "back": "to assemble, to construct",
+    "exampleJp": "家具のパーツを説明書通りに組み立てるのに、二時間かかった。",
+    "exampleTranslation": "It took two hours to assemble the furniture parts according to the instructions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0199"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 199
+  },
+  {
+    "category": "vocabulary",
+    "front": "狂う",
+    "back": "to go mad, to get out of order",
+    "exampleJp": "急な仕様変更のせいで、プロジェクトのスケジュールがすっかり狂ってしまった。",
+    "exampleTranslation": "Because of the sudden specification change, the project schedule went completely out of order.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0200"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 200
+  },
+  {
+    "category": "vocabulary",
+    "front": "暮れる",
+    "back": "to get dark, to end",
+    "exampleJp": "議論に夢中になっているうちに、あっという間に日が暮れていた。",
+    "exampleTranslation": "While we were engrossed in the discussion, the sun went down before we knew it.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0201"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 201
+  },
+  {
+    "category": "vocabulary",
+    "front": "加える",
+    "back": "to add, to include",
+    "exampleJp": "スープの味が少し薄かったので、塩と胡椒を加えた。",
+    "exampleTranslation": "The soup tasted a bit weak, so I added some salt and pepper.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0202"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 202
+  },
+  {
+    "category": "vocabulary",
+    "front": "削る",
+    "back": "to shave off, to cut down",
+    "exampleJp": "利益を確保するためには、無駄な経費を徹底的に削る必要がある。",
+    "exampleTranslation": "To secure profits, we need to thoroughly cut down on unnecessary expenses.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0203"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 203
+  },
+  {
+    "category": "vocabulary",
+    "front": "越える",
+    "back": "to cross, to pass",
+    "exampleJp": "この山を越えれば、目的地はもうすぐそこだ。",
+    "exampleTranslation": "Once we cross this mountain, our destination is just around the corner.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0204"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 204
+  },
+  {
+    "category": "vocabulary",
+    "front": "凍る",
+    "back": "to freeze",
+    "exampleJp": "昨夜はかなり冷え込んだため、路面の水たまりが凍っている。",
+    "exampleTranslation": "Because it got quite cold last night, the puddles on the road are frozen.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0205"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 205
+  },
+  {
+    "category": "vocabulary",
+    "front": "腰掛ける",
+    "back": "to sit down",
+    "exampleJp": "待合室のベンチに腰掛けて、名前が呼ばれるのを待った。",
+    "exampleTranslation": "I sat down on a bench in the waiting room and waited for my name to be called.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0206"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 206
+  },
+  {
+    "category": "vocabulary",
+    "front": "こぼす",
+    "back": "to spill",
+    "exampleJp": "誤ってコーヒーをこぼし、大切な書類を汚してしまった。",
+    "exampleTranslation": "I accidentally spilled coffee and ruined some important documents.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0207"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 207
+  },
+  {
+    "category": "vocabulary",
+    "front": "転がる",
+    "back": "to roll, to tumble",
+    "exampleJp": "子供のおもちゃが部屋の床のあちこちに転がっている。",
+    "exampleTranslation": "Children's toys are rolling about here and there on the room's floor.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0208"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 208
+  },
+  {
+    "category": "vocabulary",
+    "front": "壊す",
+    "back": "to break, to destroy",
+    "exampleJp": "古い建物を壊して、新しいマンションを建設する計画がある。",
+    "exampleTranslation": "There is a plan to tear down the old building and construct a new apartment complex.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0209"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 209
+  },
+  {
+    "category": "vocabulary",
+    "front": "探る",
+    "back": "to search, to investigate",
+    "exampleJp": "市場の最新動向を探るため、競合他社の製品を分析する。",
+    "exampleTranslation": "We will analyze competitors' products to investigate the latest market trends.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0210"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 210
+  },
+  {
+    "category": "vocabulary",
+    "front": "叫ぶ",
+    "back": "to shout, to yell",
+    "exampleJp": "環境保護の重要性が叫ばれているが、具体的な対策はまだ不十分だ。",
+    "exampleTranslation": "The importance of environmental protection is widely emphasized, but concrete measures are still insufficient.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0211"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 211
+  },
+  {
+    "category": "vocabulary",
+    "front": "避ける",
+    "back": "to avoid",
+    "exampleJp": "通勤ラッシュの混雑を避けるため、早朝に出勤している。",
+    "exampleTranslation": "I commute early in the morning to avoid the congestion of the rush hour.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0212"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 212
+  },
+  {
+    "category": "vocabulary",
+    "front": "冷ます",
+    "back": "to cool down",
+    "exampleJp": "お茶が熱すぎたので、少し冷ましてから飲んだ。",
+    "exampleTranslation": "The tea was too hot, so I let it cool down a bit before drinking it.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0213"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 213
+  },
+  {
+    "category": "vocabulary",
+    "front": "覚める",
+    "back": "to wake up, to become sober",
+    "exampleJp": "休日は昼過ぎまで寝ていて、やっと目が覚めた。",
+    "exampleTranslation": "On my days off, I sleep until past noon, and I finally woke up.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0214"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 214
+  },
+  {
+    "category": "vocabulary",
+    "front": "去る",
+    "back": "to leave, to pass",
+    "exampleJp": "彼は一身上の都合により、先月末で会社を去った。",
+    "exampleTranslation": "He left the company at the end of last month due to personal reasons.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0215"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 215
+  },
+  {
+    "category": "vocabulary",
+    "front": "騒ぐ",
+    "back": "to make noise, to be excited",
+    "exampleJp": "夜遅くに大声で騒ぐのは、近所迷惑になるのでやめてください。",
+    "exampleTranslation": "Please stop making loud noise late at night, as it is a nuisance to the neighbors.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0216"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 216
+  },
+  {
+    "category": "vocabulary",
+    "front": "沈む",
+    "back": "to sink, to feel depressed",
+    "exampleJp": "あの豪華客船は、氷山に衝突して海の底に沈んでしまった。",
+    "exampleTranslation": "That luxury cruise ship collided with an iceberg and sank to the bottom of the sea.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0217"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 217
+  },
+  {
+    "category": "vocabulary",
+    "front": "縛る",
+    "back": "to tie, to bind",
+    "exampleJp": "古新聞をヒモでしっかりと縛ってから回収に出した。",
+    "exampleTranslation": "I tied up the old newspapers tightly with string before putting them out for collection.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0218"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 218
+  },
+  {
+    "category": "vocabulary",
+    "front": "支払う",
+    "back": "to pay",
+    "exampleJp": "オンラインショッピングの代金をクレジットカードで支払った。",
+    "exampleTranslation": "I paid for the online shopping with a credit card.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0219"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 219
+  },
+  {
+    "category": "vocabulary",
+    "front": "しまう",
+    "back": "to put away, to finish",
+    "exampleJp": "冬物のコートをクリーニングに出してからクローゼットにしまった。",
+    "exampleTranslation": "I put my winter coats away in the closet after taking them to the dry cleaners.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0220"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 220
+  },
+  {
+    "category": "vocabulary",
+    "front": "示す",
+    "back": "to show, to point out",
+    "exampleJp": "このデータは、私たちのマーケティング戦略が正しいことを示している。",
+    "exampleTranslation": "This data shows that our marketing strategy is correct.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0221"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 221
+  },
+  {
+    "category": "vocabulary",
+    "front": "占める",
+    "back": "to occupy, to account for",
+    "exampleJp": "高齢者が総人口に占める割合は、年々増加している。",
+    "exampleTranslation": "The percentage that the elderly account for in the total population is increasing year by year.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0222"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 222
+  },
+  {
+    "category": "vocabulary",
+    "front": "湿る",
+    "back": "to become damp, to get wet",
+    "exampleJp": "梅雨の時期は洗濯物が乾きにくく、いつも少し湿っている気がする。",
+    "exampleTranslation": "During the rainy season, laundry is hard to dry, and it always feels a bit damp.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0223"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 223
+  },
+  {
+    "category": "vocabulary",
+    "front": "優れる",
+    "back": "to excel, to be excellent",
+    "exampleJp": "このスマートフォンは、特にカメラの性能において優れている。",
+    "exampleTranslation": "This smartphone is particularly excellent in terms of its camera performance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0224"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 224
+  },
+  {
+    "category": "vocabulary",
+    "front": "済ませる",
+    "back": "to finish, to get it over with",
+    "exampleJp": "今日の昼食は、コンビニのおにぎりだけで簡単に済ませた。",
+    "exampleTranslation": "Today I took care of lunch quickly with just a convenience store rice ball.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0225"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 225
+  },
+  {
+    "category": "vocabulary",
+    "front": "すれ違う",
+    "back": "to pass by each other, to disagree",
+    "exampleJp": "駅前で昔の同級生とすれ違ったが、相手は私に気付かなかったようだ。",
+    "exampleTranslation": "I passed by an old classmate in front of the station, but they didn't seem to notice me.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0226"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 226
+  },
+  {
+    "category": "vocabulary",
+    "front": "迫る",
+    "back": "to approach, to press",
+    "exampleJp": "プロジェクトの締め切りが明日に迫っており、チーム全員が残業している。",
+    "exampleTranslation": "The project deadline is approaching tomorrow, and the whole team is working overtime.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0227"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 227
+  },
+  {
+    "category": "vocabulary",
+    "front": "注ぐ",
+    "back": "to pour",
+    "exampleJp": "乾杯のために、グラスにシャンパンをなみなみと注いだ。",
+    "exampleTranslation": "I poured champagne to the brim of the glasses for a toast.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0228"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 228
+  },
+  {
+    "category": "vocabulary",
+    "front": "備える",
+    "back": "to prepare, to furnish with",
+    "exampleJp": "万が一の自然災害に備えて、非常食と水を備蓄している。",
+    "exampleTranslation": "We are stockpiling emergency food and water to prepare for the unlikely event of a natural disaster.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0229"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 229
+  },
+  {
+    "category": "vocabulary",
+    "front": "揃う",
+    "back": "to be complete, to gather",
+    "exampleJp": "必要な書類がすべて揃ってから、ビザの申請手続きを始めてください。",
+    "exampleTranslation": "Please start the visa application process after all the necessary documents are gathered.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0230"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 230
+  },
+  {
+    "category": "vocabulary",
+    "front": "倒す",
+    "back": "to throw down, to defeat",
+    "exampleJp": "誤って花瓶を倒し、テーブルの周りを水浸しにしてしまった。",
+    "exampleTranslation": "I accidentally knocked over the vase, flooding the area around the table with water.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0231"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 231
+  },
+  {
+    "category": "vocabulary",
+    "front": "戦う",
+    "back": "to fight, to battle",
+    "exampleJp": "環境問題という地球規模の課題に対して、私たちは協力して戦わなければならない。",
+    "exampleTranslation": "We must fight together against the global challenge of environmental issues.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0232"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 232
+  },
+  {
+    "category": "vocabulary",
+    "front": "確かめる",
+    "back": "to confirm, to check",
+    "exampleJp": "メールを送信する前に、宛先と添付ファイルが正しいか必ず確かめてください。",
+    "exampleTranslation": "Before sending an email, please always check that the recipient and the attachment are correct.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0233"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 233
+  },
+  {
+    "category": "vocabulary",
+    "front": "助かる",
+    "back": "to be saved, to be helped",
+    "exampleJp": "同僚がプレゼンの資料作りを手伝ってくれたおかげで、本当に助かった。",
+    "exampleTranslation": "I was really saved thanks to my colleague helping me make the presentation materials.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0234"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 234
+  },
+  {
+    "category": "vocabulary",
+    "front": "例える",
+    "back": "to liken to, to compare",
+    "exampleJp": "彼は人生をよく長い旅に例えて語る。",
+    "exampleTranslation": "He often likens life to a long journey when he speaks.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0235"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 235
+  },
+  {
+    "category": "vocabulary",
+    "front": "頼る",
+    "back": "to rely on, to depend on",
+    "exampleJp": "問題が複雑な場合は、一人で抱え込まずに専門家に頼るべきだ。",
+    "exampleTranslation": "When a problem is complex, you should rely on an expert instead of dealing with it alone.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0236"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 236
+  },
+  {
+    "category": "vocabulary",
+    "front": "違う",
+    "back": "to differ, to be wrong",
+    "exampleJp": "私の意見は彼の考えと少し違いますが、目的は同じです。",
+    "exampleTranslation": "My opinion differs slightly from his thoughts, but our goal is the same.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0237"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 237
+  },
+  {
+    "category": "vocabulary",
+    "front": "散らかる",
+    "back": "to be scattered, to be in a mess",
+    "exampleJp": "子供が遊んだ後で、部屋中におもちゃが散らかっている。",
+    "exampleTranslation": "Toys are scattered all over the room after the children played.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0238"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 238
+  },
+  {
+    "category": "vocabulary",
+    "front": "捕まえる",
+    "back": "to catch, to arrest",
+    "exampleJp": "警察は防犯カメラの映像を手がかりに、ついに犯人を捕まえた。",
+    "exampleTranslation": "The police finally caught the suspect using the security camera footage as a clue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0239"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 239
+  },
+  {
+    "category": "vocabulary",
+    "front": "尽きる",
+    "back": "to run out, to be exhausted",
+    "exampleJp": "長期のプロジェクトを終え、チームの体力と気力は限界まで尽きていた。",
+    "exampleTranslation": "Having finished the long-term project, the team's physical and mental strength were exhausted to the limit.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0240"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 240
+  },
+  {
+    "category": "vocabulary",
+    "front": "突く",
+    "back": "to thrust, to strike, to poke",
+    "exampleJp": "彼は会議中に核心を突く鋭い質問を投げかけた。",
+    "exampleTranslation": "During the meeting, he threw a sharp question that struck at the core of the issue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0241"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 241
+  },
+  {
+    "category": "vocabulary",
+    "front": "勤める",
+    "back": "to work for, to serve",
+    "exampleJp": "大学を卒業して以来、ずっと同じIT企業に勤めている。",
+    "exampleTranslation": "I have been working for the same IT company ever since graduating from university.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0242"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 242
+  },
+  {
+    "category": "vocabulary",
+    "front": "努める",
+    "back": "to try hard, to make an effort",
+    "exampleJp": "お客様に満足いただけるよう、サービスの向上に努めてまいります。",
+    "exampleTranslation": "We will make an effort to improve our services so that our customers will be satisfied.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0243"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 243
+  },
+  {
+    "category": "vocabulary",
+    "front": "繋ぐ",
+    "back": "to connect, to tie",
+    "exampleJp": "複数のパソコンをネットワークで繋いで、データを共有できるようにした。",
+    "exampleTranslation": "We connected multiple computers via a network to enable data sharing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0244"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 244
+  },
+  {
+    "category": "vocabulary",
+    "front": "潰す",
+    "back": "to crush, to smash, to waste",
+    "exampleJp": "暇を潰すために、カフェでスマートフォンを見ながら時間を過ごした。",
+    "exampleTranslation": "To kill time, I spent time at a cafe looking at my smartphone.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0245"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 245
+  },
+  {
+    "category": "vocabulary",
+    "front": "積む",
+    "back": "to pile up, to accumulate",
+    "exampleJp": "海外の支社で数年間の経験を積むことが、昇進の条件となっている。",
+    "exampleTranslation": "Accumulating several years of experience at an overseas branch is a condition for promotion.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0246"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 246
+  },
+  {
+    "category": "vocabulary",
+    "front": "詰める",
+    "back": "to pack, to stuff, to work out details",
+    "exampleJp": "旅行の荷物をスーツケースに詰めていたら、あっという間に夜中になっていた。",
+    "exampleTranslation": "While I was packing my travel luggage into the suitcase, it quickly became midnight.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0247"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 247
+  },
+  {
+    "category": "vocabulary",
+    "front": "解く",
+    "back": "to solve, to untie",
+    "exampleJp": "この複雑な数学のパズルを自力で解くのにはかなりの時間がかかった。",
+    "exampleTranslation": "It took a considerable amount of time to solve this complex math puzzle on my own.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0248"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 248
+  },
+  {
+    "category": "vocabulary",
+    "front": "飛ばす",
+    "back": "to fly, to skip",
+    "exampleJp": "プレゼンでは時間が足りず、最後の二つのスライドを飛ばすことになった。",
+    "exampleTranslation": "There wasn't enough time during the presentation, so I had to skip the last two slides.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0249"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 249
+  },
+  {
+    "category": "vocabulary",
+    "front": "留まる",
+    "back": "to remain, to stay",
+    "exampleJp": "この製品の不具合は一部のロットに留まらず、全体に影響している可能性がある。",
+    "exampleTranslation": "The defects in this product might not be limited to a few lots but could be affecting all of them.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0250"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 250
+  },
+  {
+    "category": "vocabulary",
+    "front": "伴う",
+    "back": "to accompany, to involve",
+    "exampleJp": "大規模なシステム改修には、常に予期せぬリスクが伴うものだ。",
+    "exampleTranslation": "Large-scale system revisions always involve unexpected risks.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0251"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 251
+  },
+  {
+    "category": "vocabulary",
+    "front": "眺める",
+    "back": "to look at, to gaze at",
+    "exampleJp": "山頂から眼下に広がる街の景色を静かに眺めた。",
+    "exampleTranslation": "I quietly gazed at the view of the city spreading out below from the summit.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0252"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 252
+  },
+  {
+    "category": "vocabulary",
+    "front": "流れる",
+    "back": "to flow, to be washed away",
+    "exampleJp": "街角からどこか懐かしいクリスマスソングが流れてきた。",
+    "exampleTranslation": "A somewhat nostalgic Christmas song came flowing from the street corner.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0253"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 253
+  },
+  {
+    "category": "vocabulary",
+    "front": "鳴らす",
+    "back": "to ring, to sound",
+    "exampleJp": "自転車で歩道を走る際、みだりにベルを鳴らすのはマナー違反だ。",
+    "exampleTranslation": "When riding a bicycle on the sidewalk, ringing the bell indiscriminately is bad manners.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0254"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 254
+  },
+  {
+    "category": "vocabulary",
+    "front": "似合う",
+    "back": "to suit, to match",
+    "exampleJp": "その明るい色のドレスは、彼女の雰囲気にとてもよく似合っている。",
+    "exampleTranslation": "That bright-colored dress suits her aura very well.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0255"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 255
+  },
+  {
+    "category": "vocabulary",
+    "front": "抜く",
+    "back": "to pull out, to extract, to omit",
+    "exampleJp": "虫歯がひどく痛むので、とうとう歯医者で抜いてもらった。",
+    "exampleTranslation": "My cavity hurt so badly that I finally had it pulled out by the dentist.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0256"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 256
+  },
+  {
+    "category": "vocabulary",
+    "front": "狙う",
+    "back": "to aim at",
+    "exampleJp": "我々の新製品は、主に二十代の若い女性の市場を狙っている。",
+    "exampleTranslation": "Our new product is primarily aiming at the market of young women in their twenties.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0257"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 257
+  },
+  {
+    "category": "vocabulary",
+    "front": "残す",
+    "back": "to leave (behind)",
+    "exampleJp": "食べ物を粗末にしないよう、お皿の料理は残さずきれいに食べた。",
+    "exampleTranslation": "To avoid wasting food, I ate everything on my plate without leaving anything behind.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0258"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 258
+  },
+  {
+    "category": "vocabulary",
+    "front": "乗せる",
+    "back": "to place on, to give a ride",
+    "exampleJp": "荷物を車のトランクに乗せて、すぐに出発する準備を整えた。",
+    "exampleTranslation": "I placed the luggage in the trunk of the car and got ready to depart immediately.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0259"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 259
+  },
+  {
+    "category": "vocabulary",
+    "front": "省く",
+    "back": "to omit, to save",
+    "exampleJp": "会議の時間を短縮するため、今回は自己紹介のプロセスを省くことにした。",
+    "exampleTranslation": "To shorten the meeting time, we decided to omit the self-introduction process this time.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0260"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 260
+  },
+  {
+    "category": "vocabulary",
+    "front": "外す",
+    "back": "to unfasten, to remove, to slip away",
+    "exampleJp": "今、担当者は席を外しておりますので、後ほど折り返しお電話いたします。",
+    "exampleTranslation": "The person in charge is away from their desk right now, so we will call you back later.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0261"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 261
+  },
+  {
+    "category": "vocabulary",
+    "front": "離れる",
+    "back": "to separate from, to leave",
+    "exampleJp": "親元を離れて一人暮らしを始めると、家事の大変さがよくわかる。",
+    "exampleTranslation": "When you leave your parents' home and start living alone, you clearly understand how difficult chores are.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0262"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 262
+  },
+  {
+    "category": "vocabulary",
+    "front": "省みる",
+    "back": "to reflect on",
+    "exampleJp": "過去の失敗を省みることで、同じ間違いを繰り返さないようにする。",
+    "exampleTranslation": "By reflecting on past failures, I try to avoid repeating the same mistakes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0263"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 263
+  },
+  {
+    "category": "vocabulary",
+    "front": "流行る",
+    "back": "to be popular, to spread",
+    "exampleJp": "最近、若者の間でレトロなデザインのカメラが流行っているそうだ。",
+    "exampleTranslation": "I hear that retro-designed cameras are popular among young people recently.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0264"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 264
+  },
+  {
+    "category": "vocabulary",
+    "front": "引き受ける",
+    "back": "to undertake, to take on",
+    "exampleJp": "彼は誰もやりたがらない面倒な仕事を、いつも快く引き受けてくれる。",
+    "exampleTranslation": "He always willingly takes on the troublesome tasks that no one else wants to do.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0265"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 265
+  },
+  {
+    "category": "vocabulary",
+    "front": "引き返す",
+    "back": "to turn back",
+    "exampleJp": "途中で忘れ物に気付き、慌てて家まで引き返した。",
+    "exampleTranslation": "I realized I forgot something on the way and hurriedly turned back home.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0266"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 266
+  },
+  {
+    "category": "vocabulary",
+    "front": "防ぐ",
+    "back": "to prevent",
+    "exampleJp": "ウイルスの感染を防ぐためには、こまめな手洗いと換気が重要です。",
+    "exampleTranslation": "To prevent virus infection, frequent hand washing and ventilation are important.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0267"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 267
+  },
+  {
+    "category": "vocabulary",
+    "front": "振る",
+    "back": "to wave, to shake, to reject",
+    "exampleJp": "空港で友人を見送る際、姿が見えなくなるまで大きく手を振った。",
+    "exampleTranslation": "When seeing my friend off at the airport, I waved my hand widely until they were out of sight.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0268"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 268
+  },
+  {
+    "category": "vocabulary",
+    "front": "触れる",
+    "back": "to touch, to mention",
+    "exampleJp": "美術館の展示作品には、絶対に手を触れないでください。",
+    "exampleTranslation": "Please do not ever touch the exhibited artworks in the museum.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0269"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 269
+  },
+  {
+    "category": "vocabulary",
+    "front": "減らす",
+    "back": "to decrease, to reduce",
+    "exampleJp": "プラスチックごみを減らすため、マイバッグの利用が推奨されている。",
+    "exampleTranslation": "To reduce plastic waste, the use of reusable bags is recommended.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0270"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 270
+  },
+  {
+    "category": "vocabulary",
+    "front": "吠える",
+    "back": "to bark, to howl",
+    "exampleJp": "見知らぬ人が近づいてきたので、飼い犬が激しく吠え始めた。",
+    "exampleTranslation": "Because a stranger approached, the pet dog began to bark violently.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0271"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 271
+  },
+  {
+    "category": "vocabulary",
+    "front": "誇る",
+    "back": "to boast of, to be proud of",
+    "exampleJp": "このホテルは、市内で最も美しい夜景を誇っています。",
+    "exampleTranslation": "This hotel boasts the most beautiful night view in the city.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0272"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 272
+  },
+  {
+    "category": "vocabulary",
+    "front": "任せる",
+    "back": "to entrust to",
+    "exampleJp": "このプロジェクトの進行は、経験豊富な彼にすべて任せるのが一番安心だ。",
+    "exampleTranslation": "It is most reassuring to entrust the progress of this project entirely to him, as he is highly experienced.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0273"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 273
+  },
+  {
+    "category": "vocabulary",
+    "front": "曲げる",
+    "back": "to bend, to twist",
+    "exampleJp": "どうしても自分の信念を曲げることができず、彼は会社を辞める道を選んだ。",
+    "exampleTranslation": "Unable to bend his beliefs no matter what, he chose the path of quitting the company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0274"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 274
+  },
+  {
+    "category": "vocabulary",
+    "front": "交ざる",
+    "back": "to be mixed",
+    "exampleJp": "白いペンキに少し青色が交ざり、きれいな水色になった。",
+    "exampleTranslation": "A little blue mixed into the white paint, becoming a pretty light blue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0275"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 275
+  },
+  {
+    "category": "vocabulary",
+    "front": "増す",
+    "back": "to increase, to grow",
+    "exampleJp": "締め切りが近づくにつれて、チーム内の緊張感がさらに増してきた。",
+    "exampleTranslation": "As the deadline approached, the tension within the team grew even more.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0276"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 276
+  },
+  {
+    "category": "vocabulary",
+    "front": "招く",
+    "back": "to invite, to cause",
+    "exampleJp": "彼の不用意な発言が、周囲の大きな誤解を招いてしまった。",
+    "exampleTranslation": "His careless remark caused a major misunderstanding among those around him.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0277"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 277
+  },
+  {
+    "category": "vocabulary",
+    "front": "迷う",
+    "back": "to get lost, to hesitate",
+    "exampleJp": "二つの魅力的なオファーがあり、どちらの会社に転職するか深く迷っている。",
+    "exampleTranslation": "I have two attractive offers, and I am deeply hesitating over which company to switch to.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0278"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 278
+  },
+  {
+    "category": "vocabulary",
+    "front": "見直す",
+    "back": "to look again, to review, to reconsider",
+    "exampleJp": "業務の効率化を図るため、これまでのマニュアルを根本から見直すことになった。",
+    "exampleTranslation": "To aim for operational efficiency, we decided to thoroughly review our previous manuals from the ground up.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0279"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 279
+  },
+  {
+    "category": "vocabulary",
+    "front": "向ける",
+    "back": "to turn towards, to point",
+    "exampleJp": "新製品のターゲットを若年層だけでなく、シニア層にも向ける方針だ。",
+    "exampleTranslation": "We have a policy to direct the target of the new product not only at the youth demographic but also at seniors.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0280"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 280
+  },
+  {
+    "category": "vocabulary",
+    "front": "儲かる",
+    "back": "to be profitable",
+    "exampleJp": "この新しいビジネスモデルは、初期投資が少なくても十分に儲かる可能性がある。",
+    "exampleTranslation": "This new business model has the potential to be sufficiently profitable even with a small initial investment.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "intransitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0281"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 281
+  },
+  {
+    "category": "vocabulary",
+    "front": "燃やす",
+    "back": "to burn",
+    "exampleJp": "落ち葉を集めて庭で燃やすのは、現在では禁止されている地域が多い。",
+    "exampleTranslation": "Gathering fallen leaves and burning them in the garden is prohibited in many areas nowadays.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0282"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 282
+  },
+  {
+    "category": "vocabulary",
+    "front": "戻す",
+    "back": "to return, to put back",
+    "exampleJp": "使った後の道具は、必ず元の場所に戻しておいてください。",
+    "exampleTranslation": "Please make sure to put the tools back in their original place after using them.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0283"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 283
+  },
+  {
+    "category": "vocabulary",
+    "front": "訳す",
+    "back": "to translate",
+    "exampleJp": "この英語の技術文書を、明日までに日本語に訳す必要があります。",
+    "exampleTranslation": "I need to translate this English technical document into Japanese by tomorrow.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0284"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 284
+  },
+  {
+    "category": "vocabulary",
+    "front": "雇う",
+    "back": "to employ, to hire",
+    "exampleJp": "繁忙期に備えて、臨時のアルバイトスタッフを数名雇うことにした。",
+    "exampleTranslation": "In preparation for the busy season, we decided to hire several temporary part-time staff.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0285"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 285
+  },
+  {
+    "category": "vocabulary",
+    "front": "破る",
+    "back": "to tear, to break (a promise)",
+    "exampleJp": "彼は絶対に秘密を守ると言っていたのに、あっさりと約束を破った。",
+    "exampleTranslation": "Even though he said he would absolutely keep the secret, he easily broke his promise.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0286"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 286
+  },
+  {
+    "category": "vocabulary",
+    "front": "譲る",
+    "back": "to assign, to hand over, to yield",
+    "exampleJp": "電車の中でお年寄りに席を譲るのは、当たり前のマナーです。",
+    "exampleTranslation": "Yielding your seat to an elderly person on the train is simple common courtesy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0287"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 287
+  },
+  {
+    "category": "vocabulary",
+    "front": "許す",
+    "back": "to permit, to forgive",
+    "exampleJp": "システムのセキュリティ制限により、外部からのアクセスは許されていない。",
+    "exampleTranslation": "Due to the system's security restrictions, access from the outside is not permitted.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0288"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 288
+  },
+  {
+    "category": "vocabulary",
+    "front": "分ける",
+    "back": "to divide, to share",
+    "exampleJp": "参加者を三つのグループに分けて、それぞれ別のテーマで議論を行った。",
+    "exampleTranslation": "We divided the participants into three groups and had them discuss different topics.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "transitive"
+    ],
+    "sourceIds": [
+      "n2-vocab-0289"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 289
+  },
+  {
+    "category": "vocabulary",
+    "front": "打ち合わせる",
+    "back": "to discuss, to arrange",
+    "exampleJp": "明日のクライアント訪問について、事前に詳細を打ち合わせる必要がある。",
+    "exampleTranslation": "We need to discuss the details in advance regarding tomorrow's client visit.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0290"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 290
+  },
+  {
+    "category": "vocabulary",
+    "front": "切り替える",
+    "back": "to switch, to change over",
+    "exampleJp": "失敗を引きずらず、気持ちを切り替えて次のプロジェクトに取り組もう。",
+    "exampleTranslation": "Let's not dwell on the failure, but switch our mindset and tackle the next project.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0291"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 291
+  },
+  {
+    "category": "vocabulary",
+    "front": "心掛ける",
+    "back": "to bear in mind, to aim to do",
+    "exampleJp": "健康のため、普段からバランスの良い食事と適度な運動を心掛けている。",
+    "exampleTranslation": "For the sake of my health, I always bear in mind to eat a balanced diet and exercise moderately.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0292"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 292
+  },
+  {
+    "category": "vocabulary",
+    "front": "問い合わせる",
+    "back": "to inquire",
+    "exampleJp": "商品の在庫状況について、カスタマーサポートに電話で問い合わせた。",
+    "exampleTranslation": "I inquired with customer support by phone regarding the stock status of the product.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0293"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 293
+  },
+  {
+    "category": "vocabulary",
+    "front": "取り消す",
+    "back": "to cancel, to withdraw",
+    "exampleJp": "天候の悪化が予想されるため、週末のフライトを泣く泣く取り消した。",
+    "exampleTranslation": "Because bad weather was forecasted, I reluctantly canceled my weekend flight.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0294"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 294
+  },
+  {
+    "category": "vocabulary",
+    "front": "見当たる",
+    "back": "to be found",
+    "exampleJp": "いくら探しても、昨日デスクの上に置いたはずの書類が見当たらない。",
+    "exampleTranslation": "No matter how much I search, I can't find the documents that I'm sure I left on my desk yesterday.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0295"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 295
+  },
+  {
+    "category": "vocabulary",
+    "front": "申し込む",
+    "back": "to apply for, to propose",
+    "exampleJp": "人気の語学講座の定員が埋まる前に、急いでインターネットから申し込んだ。",
+    "exampleTranslation": "Before the popular language course filled up to capacity, I quickly applied online.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "verb",
+      "compound-verb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0296"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 296
+  },
+  {
+    "category": "vocabulary",
+    "front": "あくまで",
+    "back": "to the end, persistently, strictly",
+    "exampleJp": "これはあくまで私の個人的な意見であり、会社の公式な見解ではありません。",
+    "exampleTranslation": "This is strictly my personal opinion and not the official view of the company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "adverb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0297"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 297
+  },
+  {
+    "category": "vocabulary",
+    "front": "案外",
+    "back": "unexpectedly",
+    "exampleJp": "難しいと思っていた試験だが、受けてみると案外簡単に解くことができた。",
+    "exampleTranslation": "It was an exam I thought would be difficult, but upon taking it, I was able to solve it unexpectedly easily.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "adverb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0298"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 298
+  },
+  {
+    "category": "vocabulary",
+    "front": "いちいち",
+    "back": "one by one, every single time",
+    "exampleJp": "彼は私のやり方にいちいち文句をつけてくるので、本当にうんざりする。",
+    "exampleTranslation": "He complains about my way of doing things every single time, which is really exhausting.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "adverb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0299"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 299
+  },
+  {
+    "category": "vocabulary",
+    "front": "思い切って",
+    "back": "resolutely, taking the plunge",
+    "exampleJp": "ずっと悩んでいたが、思い切って彼に真実を伝えることにした。",
+    "exampleTranslation": "I had been agonizing over it for a long time, but I took the plunge and decided to tell him the truth.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "adverb"
+    ],
+    "sourceIds": [
+      "n2-vocab-0300"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 300
+  },
+  {
+    "category": "vocabulary",
+    "front": "概念",
+    "back": "concept, notion",
+    "exampleJp": "その新しいプロジェクトの概念を、もっと具体的に説明してください。",
+    "exampleTranslation": "Please explain the concept of that new project more concretely.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0301"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 301
+  },
+  {
+    "category": "vocabulary",
+    "front": "現象",
+    "back": "phenomenon",
+    "exampleJp": "温暖化の影響で、各地で異常な気象現象が報告されている。",
+    "exampleTranslation": "Due to the effects of global warming, abnormal weather phenomena are being reported in various regions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0302"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 302
+  },
+  {
+    "category": "vocabulary",
+    "front": "本質",
+    "back": "essence, true nature",
+    "exampleJp": "問題の本質を見極めなければ、根本的な解決には至らない。",
+    "exampleTranslation": "Unless we discern the essence of the problem, we will not reach a fundamental solution.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0303"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 303
+  },
+  {
+    "category": "vocabulary",
+    "front": "視点",
+    "back": "perspective, point of view",
+    "exampleJp": "異なる視点から分析することで、新たな改善案が浮かび上がった。",
+    "exampleTranslation": "By analyzing from a different perspective, new improvement proposals emerged.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0304"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 304
+  },
+  {
+    "category": "vocabulary",
+    "front": "段階",
+    "back": "stage, phase",
+    "exampleJp": "現在の段階では、まだ最終的な結論を出すことは難しい。",
+    "exampleTranslation": "At the current stage, it is still difficult to draw a final conclusion.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0305"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 305
+  },
+  {
+    "category": "vocabulary",
+    "front": "状態",
+    "back": "state, condition",
+    "exampleJp": "サーバーの過負荷状態が続いており、システムがダウンする恐れがある。",
+    "exampleTranslation": "The server has been in an overloaded state continuously, and there is a fear the system might go down.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0306"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 306
+  },
+  {
+    "category": "vocabulary",
+    "front": "状況",
+    "back": "situation, circumstances",
+    "exampleJp": "市場の状況が目まぐるしく変化する中で、柔軟な対応が求められる。",
+    "exampleTranslation": "In a situation where the market changes dizzyingly, flexible responses are required.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0307"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 307
+  },
+  {
+    "category": "vocabulary",
+    "front": "側面",
+    "back": "aspect, side",
+    "exampleJp": "物事には必ずプラスとマイナスの両方の側面が存在する。",
+    "exampleTranslation": "There are always both positive and negative aspects to any matter.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0308"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 308
+  },
+  {
+    "category": "vocabulary",
+    "front": "形式",
+    "back": "form, format",
+    "exampleJp": "契約書は決められた形式に従って作成しなければ無効になる。",
+    "exampleTranslation": "A contract becomes invalid if it is not drawn up according to the prescribed format.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0309"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 309
+  },
+  {
+    "category": "vocabulary",
+    "front": "構造",
+    "back": "structure",
+    "exampleJp": "この建物の耐震構造は、最新の技術を取り入れて設計されている。",
+    "exampleTranslation": "The earthquake-resistant structure of this building is designed incorporating the latest technology.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0310"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 310
+  },
+  {
+    "category": "vocabulary",
+    "front": "要素",
+    "back": "element, factor",
+    "exampleJp": "成功に不可欠な要素は、才能よりも日々の地道な努力である。",
+    "exampleTranslation": "An indispensable element for success is steady daily effort rather than talent.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0311"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 311
+  },
+  {
+    "category": "vocabulary",
+    "front": "範囲",
+    "back": "scope, range",
+    "exampleJp": "自分の責任範囲を明確にしておかないと、後でトラブルになりやすい。",
+    "exampleTranslation": "If you don't clarify your scope of responsibility, it's easy to run into trouble later.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0312"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 312
+  },
+  {
+    "category": "vocabulary",
+    "front": "領域",
+    "back": "domain, territory, field",
+    "exampleJp": "人工知能は今や、医療や芸術など様々な領域で活用されている。",
+    "exampleTranslation": "Artificial intelligence is now utilized in various fields such as medicine and art.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0313"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 313
+  },
+  {
+    "category": "vocabulary",
+    "front": "背景",
+    "back": "background, context",
+    "exampleJp": "事件の社会的背景を考慮しなければ、動機を理解することはできない。",
+    "exampleTranslation": "Without considering the social background of the incident, it is impossible to understand the motive.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0314"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 314
+  },
+  {
+    "category": "vocabulary",
+    "front": "矛盾",
+    "back": "contradiction",
+    "exampleJp": "政府の経済対策と環境保護政策の間には、明らかな矛盾が生じている。",
+    "exampleTranslation": "There is a clear contradiction arising between the government's economic measures and its environmental protection policies.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0315"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 315
+  },
+  {
+    "category": "vocabulary",
+    "front": "統一",
+    "back": "unity, unification",
+    "exampleJp": "チーム内の意見を統一するのは、リーダーの重要な役割だ。",
+    "exampleTranslation": "Unifying the opinions within the team is an important role of the leader.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0316"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 316
+  },
+  {
+    "category": "vocabulary",
+    "front": "共通",
+    "back": "commonness, shared",
+    "exampleJp": "異なる文化を持つ人々の間でも、音楽は共通の言語になり得る。",
+    "exampleTranslation": "Even among people with different cultures, music can serve as a common language.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0317"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 317
+  },
+  {
+    "category": "vocabulary",
+    "front": "比較",
+    "back": "comparison",
+    "exampleJp": "競合他社の商品と比較することで、自社の強みが明確になった。",
+    "exampleTranslation": "By comparing it with competitors' products, our company's strengths became clear.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0318"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 318
+  },
+  {
+    "category": "vocabulary",
+    "front": "割合",
+    "back": "ratio, proportion",
+    "exampleJp": "全従業員に占める女性管理職の割合は、まだ低い水準にとどまっている。",
+    "exampleTranslation": "The proportion of female managers among all employees still remains at a low level.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0319"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 319
+  },
+  {
+    "category": "vocabulary",
+    "front": "確率",
+    "back": "probability",
+    "exampleJp": "統計によると、この手術が成功する確率は極めて高いそうだ。",
+    "exampleTranslation": "According to statistics, the probability of this surgery succeeding is extremely high.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0320"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 320
+  },
+  {
+    "category": "vocabulary",
+    "front": "程度",
+    "back": "degree, extent",
+    "exampleJp": "被害の程度によっては、保険金が全額支払われないケースもある。",
+    "exampleTranslation": "Depending on the extent of the damage, there are cases where the insurance money is not paid in full.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0321"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 321
+  },
+  {
+    "category": "vocabulary",
+    "front": "規模",
+    "back": "scale, size",
+    "exampleJp": "その企業は海外進出に伴い、事業の規模を大幅に拡大させた。",
+    "exampleTranslation": "With its expansion overseas, the company significantly enlarged the scale of its business.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0322"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 322
+  },
+  {
+    "category": "vocabulary",
+    "front": "永遠",
+    "back": "eternity, permanence",
+    "exampleJp": "芸術家たちは、永遠に語り継がれるような名作を残したいと願うものだ。",
+    "exampleTranslation": "Artists generally desire to leave behind masterpieces that will be passed down for eternity.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "abstract"
+    ],
+    "sourceIds": [
+      "n2-vocab-0323"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 323
+  },
+  {
+    "category": "vocabulary",
+    "front": "感情",
+    "back": "emotion, feeling",
+    "exampleJp": "プロの俳優は、自分の感情をコントロールして役に入り込む。",
+    "exampleTranslation": "Professional actors control their emotions to get into character.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0324"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 324
+  },
+  {
+    "category": "vocabulary",
+    "front": "心理",
+    "back": "psychology, state of mind",
+    "exampleJp": "消費者の心理を巧みに突いた広告が、売上アップに貢献した。",
+    "exampleTranslation": "Advertisements that skillfully tapped into consumer psychology contributed to increased sales.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0325"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 325
+  },
+  {
+    "category": "vocabulary",
+    "front": "意識",
+    "back": "consciousness, awareness",
+    "exampleJp": "環境保護に対する市民の意識が、年々高まりつつある。",
+    "exampleTranslation": "Citizens' awareness regarding environmental protection is rising year by year.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0326"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 326
+  },
+  {
+    "category": "vocabulary",
+    "front": "意欲",
+    "back": "will, desire, motivation",
+    "exampleJp": "彼は困難な課題に対しても、常に高い学習意欲を持って取り組んでいる。",
+    "exampleTranslation": "He constantly tackles even difficult tasks with a high motivation to learn.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0327"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 327
+  },
+  {
+    "category": "vocabulary",
+    "front": "覚悟",
+    "back": "resolution, readiness",
+    "exampleJp": "起業するには、すべての責任を自分で負うという覚悟が必要だ。",
+    "exampleTranslation": "To start a business, one needs the resolution to bear all responsibilities oneself.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0328"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 328
+  },
+  {
+    "category": "vocabulary",
+    "front": "決意",
+    "back": "determination",
+    "exampleJp": "彼女はプロの音楽家になるという固い決意を胸に、留学に旅立った。",
+    "exampleTranslation": "She set off to study abroad with a firm determination in her heart to become a professional musician.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0329"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 329
+  },
+  {
+    "category": "vocabulary",
+    "front": "期待",
+    "back": "expectation, anticipation",
+    "exampleJp": "新製品の発表会には、業界全体から大きな期待が寄せられている。",
+    "exampleTranslation": "Great expectations from the entire industry are placed on the new product announcement.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0330"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 330
+  },
+  {
+    "category": "vocabulary",
+    "front": "失望",
+    "back": "disappointment",
+    "exampleJp": "信頼していた部下に裏切られ、彼は深い失望を隠せなかった。",
+    "exampleTranslation": "Betrayed by a subordinate he trusted, he couldn't hide his deep disappointment.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0331"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 331
+  },
+  {
+    "category": "vocabulary",
+    "front": "絶望",
+    "back": "despair",
+    "exampleJp": "度重なる不運に見舞われ、一時は絶望の淵に立たされた。",
+    "exampleTranslation": "Struck by repeated misfortunes, he was at one point brought to the brink of despair.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0332"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 332
+  },
+  {
+    "category": "vocabulary",
+    "front": "後悔",
+    "back": "regret",
+    "exampleJp": "あの時もっと真剣に話し合っておけばよかったと、今更ながら後悔している。",
+    "exampleTranslation": "I regret it now, thinking I should have discussed it more seriously at that time.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0333"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 333
+  },
+  {
+    "category": "vocabulary",
+    "front": "苦痛",
+    "back": "pain, agony",
+    "exampleJp": "満員電車での長時間の通勤は、多くのサラリーマンにとって苦痛である。",
+    "exampleTranslation": "A long commute on a crowded train is an agony for many office workers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0334"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 334
+  },
+  {
+    "category": "vocabulary",
+    "front": "悲しみ",
+    "back": "sorrow, sadness",
+    "exampleJp": "愛犬を失った悲しみは、そう簡単に癒えるものではない。",
+    "exampleTranslation": "The sorrow of losing a beloved dog is not something that heals so easily.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0335"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 335
+  },
+  {
+    "category": "vocabulary",
+    "front": "喜び",
+    "back": "joy, delight",
+    "exampleJp": "長年の研究が実を結び、チーム全体が喜びに包まれた。",
+    "exampleTranslation": "The team was enveloped in joy as their years of research bore fruit.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0336"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 336
+  },
+  {
+    "category": "vocabulary",
+    "front": "怒り",
+    "back": "anger, rage",
+    "exampleJp": "理不尽な要求を繰り返す顧客に対し、ついに怒りを爆発させてしまった。",
+    "exampleTranslation": "He finally exploded in anger at the customer who kept making unreasonable demands.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0337"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 337
+  },
+  {
+    "category": "vocabulary",
+    "front": "恐怖",
+    "back": "fear, terror",
+    "exampleJp": "未曾有の自然災害を前にして、人々はただ恐怖に震えるしかなかった。",
+    "exampleTranslation": "Faced with an unprecedented natural disaster, people could do nothing but tremble in fear.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0338"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 338
+  },
+  {
+    "category": "vocabulary",
+    "front": "不安",
+    "back": "anxiety, uneasiness",
+    "exampleJp": "将来のキャリアについて、漠然とした不安を抱える若者は少なくない。",
+    "exampleTranslation": "Not a few young people harbor vague anxieties about their future careers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0339"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 339
+  },
+  {
+    "category": "vocabulary",
+    "front": "悩み",
+    "back": "worry, trouble",
+    "exampleJp": "職場の人間関係の悩みは、仕事のパフォーマンスにも悪影響を及ぼす。",
+    "exampleTranslation": "Worries about human relationships in the workplace also negatively affect job performance.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0340"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 340
+  },
+  {
+    "category": "vocabulary",
+    "front": "疑問",
+    "back": "doubt, question",
+    "exampleJp": "その理論にはいくつか矛盾点があり、専門家からも疑問の声が上がっている。",
+    "exampleTranslation": "There are several contradictions in that theory, and voices of doubt are being raised by experts as well.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0341"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 341
+  },
+  {
+    "category": "vocabulary",
+    "front": "興味",
+    "back": "interest",
+    "exampleJp": "彼は幼い頃から宇宙に強い興味を抱き、天文学者を志した。",
+    "exampleTranslation": "He harbored a strong interest in space since he was young and aspired to become an astronomer.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0342"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 342
+  },
+  {
+    "category": "vocabulary",
+    "front": "関心",
+    "back": "concern, interest",
+    "exampleJp": "政治家の汚職事件に対する国民の関心が薄れているのが懸念される。",
+    "exampleTranslation": "It is concerning that the public's concern regarding political corruption scandals is fading.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0343"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 343
+  },
+  {
+    "category": "vocabulary",
+    "front": "好奇心",
+    "back": "curiosity",
+    "exampleJp": "子供の知的な好奇心を育てるためには、様々な経験をさせることが大切だ。",
+    "exampleTranslation": "To nurture a child's intellectual curiosity, it is important to let them have various experiences.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0344"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 344
+  },
+  {
+    "category": "vocabulary",
+    "front": "誇り",
+    "back": "pride",
+    "exampleJp": "長年培ってきた職人の技術は、日本の製造業の誇りである。",
+    "exampleTranslation": "The craftsmanship cultivated over many years is the pride of Japan's manufacturing industry.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0345"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 345
+  },
+  {
+    "category": "vocabulary",
+    "front": "忍耐",
+    "back": "patience, endurance",
+    "exampleJp": "語学の習得には、地道な反復練習を続ける忍耐が不可欠だ。",
+    "exampleTranslation": "Patience to continue steady, repetitive practice is essential for acquiring a language.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0346"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 346
+  },
+  {
+    "category": "vocabulary",
+    "front": "同情",
+    "back": "sympathy, compassion",
+    "exampleJp": "被害者の悲惨な境遇に、世間から多くの同情が寄せられた。",
+    "exampleTranslation": "Much sympathy was directed from the public toward the victim's tragic circumstances.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0347"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 347
+  },
+  {
+    "category": "vocabulary",
+    "front": "共感",
+    "back": "empathy, sympathy",
+    "exampleJp": "主人公の不器用な生き方に、多くの読者が深い共感を覚えた。",
+    "exampleTranslation": "Many readers felt deep empathy for the protagonist's clumsy way of living.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0348"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 348
+  },
+  {
+    "category": "vocabulary",
+    "front": "反感",
+    "back": "antipathy, animosity",
+    "exampleJp": "強引な組織改革は、現場の従業員の反感を買う結果となった。",
+    "exampleTranslation": "The pushy organizational reform resulted in drawing the antipathy of the frontline employees.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "emotion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0349"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 349
+  },
+  {
+    "category": "vocabulary",
+    "front": "主張",
+    "back": "assertion, claim",
+    "exampleJp": "会議では、論理的な根拠に基づいて自分の主張を展開することが重要だ。",
+    "exampleTranslation": "In meetings, it is important to develop your assertions based on logical grounds.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0350"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 350
+  },
+  {
+    "category": "vocabulary",
+    "front": "評価",
+    "back": "evaluation, assessment",
+    "exampleJp": "彼の仕事に対する誠実な態度は、社内でも高く評価されている。",
+    "exampleTranslation": "His sincere attitude toward his work is highly evaluated within the company as well.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0351"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 351
+  },
+  {
+    "category": "vocabulary",
+    "front": "判断",
+    "back": "judgment, decision",
+    "exampleJp": "情報が不足している状況での性急な判断は、誤りにつながりやすい。",
+    "exampleTranslation": "Hasty judgment in a situation where information is lacking easily leads to mistakes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0352"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 352
+  },
+  {
+    "category": "vocabulary",
+    "front": "決断",
+    "back": "decision, resolve",
+    "exampleJp": "赤字部門を売却するという苦渋の決断が、社長によって下された。",
+    "exampleTranslation": "The agonizing decision to sell off the deficit-running department was handed down by the president.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0353"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 353
+  },
+  {
+    "category": "vocabulary",
+    "front": "批判",
+    "back": "criticism",
+    "exampleJp": "政府の不十分な危機管理体制に対して、厳しい批判が相次いだ。",
+    "exampleTranslation": "Severe criticisms followed one after another regarding the government's inadequate crisis management system.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0354"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 354
+  },
+  {
+    "category": "vocabulary",
+    "front": "非難",
+    "back": "blame, attack, reproach",
+    "exampleJp": "事実確認を怠った報道機関は、世論からの激しい非難を浴びた。",
+    "exampleTranslation": "The news organization that neglected to verify the facts drew fierce reproach from public opinion.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0355"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 355
+  },
+  {
+    "category": "vocabulary",
+    "front": "肯定",
+    "back": "affirmation",
+    "exampleJp": "相手の意見をまず肯定的に受け止めることで、円滑な議論が生まれる。",
+    "exampleTranslation": "Smooth discussions are born by first receiving the other party's opinions affirmatively.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0356"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 356
+  },
+  {
+    "category": "vocabulary",
+    "front": "否定",
+    "back": "denial, negation",
+    "exampleJp": "これまでの常識を真っ向から否定するような、画期的な理論が発表された。",
+    "exampleTranslation": "A groundbreaking theory that squarely denies conventional wisdom up to now was published.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0357"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 357
+  },
+  {
+    "category": "vocabulary",
+    "front": "賛同",
+    "back": "approval, endorsement",
+    "exampleJp": "その革新的なプロジェクトには、多くの投資家が賛同を示した。",
+    "exampleTranslation": "Many investors showed their endorsement for that innovative project.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0358"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 358
+  },
+  {
+    "category": "vocabulary",
+    "front": "反発",
+    "back": "rebellion, opposition, repulsion",
+    "exampleJp": "一方的なルール変更は、利用者の強い反発を招く恐れがある。",
+    "exampleTranslation": "Unilateral rule changes run the risk of inviting strong opposition from users.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0359"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 359
+  },
+  {
+    "category": "vocabulary",
+    "front": "異議",
+    "back": "objection",
+    "exampleJp": "裁判所の判決に対し、弁護側は直ちに異議を申し立てた。",
+    "exampleTranslation": "The defense team immediately filed an objection to the court's ruling.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0360"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 360
+  },
+  {
+    "category": "vocabulary",
+    "front": "価値",
+    "back": "value, worth",
+    "exampleJp": "古い絵画であっても、歴史的な文脈を理解すればその価値がわかる。",
+    "exampleTranslation": "Even with old paintings, you can understand their value if you understand their historical context.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0361"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 361
+  },
+  {
+    "category": "vocabulary",
+    "front": "意義",
+    "back": "significance, meaning",
+    "exampleJp": "地域のボランティア活動に参加することは、社会人として大きな意義がある。",
+    "exampleTranslation": "Participating in local volunteer activities holds great significance as a member of society.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0362"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 362
+  },
+  {
+    "category": "vocabulary",
+    "front": "真実",
+    "back": "truth",
+    "exampleJp": "どれほど隠蔽しようとも、いつかは真実が明らかになるものだ。",
+    "exampleTranslation": "No matter how much one tries to cover it up, the truth is something that will eventually come to light.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0363"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 363
+  },
+  {
+    "category": "vocabulary",
+    "front": "優秀",
+    "back": "excellence, superior",
+    "exampleJp": "彼は非常に優秀なエンジニアであり、チームの要として活躍している。",
+    "exampleTranslation": "He is an extremely excellent engineer and is thriving as the cornerstone of the team.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0364"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 364
+  },
+  {
+    "category": "vocabulary",
+    "front": "劣等",
+    "back": "inferiority",
+    "exampleJp": "他人と自分を比較して劣等感を抱くのは、あまり生産的ではない。",
+    "exampleTranslation": "Harboring a sense of inferiority by comparing yourself to others is not very productive.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0365"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 365
+  },
+  {
+    "category": "vocabulary",
+    "front": "不平",
+    "back": "complaint, discontent",
+    "exampleJp": "現状に対して不平を漏らすだけでなく、改善案を考えるべきだ。",
+    "exampleTranslation": "Instead of just leaking complaints about the current situation, one should think of improvement proposals.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0366"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 366
+  },
+  {
+    "category": "vocabulary",
+    "front": "満足",
+    "back": "satisfaction",
+    "exampleJp": "お客様に100％の満足を提供できるよう、サービスの向上に努めます。",
+    "exampleTranslation": "We will strive to improve our services to provide 100% satisfaction to our customers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0367"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 367
+  },
+  {
+    "category": "vocabulary",
+    "front": "完璧",
+    "back": "perfect, flawless",
+    "exampleJp": "彼のプレゼンテーションはデータも話術も完璧で、誰も反論できなかった。",
+    "exampleTranslation": "His presentation was perfect in both data and speaking skills, and no one could argue against it.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0368"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 368
+  },
+  {
+    "category": "vocabulary",
+    "front": "欠点",
+    "back": "flaw, fault, defect",
+    "exampleJp": "どんな優れたシステムにも、必ずいくつかセキュリティ上の欠点が存在する。",
+    "exampleTranslation": "No matter how excellent a system is, there are always some security flaws present.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0369"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 369
+  },
+  {
+    "category": "vocabulary",
+    "front": "弱点",
+    "back": "weakness, weak point",
+    "exampleJp": "競合企業の弱点を正確に分析することが、市場競争を勝ち抜く鍵だ。",
+    "exampleTranslation": "Accurately analyzing the competitors' weaknesses is the key to surviving market competition.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0370"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 370
+  },
+  {
+    "category": "vocabulary",
+    "front": "長所",
+    "back": "strong point, merit",
+    "exampleJp": "面接では、自分の長所を具体的なエピソードを交えてアピールすると良い。",
+    "exampleTranslation": "In an interview, it is good to highlight your strong points by mixing in specific anecdotes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0371"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 371
+  },
+  {
+    "category": "vocabulary",
+    "front": "短所",
+    "back": "shortcoming, demerit",
+    "exampleJp": "自分の短所を素直に認め、それを補う努力ができる人は成長が早い。",
+    "exampleTranslation": "A person who can honestly admit their shortcomings and make an effort to compensate for them grows quickly.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0372"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 372
+  },
+  {
+    "category": "vocabulary",
+    "front": "特長",
+    "back": "merit, distinguishing feature",
+    "exampleJp": "この素材の特長は、非常に軽くて耐久性に優れている点にあります。",
+    "exampleTranslation": "The distinguishing feature of this material lies in the fact that it is extremely light and highly durable.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0373"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 373
+  },
+  {
+    "category": "vocabulary",
+    "front": "魅力",
+    "back": "charm, appeal",
+    "exampleJp": "歴史的な建造物と近代的な街並みが融合しているのが、この都市の魅力だ。",
+    "exampleTranslation": "The fact that historical buildings and modern streets are fused together is the charm of this city.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0374"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 374
+  },
+  {
+    "category": "vocabulary",
+    "front": "印象",
+    "back": "impression",
+    "exampleJp": "初対面の時の印象が、その後の人間関係に大きく影響することはよくある。",
+    "exampleTranslation": "It often happens that the impression at the first meeting greatly influences the subsequent relationship.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0375"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 375
+  },
+  {
+    "category": "vocabulary",
+    "front": "客観",
+    "back": "objectivity",
+    "exampleJp": "主観を交えず、事実に基づいて客観的な視点から記事を執筆する。",
+    "exampleTranslation": "Write the article from a perspective of objectivity based on facts, without injecting subjectivity.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-vocab-0376"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 376
+  },
+  {
+    "category": "vocabulary",
+    "front": "原因",
+    "back": "cause, origin",
+    "exampleJp": "システム障害の根本的な原因を究明するための調査チームが発足した。",
+    "exampleTranslation": "An investigative team was launched to determine the fundamental cause of the system failure.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0377"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 377
+  },
+  {
+    "category": "vocabulary",
+    "front": "要因",
+    "back": "primary factor, main cause",
+    "exampleJp": "売上不振の要因は、市場の縮小だけでなく競合他社の台頭にもある。",
+    "exampleTranslation": "The primary factor for sluggish sales lies not only in the shrinking market but also in the rise of competitors.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0378"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 378
+  },
+  {
+    "category": "vocabulary",
+    "front": "結果",
+    "back": "result, consequence",
+    "exampleJp": "事前の入念な準備が功を奏し、商談は成功という結果に終わった。",
+    "exampleTranslation": "Careful advance preparation paid off, and the business negotiation ended in the result of success.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0379"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 379
+  },
+  {
+    "category": "vocabulary",
+    "front": "成果",
+    "back": "outcome, fruit, result",
+    "exampleJp": "日々の地道なトレーニングの成果が、大会での新記録という形で現れた。",
+    "exampleTranslation": "The outcome of steady daily training manifested in the form of a new record at the tournament.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0380"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 380
+  },
+  {
+    "category": "vocabulary",
+    "front": "効果",
+    "back": "effect, effectiveness",
+    "exampleJp": "新しい宣伝キャンペーンは、若年層の顧客獲得に絶大な効果を発揮した。",
+    "exampleTranslation": "The new advertising campaign demonstrated immense effectiveness in acquiring young customers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0381"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 381
+  },
+  {
+    "category": "vocabulary",
+    "front": "影響",
+    "back": "influence, effect, impact",
+    "exampleJp": "近隣での大規模な工事が、店舗の客足に深刻な影響を及ぼしている。",
+    "exampleTranslation": "Large-scale construction nearby is exerting a serious influence on the store's customer traffic.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0382"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 382
+  },
+  {
+    "category": "vocabulary",
+    "front": "犠牲",
+    "back": "sacrifice",
+    "exampleJp": "経済の急速な発展は、しばしば自然環境の犠牲の上に成り立っている。",
+    "exampleTranslation": "Rapid economic development is often built upon the sacrifice of the natural environment.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0383"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 383
+  },
+  {
+    "category": "vocabulary",
+    "front": "損害",
+    "back": "loss, damage",
+    "exampleJp": "個人情報の流出事件により、企業は多大な経済的損害を被った。",
+    "exampleTranslation": "Due to the personal information leak incident, the company suffered massive economic damage.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0384"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 384
+  },
+  {
+    "category": "vocabulary",
+    "front": "損失",
+    "back": "loss",
+    "exampleJp": "有能な人材が次々と退職していくのは、会社にとって計り知れない損失だ。",
+    "exampleTranslation": "Talented human resources resigning one after another is an immeasurable loss for the company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0385"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 385
+  },
+  {
+    "category": "vocabulary",
+    "front": "発見",
+    "back": "discovery",
+    "exampleJp": "画期的な新薬の発見により、不治の病とされていた病気の治療が可能になった。",
+    "exampleTranslation": "With the discovery of a groundbreaking new drug, treatment of what was considered an incurable disease became possible.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0386"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 386
+  },
+  {
+    "category": "vocabulary",
+    "front": "発明",
+    "back": "invention",
+    "exampleJp": "インターネットの発明は、人類のコミュニケーションのあり方を根本から変えた。",
+    "exampleTranslation": "The invention of the internet fundamentally changed the nature of human communication.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0387"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 387
+  },
+  {
+    "category": "vocabulary",
+    "front": "発展",
+    "back": "development, growth",
+    "exampleJp": "この地域の経済発展には、交通インフラの整備が不可欠である。",
+    "exampleTranslation": "The development of transportation infrastructure is indispensable for the economic development of this region.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0388"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 388
+  },
+  {
+    "category": "vocabulary",
+    "front": "進歩",
+    "back": "progress, advance",
+    "exampleJp": "医療技術の目覚ましい進歩により、平均寿命は飛躍的に延びた。",
+    "exampleTranslation": "Due to remarkable progress in medical technology, the average life expectancy has extended dramatically.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0389"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 389
+  },
+  {
+    "category": "vocabulary",
+    "front": "向上",
+    "back": "improvement, elevation",
+    "exampleJp": "従業員のモチベーション向上が、結果として生産性のアップにつながる。",
+    "exampleTranslation": "The elevation of employee motivation leads to an increase in productivity as a result.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0390"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 390
+  },
+  {
+    "category": "vocabulary",
+    "front": "低下",
+    "back": "decline, fall",
+    "exampleJp": "出生率の低下は、将来的な労働力不足を引き起こす深刻な問題だ。",
+    "exampleTranslation": "The decline in the birthrate is a serious problem that will cause a future labor shortage.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0391"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 391
+  },
+  {
+    "category": "vocabulary",
+    "front": "悪化",
+    "back": "deterioration, worsening",
+    "exampleJp": "両国間の外交関係の悪化により、貿易にも大きな支障が出ている。",
+    "exampleTranslation": "Due to the deterioration of diplomatic relations between the two countries, major hindrances are occurring in trade as well.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0392"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 392
+  },
+  {
+    "category": "vocabulary",
+    "front": "改善",
+    "back": "improvement, betterment",
+    "exampleJp": "顧客から寄せられた苦情をもとに、サービスの改善に取り組んでいる。",
+    "exampleTranslation": "Based on complaints received from customers, we are working on the improvement of our services.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0393"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 393
+  },
+  {
+    "category": "vocabulary",
+    "front": "解決",
+    "back": "solution, resolution",
+    "exampleJp": "長年争われてきた国境問題が、平和的な対話によってついに解決した。",
+    "exampleTranslation": "The border dispute that had been fought over for many years was finally resolved through peaceful dialogue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0394"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 394
+  },
+  {
+    "category": "vocabulary",
+    "front": "処理",
+    "back": "processing, handling",
+    "exampleJp": "膨大なデータを短時間で処理できる能力が、新しいAIには備わっている。",
+    "exampleTranslation": "The new AI is equipped with the ability to process massive amounts of data in a short time.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0395"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 395
+  },
+  {
+    "category": "vocabulary",
+    "front": "処分",
+    "back": "disposal, punishment",
+    "exampleJp": "会社の規則に違反した社員に対し、厳正な懲戒処分が下された。",
+    "exampleTranslation": "Strict disciplinary punishment was handed down to the employee who violated company rules.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0396"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 396
+  },
+  {
+    "category": "vocabulary",
+    "front": "対応",
+    "back": "response, dealing with",
+    "exampleJp": "クレームが発生した際の迅速な対応が、顧客の信頼回復に繋がる。",
+    "exampleTranslation": "A swift response when a complaint occurs leads to the recovery of customer trust.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0397"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 397
+  },
+  {
+    "category": "vocabulary",
+    "front": "反応",
+    "back": "reaction",
+    "exampleJp": "新商品の発売に対する消費者の反応は、予想以上に良好だった。",
+    "exampleTranslation": "Consumers' reaction to the launch of the new product was better than expected.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0398"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 398
+  },
+  {
+    "category": "vocabulary",
+    "front": "影響力",
+    "back": "influence, clout",
+    "exampleJp": "SNSで何百万ものフォロワーを持つ彼女の発言は、絶大な影響力を持つ。",
+    "exampleTranslation": "Her statements, having millions of followers on social media, wield immense influence.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0399"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 399
+  },
+  {
+    "category": "vocabulary",
+    "front": "効力",
+    "back": "efficacy, validity",
+    "exampleJp": "この契約書は、双方のサインが揃った時点から法的な効力を発揮する。",
+    "exampleTranslation": "This contract exhibits legal validity from the moment both parties' signatures are collected.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0400"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 400
+  },
+  {
+    "category": "vocabulary",
+    "front": "結末",
+    "back": "ending, conclusion",
+    "exampleJp": "ミステリー小説の衝撃的な結末に、多くの読者が驚きを隠せなかった。",
+    "exampleTranslation": "Many readers could not hide their surprise at the shocking ending of the mystery novel.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0401"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 401
+  },
+  {
+    "category": "vocabulary",
+    "front": "結論",
+    "back": "conclusion",
+    "exampleJp": "数ヶ月に及ぶ議論の末、計画を白紙に戻すという結論に達した。",
+    "exampleTranslation": "At the end of months of discussion, we reached the conclusion of scrapping the plan and starting over.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "cause-effect"
+    ],
+    "sourceIds": [
+      "n2-vocab-0402"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 402
+  },
+  {
+    "category": "vocabulary",
+    "front": "関連",
+    "back": "connection, relation",
+    "exampleJp": "ストレスと免疫力の低下には、密接な関連があることが研究で判明した。",
+    "exampleTranslation": "Research has revealed that there is a close connection between stress and a decline in immunity.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0403"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 403
+  },
+  {
+    "category": "vocabulary",
+    "front": "繋がり",
+    "back": "connection, tie",
+    "exampleJp": "地方に移住して、地域の人々との繋がりを大切にする若者が増えている。",
+    "exampleTranslation": "An increasing number of young people are moving to rural areas and valuing their ties with local people.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0404"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 404
+  },
+  {
+    "category": "vocabulary",
+    "front": "交流",
+    "back": "exchange, interaction",
+    "exampleJp": "姉妹都市との文化交流イベントが、毎年秋に開催されている。",
+    "exampleTranslation": "Cultural exchange events with our sister city are held every autumn.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0405"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 405
+  },
+  {
+    "category": "vocabulary",
+    "front": "コミュニケーション",
+    "back": "communication",
+    "exampleJp": "リモートワークが普及した現在、オンラインでのコミュニケーション能力が問われる。",
+    "exampleTranslation": "Now that remote work has spread, online communication skills are being put to the test.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0406"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 406
+  },
+  {
+    "category": "vocabulary",
+    "front": "協力",
+    "back": "cooperation",
+    "exampleJp": "この困難なプロジェクトを成功させるには、全社的な協力が不可欠だ。",
+    "exampleTranslation": "To make this difficult project a success, company-wide cooperation is indispensable.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0407"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 407
+  },
+  {
+    "category": "vocabulary",
+    "front": "共同",
+    "back": "joint, collaboration",
+    "exampleJp": "複数の企業が共同で、次世代のクリーンエネルギー開発に乗り出した。",
+    "exampleTranslation": "Multiple companies have jointly embarked on the development of next-generation clean energy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0408"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 408
+  },
+  {
+    "category": "vocabulary",
+    "front": "共有",
+    "back": "sharing",
+    "exampleJp": "チーム内で情報をリアルタイムに共有できるツールを導入した。",
+    "exampleTranslation": "We introduced a tool that allows sharing information in real-time within the team.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0409"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 409
+  },
+  {
+    "category": "vocabulary",
+    "front": "競争",
+    "back": "competition",
+    "exampleJp": "グローバル化に伴い、企業間の価格競争はますます激化している。",
+    "exampleTranslation": "Along with globalization, price competition among companies is intensifying more and more.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0410"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 410
+  },
+  {
+    "category": "vocabulary",
+    "front": "対立",
+    "back": "conflict, opposition",
+    "exampleJp": "開発推進派と環境保護派の意見が真っ向から対立し、議論は平行線をたどった。",
+    "exampleTranslation": "The opinions of the pro-development faction and the environmental protection faction directly conflicted, and the discussion ran on parallel lines.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0411"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 411
+  },
+  {
+    "category": "vocabulary",
+    "front": "摩擦",
+    "back": "friction",
+    "exampleJp": "貿易摩擦を解消するため、両国間で高官レベルの協議が始まった。",
+    "exampleTranslation": "High-level talks began between the two countries to resolve trade friction.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0412"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 412
+  },
+  {
+    "category": "vocabulary",
+    "front": "信頼",
+    "back": "trust, reliance",
+    "exampleJp": "一度失われた顧客の信頼を取り戻すのには、途方もない時間と労力がかかる。",
+    "exampleTranslation": "It takes an extraordinary amount of time and effort to regain customer trust once it is lost.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0413"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 413
+  },
+  {
+    "category": "vocabulary",
+    "front": "信用",
+    "back": "credit, confidence",
+    "exampleJp": "クレジットカードの審査では、個人の支払い能力や信用情報が調査される。",
+    "exampleTranslation": "In credit card screening, an individual's payment ability and credit information are investigated.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0414"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 414
+  },
+  {
+    "category": "vocabulary",
+    "front": "疑惑",
+    "back": "suspicion, doubt",
+    "exampleJp": "政治家の資金管理に関する新たな疑惑が浮上し、メディアが連日報じている。",
+    "exampleTranslation": "New suspicions regarding the politician's fund management have surfaced, and the media reports on it daily.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0415"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 415
+  },
+  {
+    "category": "vocabulary",
+    "front": "責任",
+    "back": "responsibility",
+    "exampleJp": "ミスを部下のせいにするのではなく、上司として責任を取るべきだ。",
+    "exampleTranslation": "Instead of blaming subordinates for mistakes, you should take responsibility as a boss.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0416"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 416
+  },
+  {
+    "category": "vocabulary",
+    "front": "資格",
+    "back": "qualification",
+    "exampleJp": "弁護士として働くには、国家試験に合格して資格を取得しなければならない。",
+    "exampleTranslation": "To work as a lawyer, one must pass the national exam and obtain the qualification.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0417"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 417
+  },
+  {
+    "category": "vocabulary",
+    "front": "役割",
+    "back": "role",
+    "exampleJp": "一人ひとりが自分の役割を全うすることで、チーム全体が機能する。",
+    "exampleTranslation": "By each person fulfilling their own role, the team as a whole functions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0418"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 418
+  },
+  {
+    "category": "vocabulary",
+    "front": "担当",
+    "back": "charge, responsibility",
+    "exampleJp": "この案件については、私が担当窓口として最後まで対応させていただきます。",
+    "exampleTranslation": "Regarding this matter, I will handle it to the end as the person in charge of contact.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0419"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 419
+  },
+  {
+    "category": "vocabulary",
+    "front": "任務",
+    "back": "mission, task",
+    "exampleJp": "宇宙飛行士たちは、数々の危険を乗り越えて無事に任務を完了した。",
+    "exampleTranslation": "The astronauts successfully completed their mission after overcoming numerous dangers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0420"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 420
+  },
+  {
+    "category": "vocabulary",
+    "front": "負担",
+    "back": "burden",
+    "exampleJp": "医療費の自己負担割合が増加し、高齢者の生活を圧迫している。",
+    "exampleTranslation": "The proportion of out-of-pocket burden for medical expenses is increasing, putting pressure on the lives of the elderly.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "responsibility"
+    ],
+    "sourceIds": [
+      "n2-vocab-0421"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 421
+  },
+  {
+    "category": "vocabulary",
+    "front": "迷惑",
+    "back": "annoyance, trouble",
+    "exampleJp": "夜遅くに大音量で音楽を流すのは、近所への重大な迷惑行為だ。",
+    "exampleTranslation": "Playing loud music late at night is a serious act of annoyance to the neighborhood.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0422"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 422
+  },
+  {
+    "category": "vocabulary",
+    "front": "恩恵",
+    "back": "benefit, blessing",
+    "exampleJp": "私たちは、インターネットというテクノロジーの恩恵を日々受けて生活している。",
+    "exampleTranslation": "We live our lives receiving the benefits of the technology known as the internet every day.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0423"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 423
+  },
+  {
+    "category": "vocabulary",
+    "front": "支援",
+    "back": "support, backing",
+    "exampleJp": "災害復興のために、政府は多額の財政支援を行うことを決定した。",
+    "exampleTranslation": "The government decided to provide a large amount of financial support for disaster recovery.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0424"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 424
+  },
+  {
+    "category": "vocabulary",
+    "front": "援助",
+    "back": "assistance, aid",
+    "exampleJp": "発展途上国への経済援助は、国際社会の安定において重要な意味を持つ。",
+    "exampleTranslation": "Economic assistance to developing nations holds important meaning in the stability of the international community.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0425"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 425
+  },
+  {
+    "category": "vocabulary",
+    "front": "応援",
+    "back": "cheering, support",
+    "exampleJp": "地元チームの優勝を懸けた試合に、多くのファンがスタジアムへ応援に駆けつけた。",
+    "exampleTranslation": "Many fans rushed to the stadium to show support for the local team's championship-deciding match.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0426"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 426
+  },
+  {
+    "category": "vocabulary",
+    "front": "貢献",
+    "back": "contribution",
+    "exampleJp": "長年にわたる地域社会への貢献が認められ、彼は表彰された。",
+    "exampleTranslation": "His contribution to the local community over many years was recognized, and he was awarded.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0427"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 427
+  },
+  {
+    "category": "vocabulary",
+    "front": "参加",
+    "back": "participation",
+    "exampleJp": "次回の国際会議には、世界各国から数百名の専門家が参加する予定だ。",
+    "exampleTranslation": "Hundreds of experts from around the world are scheduled to participate in the next international conference.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0428"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 428
+  },
+  {
+    "category": "vocabulary",
+    "front": "関与",
+    "back": "involvement",
+    "exampleJp": "その不正取引に経営トップが関与していた証拠が発見された。",
+    "exampleTranslation": "Evidence was discovered that top management was involved in that fraudulent transaction.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "relationship"
+    ],
+    "sourceIds": [
+      "n2-vocab-0429"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 429
+  },
+  {
+    "category": "vocabulary",
+    "front": "努力",
+    "back": "effort",
+    "exampleJp": "才能がなくても、人一倍の努力を重ねれば夢は叶うと信じている。",
+    "exampleTranslation": "I believe that even without talent, dreams will come true if you pile up more effort than others.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "effort"
+    ],
+    "sourceIds": [
+      "n2-vocab-0430"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 430
+  },
+  {
+    "category": "vocabulary",
+    "front": "苦労",
+    "back": "hardship, difficulty",
+    "exampleJp": "異国での生活は言葉の壁もあり、最初は多くの苦労を伴った。",
+    "exampleTranslation": "Living in a foreign country involved a language barrier and came with many hardships at first.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "effort"
+    ],
+    "sourceIds": [
+      "n2-vocab-0431"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 431
+  },
+  {
+    "category": "vocabulary",
+    "front": "挑戦",
+    "back": "challenge",
+    "exampleJp": "安定した職場を辞め、全く新しい業界へ挑戦することを選んだ。",
+    "exampleTranslation": "He quit a stable workplace and chose to take on the challenge of a completely new industry.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "effort"
+    ],
+    "sourceIds": [
+      "n2-vocab-0432"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 432
+  },
+  {
+    "category": "vocabulary",
+    "front": "試み",
+    "back": "attempt, trial",
+    "exampleJp": "AIを用いて渋滞を予測するという新たな試みが、試験的に導入された。",
+    "exampleTranslation": "A new attempt to predict traffic jams using AI was introduced on a trial basis.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "effort"
+    ],
+    "sourceIds": [
+      "n2-vocab-0433"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 433
+  },
+  {
+    "category": "vocabulary",
+    "front": "試行",
+    "back": "trial, execution",
+    "exampleJp": "本格的なシステムの稼働を前に、数週間の試行期間が設けられた。",
+    "exampleTranslation": "A trial period of several weeks was established before the full-scale operation of the system.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "effort"
+    ],
+    "sourceIds": [
+      "n2-vocab-0434"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 434
+  },
+  {
+    "category": "vocabulary",
+    "front": "成功",
+    "back": "success",
+    "exampleJp": "このビジネスモデルが海外でも成功するかどうかは、マーケティング次第だ。",
+    "exampleTranslation": "Whether this business model will achieve success overseas as well depends on marketing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "success"
+    ],
+    "sourceIds": [
+      "n2-vocab-0435"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 435
+  },
+  {
+    "category": "vocabulary",
+    "front": "失敗",
+    "back": "failure, mistake",
+    "exampleJp": "過去の失敗から教訓を学び、次のプロジェクトに生かすことが重要だ。",
+    "exampleTranslation": "It is important to learn lessons from past failures and utilize them in the next project.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "failure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0436"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 436
+  },
+  {
+    "category": "vocabulary",
+    "front": "挫折",
+    "back": "setback, frustration",
+    "exampleJp": "怪我でプロスポーツ選手になる夢を断たれ、深い挫折を味わった。",
+    "exampleTranslation": "Having his dream of becoming a professional athlete cut short by an injury, he experienced a deep setback.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "failure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0437"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 437
+  },
+  {
+    "category": "vocabulary",
+    "front": "勝利",
+    "back": "victory",
+    "exampleJp": "接戦の末に強豪チームを破り、見事な勝利を飾った。",
+    "exampleTranslation": "After a close game, they defeated the powerhouse team and secured a splendid victory.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "success"
+    ],
+    "sourceIds": [
+      "n2-vocab-0438"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 438
+  },
+  {
+    "category": "vocabulary",
+    "front": "敗北",
+    "back": "defeat",
+    "exampleJp": "選挙での圧倒的な敗北を受け、党首は辞任を表明した。",
+    "exampleTranslation": "Receiving an overwhelming defeat in the election, the party leader announced his resignation.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "failure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0439"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 439
+  },
+  {
+    "category": "vocabulary",
+    "front": "変化",
+    "back": "change, variation",
+    "exampleJp": "気候変動の影響により、生態系に深刻な変化が生じつつある。",
+    "exampleTranslation": "Due to the effects of climate change, serious changes are beginning to occur in the ecosystem.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0440"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 440
+  },
+  {
+    "category": "vocabulary",
+    "front": "変動",
+    "back": "fluctuation, variation",
+    "exampleJp": "原油価格の激しい変動が、物流業界全体のコストを押し上げている。",
+    "exampleTranslation": "Fierce fluctuations in crude oil prices are pushing up costs across the entire logistics industry.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0441"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 441
+  },
+  {
+    "category": "vocabulary",
+    "front": "変換",
+    "back": "conversion, transformation",
+    "exampleJp": "太陽光を効率的に電気エネルギーに変換する技術が開発されている。",
+    "exampleTranslation": "Technology that efficiently converts sunlight into electrical energy is being developed.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0442"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 442
+  },
+  {
+    "category": "vocabulary",
+    "front": "移行",
+    "back": "transition, shift",
+    "exampleJp": "旧システムからクラウドベースの新システムへの移行作業が週末に行われる。",
+    "exampleTranslation": "The transition work from the old system to the new cloud-based system will be carried out over the weekend.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0443"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 443
+  },
+  {
+    "category": "vocabulary",
+    "front": "転換",
+    "back": "turning, conversion, switch",
+    "exampleJp": "会社を存続させるため、従来の経営方針からの大きな転換が迫られている。",
+    "exampleTranslation": "To keep the company alive, a major shift from conventional management policies is being forced.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0444"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 444
+  },
+  {
+    "category": "vocabulary",
+    "front": "維持",
+    "back": "maintenance, preservation",
+    "exampleJp": "高いモチベーションを維持し続けるのは、決して簡単なことではない。",
+    "exampleTranslation": "Continuing to maintain high motivation is by no means an easy thing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0445"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 445
+  },
+  {
+    "category": "vocabulary",
+    "front": "継続",
+    "back": "continuation",
+    "exampleJp": "ボランティア活動は一時的なものではなく、継続することが何より大切だ。",
+    "exampleTranslation": "Volunteer activities are not temporary; continuation is more important than anything.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0446"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 446
+  },
+  {
+    "category": "vocabulary",
+    "front": "停止",
+    "back": "stoppage, suspension",
+    "exampleJp": "安全確認が取れるまで、すべての工場の操業を一時的に停止する。",
+    "exampleTranslation": "All factory operations will be temporarily suspended until safety can be confirmed.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0447"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 447
+  },
+  {
+    "category": "vocabulary",
+    "front": "中止",
+    "back": "cancellation",
+    "exampleJp": "台風の接近に伴い、屋外で開催予定だったフェスティバルは中止となった。",
+    "exampleTranslation": "With the approach of the typhoon, the festival scheduled to be held outdoors was cancelled.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0448"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 448
+  },
+  {
+    "category": "vocabulary",
+    "front": "延長",
+    "back": "extension",
+    "exampleJp": "応募の締め切りを当初の予定から1週間延長することが決まった。",
+    "exampleTranslation": "It was decided to extend the application deadline by one week from the original schedule.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0449"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 449
+  },
+  {
+    "category": "vocabulary",
+    "front": "短縮",
+    "back": "shortening, reduction",
+    "exampleJp": "リモートワークの導入により、通勤時間が大幅に短縮された。",
+    "exampleTranslation": "With the introduction of remote work, commuting time has been significantly reduced.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0450"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 450
+  },
+  {
+    "category": "vocabulary",
+    "front": "拡大",
+    "back": "expansion, enlargement",
+    "exampleJp": "その企業は国内市場だけでなく、アジア全域へと事業を拡大している。",
+    "exampleTranslation": "That company is expanding its business not only in the domestic market but throughout Asia.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0451"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 451
+  },
+  {
+    "category": "vocabulary",
+    "front": "縮小",
+    "back": "reduction, curtailment",
+    "exampleJp": "人口減少に伴い、地方都市の経済規模は徐々に縮小していくと予想される。",
+    "exampleTranslation": "With the population decline, it is expected that the economic scale of regional cities will gradually shrink.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0452"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 452
+  },
+  {
+    "category": "vocabulary",
+    "front": "増加",
+    "back": "increase",
+    "exampleJp": "近年、外国人観光客の数が急激に増加し、宿泊施設の不足が課題となっている。",
+    "exampleTranslation": "In recent years, the number of foreign tourists has rapidly increased, and a shortage of accommodations has become an issue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0453"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 453
+  },
+  {
+    "category": "vocabulary",
+    "front": "減少",
+    "back": "decrease, decline",
+    "exampleJp": "紙の新聞を定期購読する世帯の数は、インターネットの普及とともに減少している。",
+    "exampleTranslation": "The number of households subscribing to paper newspapers is decreasing along with the spread of the internet.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0454"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 454
+  },
+  {
+    "category": "vocabulary",
+    "front": "成長",
+    "back": "growth",
+    "exampleJp": "新入社員が様々な壁を乗り越えて成長していく姿を見るのは嬉しい。",
+    "exampleTranslation": "It is joyful to see new employees overcoming various obstacles and growing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0455"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 455
+  },
+  {
+    "category": "vocabulary",
+    "front": "普及",
+    "back": "spread, diffusion",
+    "exampleJp": "スマートフォンが急速に普及したことで、人々の情報収集の方法が一変した。",
+    "exampleTranslation": "With the rapid spread of smartphones, the way people gather information has completely changed.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0456"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 456
+  },
+  {
+    "category": "vocabulary",
+    "front": "流行",
+    "back": "trend, fashion, outbreak",
+    "exampleJp": "若者の間で新しいファッションが流行しているが、私はついていけない。",
+    "exampleTranslation": "A new fashion is trending among young people, but I can't keep up.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "noun",
+      "change"
+    ],
+    "sourceIds": [
+      "n2-vocab-0457"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 457
+  },
+  {
+    "category": "vocabulary",
+    "front": "報道",
+    "back": "report, journalism",
+    "exampleJp": "最新の報道によると、被害者の数はさらに増える見込みだ。",
+    "exampleTranslation": "According to the latest reports, the number of victims is expected to increase further.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0458"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 458
+  },
+  {
+    "category": "vocabulary",
+    "front": "取材",
+    "back": "coverage, interview",
+    "exampleJp": "あのジャーナリストは、戦場での危険な取材で知られている。",
+    "exampleTranslation": "That journalist is known for his dangerous coverage in war zones.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0459"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 459
+  },
+  {
+    "category": "vocabulary",
+    "front": "中継",
+    "back": "broadcast, relay",
+    "exampleJp": "オリンピックの開会式は世界中に生中継された。",
+    "exampleTranslation": "The opening ceremony of the Olympics was broadcast live worldwide.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0460"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 460
+  },
+  {
+    "category": "vocabulary",
+    "front": "見出し",
+    "back": "headline",
+    "exampleJp": "新聞の大きな見出しを見て、思わず足を止めた。",
+    "exampleTranslation": "I stopped in my tracks when I saw the large newspaper headline.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0461"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 461
+  },
+  {
+    "category": "vocabulary",
+    "front": "記事",
+    "back": "article",
+    "exampleJp": "彼が書いた経済に関する記事が、今朝の朝刊に載っている。",
+    "exampleTranslation": "The article he wrote about the economy is published in this morning's paper.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0462"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 462
+  },
+  {
+    "category": "vocabulary",
+    "front": "発行",
+    "back": "issue, publication",
+    "exampleJp": "この雑誌は月に二回発行されている。",
+    "exampleTranslation": "This magazine is published twice a month.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0463"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 463
+  },
+  {
+    "category": "vocabulary",
+    "front": "特集",
+    "back": "special feature",
+    "exampleJp": "今月の旅行雑誌は、ヨーロッパの古い街並みを特集している。",
+    "exampleTranslation": "This month's travel magazine features a special on old European townscapes.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0464"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 464
+  },
+  {
+    "category": "vocabulary",
+    "front": "世論",
+    "back": "public opinion",
+    "exampleJp": "政府は世論の動向を慎重に見極める必要がある。",
+    "exampleTranslation": "The government needs to carefully assess the trends in public opinion.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0465"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 465
+  },
+  {
+    "category": "vocabulary",
+    "front": "評論",
+    "back": "criticism, review",
+    "exampleJp": "彼の映画評論は鋭い視点が多く、読者から高く評価されている。",
+    "exampleTranslation": "His film reviews offer many sharp perspectives and are highly regarded by readers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0466"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 466
+  },
+  {
+    "category": "vocabulary",
+    "front": "司会",
+    "back": "moderator, hosting",
+    "exampleJp": "その討論会の司会を務めるのは、有名なベテランアナウンサーだ。",
+    "exampleTranslation": "The moderator for that debate is a famous veteran announcer.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0467"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 467
+  },
+  {
+    "category": "vocabulary",
+    "front": "出版",
+    "back": "publishing",
+    "exampleJp": "彼女のデビュー小説は来月、大手の出版社から出版される。",
+    "exampleTranslation": "Her debut novel will be published by a major publishing company next month.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0468"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 468
+  },
+  {
+    "category": "vocabulary",
+    "front": "広告",
+    "back": "advertisement",
+    "exampleJp": "インターネット上の広告費が、テレビ広告を上回る時代になった。",
+    "exampleTranslation": "We are now in an era where internet advertising expenses exceed television advertising.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0469"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 469
+  },
+  {
+    "category": "vocabulary",
+    "front": "放送",
+    "back": "broadcasting",
+    "exampleJp": "台風の接近に伴い、緊急の気象情報が放送された。",
+    "exampleTranslation": "With the approach of the typhoon, urgent weather information was broadcast.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0470"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 470
+  },
+  {
+    "category": "vocabulary",
+    "front": "収録",
+    "back": "recording",
+    "exampleJp": "このテレビ番組の収録は、観客を入れずに行われた。",
+    "exampleTranslation": "The recording of this TV program was conducted without a live audience.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "entertainment"
+    ],
+    "sourceIds": [
+      "n2-vocab-0471"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 471
+  },
+  {
+    "category": "vocabulary",
+    "front": "記者",
+    "back": "journalist, reporter",
+    "exampleJp": "記者の厳しい質問に対し、大臣は言葉を濁した。",
+    "exampleTranslation": "The minister gave a vague answer to the reporter's tough question.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0472"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 472
+  },
+  {
+    "category": "vocabulary",
+    "front": "ジャーナリスト",
+    "back": "journalist",
+    "exampleJp": "彼はフリーのジャーナリストとして、世界各地の紛争地帯を取材している。",
+    "exampleTranslation": "As a freelance journalist, he covers conflict zones all over the world.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0473"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 473
+  },
+  {
+    "category": "vocabulary",
+    "front": "コメンテーター",
+    "back": "commentator",
+    "exampleJp": "ニュース番組のコメンテーターが、政治家の発言について鋭く批判した。",
+    "exampleTranslation": "The news program commentator sharply criticized the politician's remarks.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0474"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 474
+  },
+  {
+    "category": "vocabulary",
+    "front": "マスコミ",
+    "back": "mass media",
+    "exampleJp": "その事件は、連日マスコミによって大々的に報じられている。",
+    "exampleTranslation": "The incident is being extensively covered by the mass media every day.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0475"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 475
+  },
+  {
+    "category": "vocabulary",
+    "front": "視聴率",
+    "back": "audience rating",
+    "exampleJp": "最終回の視聴率が予想を大幅に上回り、制作陣は喜んでいる。",
+    "exampleTranslation": "The production team is thrilled that the final episode's audience rating far exceeded expectations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "entertainment"
+    ],
+    "sourceIds": [
+      "n2-vocab-0476"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 476
+  },
+  {
+    "category": "vocabulary",
+    "front": "生放送",
+    "back": "live broadcast",
+    "exampleJp": "生放送中の突然のハプニングに、スタジオは一時騒然となった。",
+    "exampleTranslation": "The studio briefly fell into chaos due to a sudden mishap during the live broadcast.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "entertainment"
+    ],
+    "sourceIds": [
+      "n2-vocab-0477"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 477
+  },
+  {
+    "category": "vocabulary",
+    "front": "独占",
+    "back": "monopoly, exclusive",
+    "exampleJp": "その雑誌は、人気俳優の結婚に関する独占インタビューを掲載した。",
+    "exampleTranslation": "The magazine published an exclusive interview regarding the popular actor's marriage.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0478"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 478
+  },
+  {
+    "category": "vocabulary",
+    "front": "匿名",
+    "back": "anonymous",
+    "exampleJp": "ネット上の匿名の書き込みが、思わぬトラブルを引き起こすことがある。",
+    "exampleTranslation": "Anonymous posts on the internet can sometimes cause unexpected trouble.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "technology"
+    ],
+    "sourceIds": [
+      "n2-vocab-0479"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 479
+  },
+  {
+    "category": "vocabulary",
+    "front": "投稿",
+    "back": "post, contribution",
+    "exampleJp": "読者からの投稿欄には、様々な世代の意見が寄せられている。",
+    "exampleTranslation": "Opinions from various generations have been sent to the reader contribution column.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0480"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 480
+  },
+  {
+    "category": "vocabulary",
+    "front": "掲載",
+    "back": "publication, posting",
+    "exampleJp": "論文が有名な学術誌に掲載され、彼の研究が世界に認められた。",
+    "exampleTranslation": "His paper was published in a famous academic journal, and his research was recognized globally.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "academic"
+    ],
+    "sourceIds": [
+      "n2-vocab-0481"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 481
+  },
+  {
+    "category": "vocabulary",
+    "front": "速報",
+    "back": "breaking news",
+    "exampleJp": "地震の発生を伝える速報が、画面の上部にテロップで流れた。",
+    "exampleTranslation": "A breaking news ticker announcing the earthquake scrolled across the top of the screen.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0482"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 482
+  },
+  {
+    "category": "vocabulary",
+    "front": "インタビュー",
+    "back": "interview",
+    "exampleJp": "試合後のインタビューで、選手は涙を流してファンに感謝を伝えた。",
+    "exampleTranslation": "In the post-match interview, the player teared up and expressed gratitude to the fans.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "sports"
+    ],
+    "sourceIds": [
+      "n2-vocab-0483"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 483
+  },
+  {
+    "category": "vocabulary",
+    "front": "取材陣",
+    "back": "press corps",
+    "exampleJp": "空港には、海外から帰国する代表チームを待ち受ける取材陣が殺到した。",
+    "exampleTranslation": "A horde of reporters flooded the airport waiting for the national team to return from overseas.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-vocab-0484"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 484
+  },
+  {
+    "category": "vocabulary",
+    "front": "記者会見",
+    "back": "press conference",
+    "exampleJp": "企業の不祥事に関する緊急の記者会見が、午後から開かれる。",
+    "exampleTranslation": "An emergency press conference regarding the corporate scandal will be held this afternoon.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "media",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0485"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 485
+  },
+  {
+    "category": "vocabulary",
+    "front": "景気",
+    "back": "economic condition",
+    "exampleJp": "政府は景気の回復に向けて、新たな経済対策を発表した。",
+    "exampleTranslation": "The government announced new economic measures aiming for economic recovery.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0486"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 486
+  },
+  {
+    "category": "vocabulary",
+    "front": "利益",
+    "back": "profit",
+    "exampleJp": "新製品の売上が好調で、今期は過去最高の利益を記録しそうだ。",
+    "exampleTranslation": "Sales of the new product are strong, and we are likely to record record-high profits this term.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0487"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 487
+  },
+  {
+    "category": "vocabulary",
+    "front": "資本",
+    "back": "capital",
+    "exampleJp": "海外進出のためには、莫大な資本と優秀な人材が必要不可欠だ。",
+    "exampleTranslation": "Enormous capital and excellent human resources are essential for overseas expansion.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0488"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 488
+  },
+  {
+    "category": "vocabulary",
+    "front": "投資",
+    "back": "investment",
+    "exampleJp": "将来の成長を見込んで、再生可能エネルギーの分野に積極的に投資する。",
+    "exampleTranslation": "Anticipating future growth, we will actively invest in the renewable energy sector.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0489"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 489
+  },
+  {
+    "category": "vocabulary",
+    "front": "予算",
+    "back": "budget",
+    "exampleJp": "プロジェクトの予算が大幅に削減され、計画の見直しを余儀なくされた。",
+    "exampleTranslation": "The project budget was significantly reduced, forcing us to revise our plans.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0490"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 490
+  },
+  {
+    "category": "vocabulary",
+    "front": "赤字",
+    "back": "deficit",
+    "exampleJp": "長引く不況の影響で、多くの企業が赤字経営に苦しんでいる。",
+    "exampleTranslation": "Due to the prolonged recession, many companies are suffering from deficit operations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0491"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 491
+  },
+  {
+    "category": "vocabulary",
+    "front": "黒字",
+    "back": "surplus",
+    "exampleJp": "経営陣の努力により、会社はついに数年ぶりの黒字に転換した。",
+    "exampleTranslation": "Thanks to the management team's efforts, the company finally turned a surplus for the first time in years.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0492"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 492
+  },
+  {
+    "category": "vocabulary",
+    "front": "経費",
+    "back": "expenses",
+    "exampleJp": "出張先での宿泊費や交通費などの経費は、後日会社から支給される。",
+    "exampleTranslation": "Expenses such as accommodation and travel costs during the business trip will be reimbursed by the company later.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0493"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 493
+  },
+  {
+    "category": "vocabulary",
+    "front": "株価",
+    "back": "stock price",
+    "exampleJp": "中央銀行の金利引き上げのニュースを受け、株価が急落した。",
+    "exampleTranslation": "Following the news of the central bank raising interest rates, stock prices plummeted.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0494"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 494
+  },
+  {
+    "category": "vocabulary",
+    "front": "倒産",
+    "back": "bankruptcy",
+    "exampleJp": "主要取引先の突然の倒産により、自社の経営も危機に陥った。",
+    "exampleTranslation": "Due to the sudden bankruptcy of a major business partner, our own management fell into a crisis.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0495"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 495
+  },
+  {
+    "category": "vocabulary",
+    "front": "雇用",
+    "back": "employment",
+    "exampleJp": "新しい工場の建設により、地域に数百人の雇用が創出されると期待されている。",
+    "exampleTranslation": "The construction of the new factory is expected to create hundreds of employment opportunities in the region.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0496"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 496
+  },
+  {
+    "category": "vocabulary",
+    "front": "解雇",
+    "back": "dismissal",
+    "exampleJp": "彼は会社の機密情報を漏洩したため、懲戒解雇処分となった。",
+    "exampleTranslation": "He was subjected to disciplinary dismissal for leaking confidential company information.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0497"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 497
+  },
+  {
+    "category": "vocabulary",
+    "front": "業績",
+    "back": "business performance",
+    "exampleJp": "海外市場での販売が好調で、今四半期の業績は予想を上回った。",
+    "exampleTranslation": "With strong sales in overseas markets, business performance this quarter exceeded expectations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0498"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 498
+  },
+  {
+    "category": "vocabulary",
+    "front": "売上",
+    "back": "sales",
+    "exampleJp": "年末商戦に向けたキャンペーンが成功し、今月の売上は飛躍的に伸びた。",
+    "exampleTranslation": "The campaign for the year-end shopping season was successful, and this month's sales grew dramatically.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0499"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 499
+  },
+  {
+    "category": "vocabulary",
+    "front": "契約",
+    "back": "contract",
+    "exampleJp": "両社は新しい技術の共同開発に関する契約を正式に締結した。",
+    "exampleTranslation": "The two companies formally concluded a contract regarding the joint development of new technology.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0500"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 500
+  },
+  {
+    "category": "vocabulary",
+    "front": "借金",
+    "back": "debt",
+    "exampleJp": "事業の失敗で作った多額の借金を返すため、彼は昼夜問わず働いている。",
+    "exampleTranslation": "He is working day and night to pay off the heavy debt incurred from his business failure.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "personal-finance"
+    ],
+    "sourceIds": [
+      "n2-vocab-0501"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 501
+  },
+  {
+    "category": "vocabulary",
+    "front": "取引",
+    "back": "transaction, trade",
+    "exampleJp": "海外の企業との取引では、文化や商習慣の違いを理解することが重要だ。",
+    "exampleTranslation": "In transactions with overseas companies, it is important to understand cultural and business practice differences.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0502"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 502
+  },
+  {
+    "category": "vocabulary",
+    "front": "為替",
+    "back": "foreign exchange",
+    "exampleJp": "為替レートの変動は、輸出企業の利益に直結する重要な問題だ。",
+    "exampleTranslation": "Fluctuations in foreign exchange rates are a critical issue directly linked to the profits of export companies.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0503"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 503
+  },
+  {
+    "category": "vocabulary",
+    "front": "融資",
+    "back": "loan, financing",
+    "exampleJp": "新規事業を立ち上げるため、銀行に融資を申し込む準備を進めている。",
+    "exampleTranslation": "We are preparing to apply for a loan from the bank to launch a new business.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0504"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 504
+  },
+  {
+    "category": "vocabulary",
+    "front": "金融",
+    "back": "finance",
+    "exampleJp": "世界的な金融危機により、多くの銀行が深刻な経営難に陥った。",
+    "exampleTranslation": "Due to the global financial crisis, many banks fell into severe managerial difficulties.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0505"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 505
+  },
+  {
+    "category": "vocabulary",
+    "front": "預金",
+    "back": "deposit",
+    "exampleJp": "将来の不安に備えて、毎月少しずつ銀行に預金をしている。",
+    "exampleTranslation": "I am making small monthly deposits in the bank to prepare for future uncertainties.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "personal-finance"
+    ],
+    "sourceIds": [
+      "n2-vocab-0506"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 506
+  },
+  {
+    "category": "vocabulary",
+    "front": "利子",
+    "back": "interest",
+    "exampleJp": "現在の低い金利では、銀行にお金を預けてもほとんど利子はつかない。",
+    "exampleTranslation": "With current low interest rates, you earn almost no interest even if you leave your money in the bank.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "finance"
+    ],
+    "sourceIds": [
+      "n2-vocab-0507"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 507
+  },
+  {
+    "category": "vocabulary",
+    "front": "破産",
+    "back": "bankruptcy",
+    "exampleJp": "ギャンブルへの依存が原因で、彼は最終的に自己破産を申請した。",
+    "exampleTranslation": "Due to his gambling addiction, he ultimately filed for personal bankruptcy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "legal"
+    ],
+    "sourceIds": [
+      "n2-vocab-0508"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 508
+  },
+  {
+    "category": "vocabulary",
+    "front": "税金",
+    "back": "tax",
+    "exampleJp": "国民から集められた税金は、道路の整備や社会福祉などに使われる。",
+    "exampleTranslation": "Taxes collected from citizens are used for road maintenance, social welfare, and other public services.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-vocab-0509"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 509
+  },
+  {
+    "category": "vocabulary",
+    "front": "節税",
+    "back": "tax saving",
+    "exampleJp": "企業は法律で認められた範囲内で、様々な節税対策を行っている。",
+    "exampleTranslation": "Companies implement various tax-saving measures within the boundaries allowed by the law.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0510"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 510
+  },
+  {
+    "category": "vocabulary",
+    "front": "輸出",
+    "back": "export",
+    "exampleJp": "この国は自動車や電子部品を海外へ輸出することで経済を支えている。",
+    "exampleTranslation": "This country supports its economy by exporting automobiles and electronic components overseas.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "trade"
+    ],
+    "sourceIds": [
+      "n2-vocab-0511"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 511
+  },
+  {
+    "category": "vocabulary",
+    "front": "輸入",
+    "back": "import",
+    "exampleJp": "原材料の多くを海外からの輸入に頼っているため、価格変動のリスクが高い。",
+    "exampleTranslation": "Because we rely heavily on imports from overseas for raw materials, the risk of price fluctuation is high.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "trade"
+    ],
+    "sourceIds": [
+      "n2-vocab-0512"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 512
+  },
+  {
+    "category": "vocabulary",
+    "front": "消費",
+    "back": "consumption",
+    "exampleJp": "若者の車離れが進み、自動車の国内消費が年々減少している。",
+    "exampleTranslation": "With young people increasingly moving away from owning cars, domestic automobile consumption is declining year by year.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0513"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 513
+  },
+  {
+    "category": "vocabulary",
+    "front": "物価",
+    "back": "prices",
+    "exampleJp": "原油価格の高騰により、あらゆる商品の物価が上昇し続けている。",
+    "exampleTranslation": "Due to the soaring crude oil prices, the prices of all kinds of goods continue to rise.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0514"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 514
+  },
+  {
+    "category": "vocabulary",
+    "front": "インフレ",
+    "back": "inflation",
+    "exampleJp": "急激なインフレにより、紙幣の価値が下がり人々の生活は苦しくなった。",
+    "exampleTranslation": "Due to rapid inflation, the value of paper money dropped, making people's lives difficult.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0515"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 515
+  },
+  {
+    "category": "vocabulary",
+    "front": "温暖化",
+    "back": "global warming",
+    "exampleJp": "地球温暖化の影響で、海面の上昇や異常気象が世界各地で起きている。",
+    "exampleTranslation": "Due to global warming, rising sea levels and extreme weather are occurring worldwide.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0516"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 516
+  },
+  {
+    "category": "vocabulary",
+    "front": "汚染",
+    "back": "pollution",
+    "exampleJp": "工場から排出された有害物質により、川の水が深刻に汚染された。",
+    "exampleTranslation": "The river water was severely polluted by harmful substances discharged from the factory.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0517"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 517
+  },
+  {
+    "category": "vocabulary",
+    "front": "資源",
+    "back": "resources",
+    "exampleJp": "限りある地球の資源を大切にし、次世代に残していく責任がある。",
+    "exampleTranslation": "We have a responsibility to cherish the earth's limited resources and preserve them for the next generation.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0518"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 518
+  },
+  {
+    "category": "vocabulary",
+    "front": "排出",
+    "back": "emission",
+    "exampleJp": "政府は、温室効果ガスの排出を大幅に削減する新たな目標を設定した。",
+    "exampleTranslation": "The government set a new target to significantly reduce greenhouse gas emissions.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "policy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0519"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 519
+  },
+  {
+    "category": "vocabulary",
+    "front": "エコ",
+    "back": "eco, environmentally friendly",
+    "exampleJp": "最近では、マイボトルを持ち歩くなど、エコなライフスタイルが定着してきた。",
+    "exampleTranslation": "Recently, eco-friendly lifestyles, such as carrying a reusable water bottle, have become established.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0520"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 520
+  },
+  {
+    "category": "vocabulary",
+    "front": "リサイクル",
+    "back": "recycle",
+    "exampleJp": "使い終わったペットボトルは、洗ってリサイクルに出すようにしている。",
+    "exampleTranslation": "I make sure to wash and put out used plastic bottles for recycling.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0521"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 521
+  },
+  {
+    "category": "vocabulary",
+    "front": "砂漠化",
+    "back": "desertification",
+    "exampleJp": "過度な放牧や森林伐採が原因で、深刻な砂漠化が進行している地域がある。",
+    "exampleTranslation": "Severe desertification is progressing in some regions due to excessive grazing and deforestation.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "geography"
+    ],
+    "sourceIds": [
+      "n2-vocab-0522"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 522
+  },
+  {
+    "category": "vocabulary",
+    "front": "生態系",
+    "back": "ecosystem",
+    "exampleJp": "外来種の侵入により、その地域の豊かな生態系が破壊される恐れがある。",
+    "exampleTranslation": "The invasion of alien species threatens to destroy the region's rich ecosystem.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0523"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 523
+  },
+  {
+    "category": "vocabulary",
+    "front": "保護",
+    "back": "protection",
+    "exampleJp": "絶滅の危機に瀕している野生動物を保護するため、特別な法律が制定された。",
+    "exampleTranslation": "Special laws were enacted to protect endangered wild animals.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0524"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 524
+  },
+  {
+    "category": "vocabulary",
+    "front": "破壊",
+    "back": "destruction",
+    "exampleJp": "利益を優先するあまり、取り返しのつかない環境破壊が進んでしまった。",
+    "exampleTranslation": "In prioritizing profit, irreversible environmental destruction has advanced.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0525"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 525
+  },
+  {
+    "category": "vocabulary",
+    "front": "節約",
+    "back": "saving, conservation",
+    "exampleJp": "地球環境を守るためにも、日頃から水や電気の節約を心がけたい。",
+    "exampleTranslation": "To protect the global environment, I want to keep in mind saving water and electricity on a daily basis.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0526"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 526
+  },
+  {
+    "category": "vocabulary",
+    "front": "消費量",
+    "back": "amount of consumption",
+    "exampleJp": "先進国におけるエネルギーの消費量は、発展途上国に比べて圧倒的に多い。",
+    "exampleTranslation": "The amount of energy consumption in developed countries is overwhelmingly larger than in developing countries.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0527"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 527
+  },
+  {
+    "category": "vocabulary",
+    "front": "廃棄",
+    "back": "disposal",
+    "exampleJp": "大量の食品が毎日廃棄されている現状は、大きな社会問題となっている。",
+    "exampleTranslation": "The current situation where massive amounts of food are disposed of daily has become a major social issue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0528"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 528
+  },
+  {
+    "category": "vocabulary",
+    "front": "ゴミ処理",
+    "back": "garbage disposal",
+    "exampleJp": "人口の増加に伴い、都市部でのゴミ処理能力が限界に近づいている。",
+    "exampleTranslation": "With the population increase, garbage disposal capacity in urban areas is approaching its limit.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0529"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 529
+  },
+  {
+    "category": "vocabulary",
+    "front": "騒音",
+    "back": "noise pollution",
+    "exampleJp": "空港の近くに住む人々は、飛行機の離着陸に伴う騒音に悩まされている。",
+    "exampleTranslation": "People living near the airport are troubled by the noise pollution associated with planes taking off and landing.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0530"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 530
+  },
+  {
+    "category": "vocabulary",
+    "front": "自然環境",
+    "back": "natural environment",
+    "exampleJp": "開発が進む一方で、いかにして自然環境を保全するかが今後の課題だ。",
+    "exampleTranslation": "While development progresses, how to conserve the natural environment is a future challenge.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0531"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 531
+  },
+  {
+    "category": "vocabulary",
+    "front": "気候変動",
+    "back": "climate change",
+    "exampleJp": "急激な気候変動は、農業や生態系に計り知れない影響を与えると懸念されている。",
+    "exampleTranslation": "There are concerns that rapid climate change will have immeasurable impacts on agriculture and ecosystems.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0532"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 532
+  },
+  {
+    "category": "vocabulary",
+    "front": "温室効果ガス",
+    "back": "greenhouse gas",
+    "exampleJp": "世界各国が協力して、温室効果ガスの削減に向けた取り組みを進めている。",
+    "exampleTranslation": "Countries around the world are cooperating to advance efforts to reduce greenhouse gases.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "policy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0533"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 533
+  },
+  {
+    "category": "vocabulary",
+    "front": "オゾン層",
+    "back": "ozone layer",
+    "exampleJp": "オゾン層が破壊されると、有害な紫外線が地上に多く降り注ぐことになる。",
+    "exampleTranslation": "If the ozone layer is destroyed, an increased amount of harmful ultraviolet rays will pour down on the ground.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0534"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 534
+  },
+  {
+    "category": "vocabulary",
+    "front": "紫外線",
+    "back": "ultraviolet rays",
+    "exampleJp": "夏の強い紫外線から肌を守るため、外出時は必ず日焼け止めを塗っている。",
+    "exampleTranslation": "To protect my skin from strong summer ultraviolet rays, I always apply sunscreen when going out.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "environment"
+    ],
+    "sourceIds": [
+      "n2-vocab-0535"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 535
+  },
+  {
+    "category": "vocabulary",
+    "front": "酸性雨",
+    "back": "acid rain",
+    "exampleJp": "工場からの排気ガスが原因で酸性雨が降り、森林が立ち枯れる被害が出た。",
+    "exampleTranslation": "Acid rain caused by factory exhaust emissions fell, resulting in damage where forests withered away.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0536"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 536
+  },
+  {
+    "category": "vocabulary",
+    "front": "有害",
+    "back": "harmful",
+    "exampleJp": "この塗料には人体に有害な化学物質が含まれているため、取り扱いに注意が必要だ。",
+    "exampleTranslation": "Because this paint contains chemical substances harmful to the human body, careful handling is required.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "health"
+    ],
+    "sourceIds": [
+      "n2-vocab-0537"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 537
+  },
+  {
+    "category": "vocabulary",
+    "front": "放射能",
+    "back": "radioactivity",
+    "exampleJp": "原子力発電所の事故により、周囲に放射能が漏れ出すという最悪の事態が発生した。",
+    "exampleTranslation": "The worst-case scenario occurred where radioactivity leaked into the surroundings due to the nuclear power plant accident.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0538"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 538
+  },
+  {
+    "category": "vocabulary",
+    "front": "再利用",
+    "back": "reuse",
+    "exampleJp": "不要になった衣類を捨てるのではなく、布巾などに再利用している。",
+    "exampleTranslation": "Instead of throwing away unneeded clothing, we reuse it for things like dishcloths.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0539"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 539
+  },
+  {
+    "category": "vocabulary",
+    "front": "分別",
+    "back": "separation",
+    "exampleJp": "ゴミの分別ルールが細かくなり、最初は少し戸惑う住民も多かった。",
+    "exampleTranslation": "As the rules for garbage separation became detailed, many residents were initially a bit confused.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0540"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 540
+  },
+  {
+    "category": "vocabulary",
+    "front": "環境問題",
+    "back": "environmental issues",
+    "exampleJp": "環境問題は一国だけで解決できるものではなく、国際的な協力が不可欠だ。",
+    "exampleTranslation": "Environmental issues cannot be solved by a single country alone; international cooperation is indispensable.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "policy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0541"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 541
+  },
+  {
+    "category": "vocabulary",
+    "front": "エコバッグ",
+    "back": "reusable bag",
+    "exampleJp": "レジ袋の有料化に伴い、買い物には必ずエコバッグを持参するようになった。",
+    "exampleTranslation": "With plastic bags no longer being free, I have started always bringing a reusable bag when shopping.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0542"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 542
+  },
+  {
+    "category": "vocabulary",
+    "front": "森林伐採",
+    "back": "deforestation",
+    "exampleJp": "熱帯雨林の急速な森林伐採は、多くの動植物から住処を奪っている。",
+    "exampleTranslation": "The rapid deforestation of tropical rainforests is depriving many animals and plants of their habitats.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0543"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 543
+  },
+  {
+    "category": "vocabulary",
+    "front": "絶滅",
+    "back": "extinction",
+    "exampleJp": "かつて地球を支配していた恐竜は、環境の激変によって絶滅したと考えられている。",
+    "exampleTranslation": "Dinosaurs, which once dominated the earth, are believed to have faced extinction due to a drastic environmental change.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0544"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 544
+  },
+  {
+    "category": "vocabulary",
+    "front": "天然資源",
+    "back": "natural resources",
+    "exampleJp": "自国に天然資源を持たないこの国は、輸入への依存度が高い。",
+    "exampleTranslation": "This country, which lacks natural resources of its own, has a high degree of dependence on imports.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "environment",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0545"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 545
+  },
+  {
+    "category": "vocabulary",
+    "front": "画面",
+    "back": "screen",
+    "exampleJp": "スマートフォンの画面を見続けたせいで、目がすっかり疲れてしまった。",
+    "exampleTranslation": "My eyes are completely exhausted from constantly staring at my smartphone screen.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0546"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 546
+  },
+  {
+    "category": "vocabulary",
+    "front": "装置",
+    "back": "device, equipment",
+    "exampleJp": "この工場には、製品の欠陥を自動で検知する最新の装置が導入されている。",
+    "exampleTranslation": "This factory has introduced the latest equipment that automatically detects product defects.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0547"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 547
+  },
+  {
+    "category": "vocabulary",
+    "front": "開発",
+    "back": "development",
+    "exampleJp": "その企業は、誰でも簡単に使える新しいアプリの開発に力を入れている。",
+    "exampleTranslation": "That company is focusing its efforts on the development of a new app that anyone can easily use.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0548"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 548
+  },
+  {
+    "category": "vocabulary",
+    "front": "検索",
+    "back": "search",
+    "exampleJp": "分からない言葉があったら、すぐにインターネットで検索するようにしている。",
+    "exampleTranslation": "If I run into an unfamiliar term, I make a habit of looking it up online right away.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0549"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 549
+  },
+  {
+    "category": "vocabulary",
+    "front": "接続",
+    "back": "connection",
+    "exampleJp": "地下鉄の中ではインターネットの接続が不安定になりがちだ。",
+    "exampleTranslation": "Internet connection tends to become unstable inside the subway.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0550"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 550
+  },
+  {
+    "category": "vocabulary",
+    "front": "パスワード",
+    "back": "password",
+    "exampleJp": "セキュリティ上の理由から、パスワードは定期的に変更することが推奨されている。",
+    "exampleTranslation": "For security reasons, it is recommended to change your password regularly.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "security"
+    ],
+    "sourceIds": [
+      "n2-vocab-0551"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 551
+  },
+  {
+    "category": "vocabulary",
+    "front": "ログイン",
+    "back": "login",
+    "exampleJp": "会員専用のページにアクセスするには、まずログインIDを入力してください。",
+    "exampleTranslation": "To access the members-only page, please enter your login ID first.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "internet"
+    ],
+    "sourceIds": [
+      "n2-vocab-0552"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 552
+  },
+  {
+    "category": "vocabulary",
+    "front": "インストール",
+    "back": "installation",
+    "exampleJp": "新しいソフトウェアをパソコンにインストールするのに、かなり時間がかかった。",
+    "exampleTranslation": "It took quite a while to install the new software on the computer.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "computing"
+    ],
+    "sourceIds": [
+      "n2-vocab-0553"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 553
+  },
+  {
+    "category": "vocabulary",
+    "front": "ダウンロード",
+    "back": "download",
+    "exampleJp": "大容量の動画ファイルをダウンロードする際は、Wi-Fi環境を利用した方がいい。",
+    "exampleTranslation": "When downloading large video files, it's better to use a Wi-Fi environment.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "internet"
+    ],
+    "sourceIds": [
+      "n2-vocab-0554"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 554
+  },
+  {
+    "category": "vocabulary",
+    "front": "アップロード",
+    "back": "upload",
+    "exampleJp": "旅行先で撮った写真をSNSにアップロードして、友人たちと共有した。",
+    "exampleTranslation": "I uploaded the photos I took on my trip to social media and shared them with my friends.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "internet"
+    ],
+    "sourceIds": [
+      "n2-vocab-0555"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 555
+  },
+  {
+    "category": "vocabulary",
+    "front": "デジタル",
+    "back": "digital",
+    "exampleJp": "カメラがデジタル化されたことで、写真の現像という作業は過去のものになった。",
+    "exampleTranslation": "With cameras becoming digital, the process of developing photos has become a thing of the past.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0556"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 556
+  },
+  {
+    "category": "vocabulary",
+    "front": "アナログ",
+    "back": "analog",
+    "exampleJp": "すべてがデジタル化される現代だからこそ、アナログな手紙の温かさが心に響く。",
+    "exampleTranslation": "Precisely because everything is digitized today, the warmth of an analog handwritten letter touches the heart.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0557"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 557
+  },
+  {
+    "category": "vocabulary",
+    "front": "バッテリー",
+    "back": "battery",
+    "exampleJp": "長時間の外出時には、スマートフォンのモバイルバッテリーを持ち歩くようにしている。",
+    "exampleTranslation": "When going out for a long time, I make sure to carry a mobile battery for my smartphone.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0558"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 558
+  },
+  {
+    "category": "vocabulary",
+    "front": "充電",
+    "back": "charging",
+    "exampleJp": "寝る前にスマートフォンを充電器に繋いでおくのを忘れてしまった。",
+    "exampleTranslation": "I forgot to connect my smartphone to the charger before going to sleep.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0559"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 559
+  },
+  {
+    "category": "vocabulary",
+    "front": "履歴",
+    "back": "history, record",
+    "exampleJp": "ブラウザの閲覧履歴を削除して、プライバシーを保護した。",
+    "exampleTranslation": "I deleted my browser's viewing history to protect my privacy.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "security"
+    ],
+    "sourceIds": [
+      "n2-vocab-0560"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 560
+  },
+  {
+    "category": "vocabulary",
+    "front": "編集",
+    "back": "editing",
+    "exampleJp": "撮影した映像に効果音やテロップを追加して、見やすく編集した。",
+    "exampleTranslation": "I added sound effects and text to the filmed footage, editing it to make it easier to watch.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "media"
+    ],
+    "sourceIds": [
+      "n2-vocab-0561"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 561
+  },
+  {
+    "category": "vocabulary",
+    "front": "削除",
+    "back": "deletion",
+    "exampleJp": "誤って重要なデータを削除してしまい、上司に厳しく叱られた。",
+    "exampleTranslation": "I mistakenly deleted important data and was strictly scolded by my boss.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0562"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 562
+  },
+  {
+    "category": "vocabulary",
+    "front": "保存",
+    "back": "save, storage",
+    "exampleJp": "作成した文書は、こまめに保存しないとデータが消える危険がある。",
+    "exampleTranslation": "If you don't save the document you're creating frequently, there's a risk of losing the data.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "computing"
+    ],
+    "sourceIds": [
+      "n2-vocab-0563"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 563
+  },
+  {
+    "category": "vocabulary",
+    "front": "コピー",
+    "back": "copy",
+    "exampleJp": "会議の資料を参加者の人数分コピーして、机の上に配っておいてください。",
+    "exampleTranslation": "Please make copies of the meeting materials for the number of participants and distribute them on the desks.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0564"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 564
+  },
+  {
+    "category": "vocabulary",
+    "front": "貼り付け",
+    "back": "paste",
+    "exampleJp": "別の文書から文章をコピーして、こちらの資料に貼り付けた。",
+    "exampleTranslation": "I copied text from another document and pasted it into these materials.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "computing"
+    ],
+    "sourceIds": [
+      "n2-vocab-0565"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 565
+  },
+  {
+    "category": "vocabulary",
+    "front": "添付",
+    "back": "attachment",
+    "exampleJp": "先ほどのメールに企画書のPDFファイルを添付しましたので、ご確認ください。",
+    "exampleTranslation": "I attached the project proposal PDF file to the previous email, so please check it.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0566"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 566
+  },
+  {
+    "category": "vocabulary",
+    "front": "返信",
+    "back": "reply",
+    "exampleJp": "取引先からの重要なメールには、内容を確認してすぐに返信しなければならない。",
+    "exampleTranslation": "You must review the content and reply immediately to important emails from business partners.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0567"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 567
+  },
+  {
+    "category": "vocabulary",
+    "front": "転送",
+    "back": "forward",
+    "exampleJp": "担当者が不在だったため、送られてきたメールを本人のスマートフォンに転送した。",
+    "exampleTranslation": "Since the person in charge was absent, I forwarded the received email to his smartphone.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0568"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 568
+  },
+  {
+    "category": "vocabulary",
+    "front": "通知",
+    "back": "notification",
+    "exampleJp": "スマートフォンの通知音が鳴り止まず、仕事に集中できなかった。",
+    "exampleTranslation": "My smartphone's notification sound wouldn't stop ringing, and I couldn't concentrate on my work.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0569"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 569
+  },
+  {
+    "category": "vocabulary",
+    "front": "設定",
+    "back": "settings",
+    "exampleJp": "新しいパソコンを購入したので、初期設定をするのに一日がかりだった。",
+    "exampleTranslation": "Because I bought a new computer, it took me all day to do the initial settings.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "computing"
+    ],
+    "sourceIds": [
+      "n2-vocab-0570"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 570
+  },
+  {
+    "category": "vocabulary",
+    "front": "アカウント",
+    "back": "account",
+    "exampleJp": "SNSのアカウントが何者かに乗っ取られ、迷惑なメッセージが送信されてしまった。",
+    "exampleTranslation": "My social media account was hijacked by someone, and spam messages were sent out.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "security"
+    ],
+    "sourceIds": [
+      "n2-vocab-0571"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 571
+  },
+  {
+    "category": "vocabulary",
+    "front": "ネット",
+    "back": "internet",
+    "exampleJp": "わからないことがあれば、すぐにネットで調べるのが現代人の習慣だ。",
+    "exampleTranslation": "It is a habit of modern people to immediately look things up on the internet if there is something they don't know.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0572"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 572
+  },
+  {
+    "category": "vocabulary",
+    "front": "電波",
+    "back": "radio wave",
+    "exampleJp": "山奥のキャンプ場に入るとスマートフォンの電波が全く届かなくなった。",
+    "exampleTranslation": "Once we entered the campsite deep in the mountains, smartphone radio waves couldn't reach us at all.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "travel"
+    ],
+    "sourceIds": [
+      "n2-vocab-0573"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 573
+  },
+  {
+    "category": "vocabulary",
+    "front": "通信",
+    "back": "communication, transmission",
+    "exampleJp": "災害時に通信網が遮断されると、救助活動に大きな支障が出る。",
+    "exampleTranslation": "If communication networks are cut off during a disaster, it causes major hindrances to rescue operations.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0574"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 574
+  },
+  {
+    "category": "vocabulary",
+    "front": "人工知能",
+    "back": "artificial intelligence",
+    "exampleJp": "医療の現場でも、人工知能による画像の解析や診断の支援が始まっている。",
+    "exampleTranslation": "Even in the medical field, image analysis and diagnostic support by artificial intelligence have begun.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-vocab-0575"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 575
+  },
+  {
+    "category": "vocabulary",
+    "front": "寿命",
+    "back": "lifespan",
+    "exampleJp": "医療技術の進歩により、人間の平均寿命は過去百年で飛躍的に伸びた。",
+    "exampleTranslation": "Thanks to advances in medical technology, the average human lifespan has increased dramatically over the past hundred years.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0576"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 576
+  },
+  {
+    "category": "vocabulary",
+    "front": "高齢化",
+    "back": "aging population",
+    "exampleJp": "急速な高齢化に伴い、介護施設の不足が深刻な社会問題となっている。",
+    "exampleTranslation": "With the rapidly aging population, the shortage of nursing care facilities has become a serious social issue.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "health"
+    ],
+    "sourceIds": [
+      "n2-vocab-0577"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 577
+  },
+  {
+    "category": "vocabulary",
+    "front": "福祉",
+    "back": "welfare",
+    "exampleJp": "北欧の国々は、税金が高い代わりに充実した社会福祉制度が整っている。",
+    "exampleTranslation": "Although taxes are high, Nordic countries have well-established social welfare systems in return.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "policy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0578"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 578
+  },
+  {
+    "category": "vocabulary",
+    "front": "症状",
+    "back": "symptom",
+    "exampleJp": "熱はないものの、咳と喉の痛みが続くという風邪の症状に悩まされている。",
+    "exampleTranslation": "Though I have no fever, I am bothered by cold symptoms of a persistent cough and sore throat.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0579"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 579
+  },
+  {
+    "category": "vocabulary",
+    "front": "睡眠",
+    "back": "sleep",
+    "exampleJp": "質の高い睡眠をとることは、日々の疲労を回復し健康を保つために不可欠だ。",
+    "exampleTranslation": "Getting high-quality sleep is essential for recovering from daily fatigue and maintaining health.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0580"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 580
+  },
+  {
+    "category": "vocabulary",
+    "front": "疲労",
+    "back": "fatigue",
+    "exampleJp": "長時間の運転による疲労が蓄積し、彼はハンドルを握ったまま眠ってしまった。",
+    "exampleTranslation": "Fatigue from driving for long hours accumulated, and he fell asleep holding the steering wheel.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "accident"
+    ],
+    "sourceIds": [
+      "n2-vocab-0581"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 581
+  },
+  {
+    "category": "vocabulary",
+    "front": "栄養",
+    "back": "nutrition",
+    "exampleJp": "成長期の子供には、バランスの取れた栄養のある食事が特に重要である。",
+    "exampleTranslation": "For children in their growing period, well-balanced and nutritious meals are particularly important.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "lifestyle"
+    ],
+    "sourceIds": [
+      "n2-vocab-0582"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 582
+  },
+  {
+    "category": "vocabulary",
+    "front": "手術",
+    "back": "surgery",
+    "exampleJp": "最新のロボット技術を導入したことで、より安全で精密な手術が可能になった。",
+    "exampleTranslation": "The introduction of the latest robot technology has made safer and more precise surgeries possible.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0583"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 583
+  },
+  {
+    "category": "vocabulary",
+    "front": "診断",
+    "back": "diagnosis",
+    "exampleJp": "複数の医師から話を聞き、最終的に癌ではないという正確な診断を受けた。",
+    "exampleTranslation": "After consulting multiple doctors, I eventually received an accurate diagnosis that it was not cancer.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0584"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 584
+  },
+  {
+    "category": "vocabulary",
+    "front": "治療",
+    "back": "treatment",
+    "exampleJp": "この新しい薬は、これまで治癒が難しいとされていた病気の治療に期待されている。",
+    "exampleTranslation": "This new medicine is expected to be used in the treatment of diseases that were previously considered difficult to cure.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0585"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 585
+  },
+  {
+    "category": "vocabulary",
+    "front": "予防",
+    "back": "prevention",
+    "exampleJp": "感染症の予防には、こまめな手洗いと適切なマスクの着用が最も効果的だ。",
+    "exampleTranslation": "For the prevention of infectious diseases, frequent hand washing and appropriate mask-wearing are most effective.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0586"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 586
+  },
+  {
+    "category": "vocabulary",
+    "front": "ワクチン",
+    "back": "vaccine",
+    "exampleJp": "冬が本格化する前に、多くの人がインフルエンザのワクチンを接種しに病院を訪れる。",
+    "exampleTranslation": "Before winter sets in properly, many people visit the hospital to get vaccinated against influenza.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0587"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 587
+  },
+  {
+    "category": "vocabulary",
+    "front": "感染",
+    "back": "infection",
+    "exampleJp": "ウイルスは飛沫を通じて空気中に広がり、周囲の人々へ容易に感染していく。",
+    "exampleTranslation": "The virus spreads into the air through droplets, easily infecting people nearby.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "medicine"
+    ],
+    "sourceIds": [
+      "n2-vocab-0588"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 588
+  },
+  {
+    "category": "vocabulary",
+    "front": "対策",
+    "back": "measure, countermeasure",
+    "exampleJp": "政府は、深刻化する少子化を食い止めるための具体的な対策を急いでいる。",
+    "exampleTranslation": "The government is hurrying concrete measures to halt the worsening declining birthrate.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "policy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0589"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 589
+  },
+  {
+    "category": "vocabulary",
+    "front": "少子化",
+    "back": "declining birthrate",
+    "exampleJp": "少子化によって将来の労働力不足が懸念され、外国人労働者の受け入れが議論されている。",
+    "exampleTranslation": "Due to the declining birthrate, there are concerns about a future labor shortage, and the acceptance of foreign workers is being discussed.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0590"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 590
+  },
+  {
+    "category": "vocabulary",
+    "front": "差別",
+    "back": "discrimination",
+    "exampleJp": "性別や人種に基づくあらゆる差別は、法によって厳しく禁じられている。",
+    "exampleTranslation": "All forms of discrimination based on gender or race are strictly prohibited by law.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0591"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 591
+  },
+  {
+    "category": "vocabulary",
+    "front": "平等",
+    "back": "equality",
+    "exampleJp": "民主主義社会においては、すべての市民が法の下に平等でなければならない。",
+    "exampleTranslation": "In a democratic society, all citizens must be equal under the law.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-vocab-0592"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 592
+  },
+  {
+    "category": "vocabulary",
+    "front": "権利",
+    "back": "rights",
+    "exampleJp": "教育を受ける権利は、憲法によって保障された基本的な人権の一つである。",
+    "exampleTranslation": "The right to receive an education is one of the fundamental human rights guaranteed by the constitution.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0593"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 593
+  },
+  {
+    "category": "vocabulary",
+    "front": "義務",
+    "back": "duty, obligation",
+    "exampleJp": "国民には、国を支えるための税金を納めるという重要な義務がある。",
+    "exampleTranslation": "Citizens have an important duty to pay taxes to support the country.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0594"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 594
+  },
+  {
+    "category": "vocabulary",
+    "front": "犯罪",
+    "back": "crime",
+    "exampleJp": "監視カメラの設置が増えたことで、街中での凶悪な犯罪の発生件数は減少傾向にある。",
+    "exampleTranslation": "With the increased installation of surveillance cameras, the occurrence of vicious crimes in the city is on a declining trend.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0595"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 595
+  },
+  {
+    "category": "vocabulary",
+    "front": "逮捕",
+    "back": "arrest",
+    "exampleJp": "長期間の捜査の末、警察はついに連続強盗事件の容疑者を逮捕した。",
+    "exampleTranslation": "After a long-term investigation, the police finally arrested the suspect in the serial robbery case.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0596"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 596
+  },
+  {
+    "category": "vocabulary",
+    "front": "裁判",
+    "back": "trial",
+    "exampleJp": "その複雑な事件の裁判は数年に及び、関係者は長期間拘束されることになった。",
+    "exampleTranslation": "The trial for that complex case spanned several years, leaving those involved tied up for a long period.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0597"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 597
+  },
+  {
+    "category": "vocabulary",
+    "front": "法律",
+    "back": "law",
+    "exampleJp": "社会の急激な変化に対応するため、既存の法律を改正する動きが活発化している。",
+    "exampleTranslation": "To respond to rapid changes in society, movements to revise existing laws are becoming active.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "law"
+    ],
+    "sourceIds": [
+      "n2-vocab-0598"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 598
+  },
+  {
+    "category": "vocabulary",
+    "front": "規則",
+    "back": "rule, regulation",
+    "exampleJp": "寮の厳しい規則を破った学生は、退寮処分という重いペナルティを受ける。",
+    "exampleTranslation": "Students who break the strict dorm regulations face the heavy penalty of eviction.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0599"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 599
+  },
+  {
+    "category": "vocabulary",
+    "front": "制度",
+    "back": "system, institution",
+    "exampleJp": "新しい教育制度の導入により、学校現場では大きな混乱が生じている。",
+    "exampleTranslation": "The introduction of the new educational system is causing major confusion on school grounds.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-vocab-0600"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 600
+  },
+  {
+    "category": "vocabulary",
+    "front": "保険",
+    "back": "insurance",
+    "exampleJp": "万が一の病気や怪我に備えて、社会人になったのを機に民間の医療保険に加入した。",
+    "exampleTranslation": "To prepare for unexpected illness or injury, I enrolled in private medical insurance upon entering the workforce.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0601"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 601
+  },
+  {
+    "category": "vocabulary",
+    "front": "年金",
+    "back": "pension",
+    "exampleJp": "少子高齢化の影響で、将来自分が十分な年金を受け取れるのか不安に感じる若者が多い。",
+    "exampleTranslation": "Due to the aging population with a declining birthrate, many young people feel anxious about whether they will receive a sufficient pension in the future.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-vocab-0602"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 602
+  },
+  {
+    "category": "vocabulary",
+    "front": "税務署",
+    "back": "tax office",
+    "exampleJp": "個人事業主は、毎年決められた時期に税務署へ確定申告の書類を提出しなければならない。",
+    "exampleTranslation": "Sole proprietors must submit their final tax return documents to the tax office at a designated time every year.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "economy",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0603"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 603
+  },
+  {
+    "category": "vocabulary",
+    "front": "労働",
+    "back": "labor",
+    "exampleJp": "過酷な労働環境を改善するため、労働組合が会社側と激しく交渉している。",
+    "exampleTranslation": "To improve harsh labor environments, the labor union is negotiating fiercely with the company.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "society",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0604"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 604
+  },
+  {
+    "category": "vocabulary",
+    "front": "ストレス",
+    "back": "stress",
+    "exampleJp": "現代人は複雑な人間関係や仕事の重圧から、常に多くのストレスを抱えて生きている。",
+    "exampleTranslation": "Modern people live constantly bearing a lot of stress from complex human relationships and heavy workloads.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "health",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0605"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 605
+  },
+  {
+    "category": "vocabulary",
+    "front": "衝突",
+    "back": "collision",
+    "exampleJp": "交差点でトラックと乗用車が正面から衝突する大きな事故が発生した。",
+    "exampleTranslation": "A major accident occurred where a truck and a passenger car collided head-on at an intersection.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "accident",
+      "transportation"
+    ],
+    "sourceIds": [
+      "n2-vocab-0606"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 606
+  },
+  {
+    "category": "vocabulary",
+    "front": "欠航",
+    "back": "flight cancellation",
+    "exampleJp": "猛烈な台風の接近により、本日の国内線はすべて欠航となることが決定した。",
+    "exampleTranslation": "Due to the approach of a fierce typhoon, it was decided that all domestic flights today will be canceled.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0607"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 607
+  },
+  {
+    "category": "vocabulary",
+    "front": "渋滞",
+    "back": "traffic jam",
+    "exampleJp": "連休の初日ということもあり、高速道路は数十キロにわたる深刻な渋滞に見舞われている。",
+    "exampleTranslation": "Partly because it's the first day of the long weekend, the expressway is experiencing a severe traffic jam stretching for tens of kilometers.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "transportation"
+    ],
+    "sourceIds": [
+      "n2-vocab-0608"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 608
+  },
+  {
+    "category": "vocabulary",
+    "front": "被害",
+    "back": "damage, harm",
+    "exampleJp": "記録的な大雨による土砂崩れで、多くの家屋が押し流されるという甚大な被害が出た。",
+    "exampleTranslation": "A landslide caused by record heavy rain resulted in immense damage, with many houses being swept away.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0609"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 609
+  },
+  {
+    "category": "vocabulary",
+    "front": "復旧",
+    "back": "restoration, recovery",
+    "exampleJp": "地震で寸断された鉄道網の復旧には、少なくとも数ヶ月を要する見通しだ。",
+    "exampleTranslation": "It is estimated that the restoration of the railway network severed by the earthquake will take at least several months.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "infrastructure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0610"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 610
+  },
+  {
+    "category": "vocabulary",
+    "front": "事故",
+    "back": "accident",
+    "exampleJp": "彼は旅行先で不注意から交通事故に巻き込まれ、重傷を負ってしまった。",
+    "exampleTranslation": "He was involved in a traffic accident due to carelessness while traveling and suffered serious injuries.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "accident",
+      "travel"
+    ],
+    "sourceIds": [
+      "n2-vocab-0611"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 611
+  },
+  {
+    "category": "vocabulary",
+    "front": "故障",
+    "back": "breakdown, failure",
+    "exampleJp": "大事なプレゼンの直前にプロジェクターが故障し、担当者はパニックに陥った。",
+    "exampleTranslation": "The projector broke down right before an important presentation, sending the person in charge into a panic.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "technology",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-vocab-0612"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 612
+  },
+  {
+    "category": "vocabulary",
+    "front": "救助",
+    "back": "rescue",
+    "exampleJp": "山で遭難した登山者を捜索するため、ヘリコプターによる懸命な救助活動が行われた。",
+    "exampleTranslation": "Desperate rescue operations by helicopter were carried out to search for the climbers stranded in the mountains.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "accident"
+    ],
+    "sourceIds": [
+      "n2-vocab-0613"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 613
+  },
+  {
+    "category": "vocabulary",
+    "front": "避難",
+    "back": "evacuation",
+    "exampleJp": "津波警報が発令された直後、住民たちは高台にある安全な場所へと速やかに避難した。",
+    "exampleTranslation": "Immediately after the tsunami warning was issued, residents swiftly evacuated to a safe place on high ground.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0614"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 614
+  },
+  {
+    "category": "vocabulary",
+    "front": "停電",
+    "back": "power outage",
+    "exampleJp": "落雷が原因で大規模な停電が発生し、街中が真っ暗闇に包まれた。",
+    "exampleTranslation": "A massive power outage occurred due to a lightning strike, enveloping the entire city in pitch darkness.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "infrastructure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0615"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 615
+  },
+  {
+    "category": "vocabulary",
+    "front": "断水",
+    "back": "water outage",
+    "exampleJp": "水道管の破裂により広い地域で断水が続き、人々の生活に深刻な影響が出ている。",
+    "exampleTranslation": "Due to a burst water pipe, the water outage continues over a wide area, seriously affecting people's lives.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "infrastructure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0616"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 616
+  },
+  {
+    "category": "vocabulary",
+    "front": "地震",
+    "back": "earthquake",
+    "exampleJp": "深夜に発生した強い地震で目を覚まし、恐怖でしばらく動くことができなかった。",
+    "exampleTranslation": "Woken up by a strong earthquake that occurred late at night, I couldn't move for a while out of fear.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0617"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 617
+  },
+  {
+    "category": "vocabulary",
+    "front": "津波",
+    "back": "tsunami",
+    "exampleJp": "地震の後に巨大な津波が沿岸部を襲い、多くの街が壊滅的な打撃を受けた。",
+    "exampleTranslation": "Following the earthquake, a massive tsunami struck the coastal areas, dealing a devastating blow to many towns.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0618"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 618
+  },
+  {
+    "category": "vocabulary",
+    "front": "洪水",
+    "back": "flood",
+    "exampleJp": "何日も降り続いた雨のせいで川が氾濫し、周囲の住宅街が洪水に飲み込まれた。",
+    "exampleTranslation": "The river overflowed due to rain that continued to fall for days, and the surrounding residential areas were swallowed by a flood.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0619"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 619
+  },
+  {
+    "category": "vocabulary",
+    "front": "台風",
+    "back": "typhoon",
+    "exampleJp": "大型の台風が上陸する恐れがあるため、窓ガラスを補強するなどの対策が必要だ。",
+    "exampleTranslation": "Because there is a fear that a large typhoon will make landfall, measures such as reinforcing window glass are necessary.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0620"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 620
+  },
+  {
+    "category": "vocabulary",
+    "front": "火災",
+    "back": "fire",
+    "exampleJp": "乾燥した空気が原因で山林火災が発生し、消防隊が懸命な消火活動に当たっている。",
+    "exampleTranslation": "A forest fire broke out due to the dry air, and the fire brigade is engaged in desperate firefighting efforts.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "accident"
+    ],
+    "sourceIds": [
+      "n2-vocab-0621"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 621
+  },
+  {
+    "category": "vocabulary",
+    "front": "発生",
+    "back": "occurrence",
+    "exampleJp": "高速道路上で多重事故が発生したため、一部の区間が完全に通行止めとなっている。",
+    "exampleTranslation": "Because a multi-vehicle accident occurred on the expressway, a section of the road is completely closed to traffic.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "accident",
+      "transportation"
+    ],
+    "sourceIds": [
+      "n2-vocab-0622"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 622
+  },
+  {
+    "category": "vocabulary",
+    "front": "防止",
+    "back": "prevention",
+    "exampleJp": "駅のホームでの転落事故を防止するため、安全柵の設置が急ピッチで進められている。",
+    "exampleTranslation": "To prevent falling accidents on station platforms, the installation of safety fences is proceeding at a rapid pace.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "accident",
+      "infrastructure"
+    ],
+    "sourceIds": [
+      "n2-vocab-0623"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 623
+  },
+  {
+    "category": "vocabulary",
+    "front": "警戒",
+    "back": "warning, caution",
+    "exampleJp": "気象庁は、大雨による土砂災害や河川の増水に対して最大級の警戒を呼びかけている。",
+    "exampleTranslation": "The Meteorological Agency is calling for maximum caution against landslides and rising river levels caused by heavy rain.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0624"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 624
+  },
+  {
+    "category": "vocabulary",
+    "front": "運休",
+    "back": "suspension of service",
+    "exampleJp": "大雪の影響により、本日の新幹線は終日運休となることが発表された。",
+    "exampleTranslation": "It was announced that today's Shinkansen services will be suspended all day due to the impact of heavy snow.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0625"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 625
+  },
+  {
+    "category": "vocabulary",
+    "front": "延期",
+    "back": "postponement",
+    "exampleJp": "悪天候が予想されるため、楽しみにしていた野外フェスティバルは来週に延期された。",
+    "exampleTranslation": "Because bad weather is expected, the outdoor festival we were looking forward to was postponed to next week.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "event",
+      "weather"
+    ],
+    "sourceIds": [
+      "n2-vocab-0626"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 626
+  },
+  {
+    "category": "vocabulary",
+    "front": "変更",
+    "back": "change",
+    "exampleJp": "飛行機の出発時刻が急に変更されたため、空港で慌てて搭乗手続きをやり直した。",
+    "exampleTranslation": "Because the flight's departure time was suddenly changed, I rushed to redo the boarding procedures at the airport.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "transportation"
+    ],
+    "sourceIds": [
+      "n2-vocab-0627"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 627
+  },
+  {
+    "category": "vocabulary",
+    "front": "払い戻し",
+    "back": "refund",
+    "exampleJp": "コンサートが中止になったため、チケット代金の払い戻し手続きを窓口で行った。",
+    "exampleTranslation": "Since the concert was canceled, I went through the procedures for a ticket refund at the counter.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "event"
+    ],
+    "sourceIds": [
+      "n2-vocab-0628"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 628
+  },
+  {
+    "category": "vocabulary",
+    "front": "迷子",
+    "back": "lost child/person",
+    "exampleJp": "混雑した遊園地で親とはぐれてしまい、一時的に迷子になって泣きそうだった。",
+    "exampleTranslation": "I got separated from my parents at the crowded amusement park and was close to tears after temporarily becoming a lost child.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0629"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 629
+  },
+  {
+    "category": "vocabulary",
+    "front": "落とし物",
+    "back": "lost property",
+    "exampleJp": "電車の中で見つけた財布を、駅の係員に落とし物として届け出た。",
+    "exampleTranslation": "I turned in a wallet I found on the train to the station attendant as lost property.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "daily-life"
+    ],
+    "sourceIds": [
+      "n2-vocab-0630"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 630
+  },
+  {
+    "category": "vocabulary",
+    "front": "盗難",
+    "back": "theft",
+    "exampleJp": "海外旅行中にパスポートや貴重品の入ったバッグを盗難に遭い、警察沙汰になった。",
+    "exampleTranslation": "While traveling overseas, my bag containing my passport and valuables was stolen, leading to police involvement.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "travel",
+      "crime"
+    ],
+    "sourceIds": [
+      "n2-vocab-0631"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 631
+  },
+  {
+    "category": "vocabulary",
+    "front": "詐欺",
+    "back": "fraud",
+    "exampleJp": "高齢者を狙った悪質な電話詐欺が多発しており、警察が注意を呼びかけている。",
+    "exampleTranslation": "Malicious telephone fraud targeting the elderly is occurring frequently, and the police are calling for caution.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "crime",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0632"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 632
+  },
+  {
+    "category": "vocabulary",
+    "front": "危険",
+    "back": "danger",
+    "exampleJp": "この先は崖崩れの危険があるため、立ち入りが厳しく制限されている。",
+    "exampleTranslation": "Because there is a danger of landslides ahead, entry is strictly restricted.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-vocab-0633"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 633
+  },
+  {
+    "category": "vocabulary",
+    "front": "無事",
+    "back": "safety, unharmed",
+    "exampleJp": "嵐の中で遭難した船の乗組員が、全員無事に救助されたというニュースが流れた。",
+    "exampleTranslation": "News broke that all the crew members of the ship stranded in the storm were rescued safely.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "accident",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-vocab-0634"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 634
+  },
+  {
+    "category": "vocabulary",
+    "front": "被災者",
+    "back": "disaster victim",
+    "exampleJp": "全国から集まったボランティアが、被災者に温かい食事や衣服を提供している。",
+    "exampleTranslation": "Volunteers gathered from all over the country are providing warm meals and clothing to the disaster victims.",
+    "tags": [
+      "n2",
+      "vocabulary",
+      "disaster",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-vocab-0635"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 635
+  },
+  {
+    "category": "kanji",
+    "front": "雇",
+    "back": "employ",
+    "exampleJp": "新しいシステムを導入するため、専門の技術者を雇うことになった。",
+    "exampleTranslation": "We have decided to employ a specialized technician to implement the new system.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0001"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 636
+  },
+  {
+    "category": "kanji",
+    "front": "替",
+    "back": "exchange",
+    "exampleJp": "為替レートの変動により、輸入コストが大幅に上昇している。",
+    "exampleTranslation": "Import costs have risen significantly due to fluctuations in exchange rates.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0002"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 637
+  },
+  {
+    "category": "kanji",
+    "front": "賛",
+    "back": "approve",
+    "exampleJp": "その法案に対し、与野党問わず多くの議員が賛成票を投じた。",
+    "exampleTranslation": "Many lawmakers, regardless of party affiliation, voted to approve the bill.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0003"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 638
+  },
+  {
+    "category": "kanji",
+    "front": "否",
+    "back": "deny",
+    "exampleJp": "彼はその事件への関与を全面的に否定している。",
+    "exampleTranslation": "He completely denies any involvement in the incident.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0004"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 639
+  },
+  {
+    "category": "kanji",
+    "front": "幼",
+    "back": "infancy",
+    "exampleJp": "幼い頃から異文化に触れることは、子供の成長に良い影響を与える。",
+    "exampleTranslation": "Being exposed to different cultures from childhood has a positive impact on a child's development.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0005"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 640
+  },
+  {
+    "category": "kanji",
+    "front": "児",
+    "back": "child",
+    "exampleJp": "最近は、育児休暇を取得する男性社員が増えてきている。",
+    "exampleTranslation": "Recently, the number of male employees taking childcare leave has been increasing.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0006"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 641
+  },
+  {
+    "category": "kanji",
+    "front": "派",
+    "back": "faction",
+    "exampleJp": "彼女は新しいプロジェクトのリーダーとして海外支社に派遣された。",
+    "exampleTranslation": "She was dispatched to the overseas branch as the leader of the new project.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0007"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 642
+  },
+  {
+    "category": "kanji",
+    "front": "遣",
+    "back": "dispatch",
+    "exampleJp": "無駄遣いを減らすために、毎月の支出を見直すことにした。",
+    "exampleTranslation": "I decided to review my monthly expenses in order to reduce wasteful spending.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0008"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 643
+  },
+  {
+    "category": "kanji",
+    "front": "述",
+    "back": "state",
+    "exampleJp": "市長は今後の都市開発計画について、具体的な方針を述べた。",
+    "exampleTranslation": "The mayor stated a specific policy regarding future urban development plans.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0009"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 644
+  },
+  {
+    "category": "kanji",
+    "front": "逆",
+    "back": "reverse",
+    "exampleJp": "期待していたのとは逆の結果になり、計画の練り直しが必要だ。",
+    "exampleTranslation": "The result was the reverse of what we expected, so we need to rework the plan.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0010"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 645
+  },
+  {
+    "category": "kanji",
+    "front": "刻",
+    "back": "engrave",
+    "exampleJp": "深刻な環境問題に対処するため、早急な対策が求められている。",
+    "exampleTranslation": "Urgent measures are required to address serious environmental issues.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0011"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 646
+  },
+  {
+    "category": "kanji",
+    "front": "骨",
+    "back": "bone",
+    "exampleJp": "この作業は非常に骨が折れるが、誰かがやらなければならない。",
+    "exampleTranslation": "This task is extremely backbreaking, but someone has to do it.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0012"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 647
+  },
+  {
+    "category": "kanji",
+    "front": "叫",
+    "back": "shout",
+    "exampleJp": "いくら心の中で叫んでも、この思いは誰にも届かない。",
+    "exampleTranslation": "No matter how much I shout in my heart, these feelings will not reach anyone.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0013"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 648
+  },
+  {
+    "category": "kanji",
+    "front": "祈",
+    "back": "pray",
+    "exampleJp": "世界中の人々が、一日も早い紛争の終結を祈っている。",
+    "exampleTranslation": "People all over the world are praying for the conflicts to end as soon as possible.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0014"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 649
+  },
+  {
+    "category": "kanji",
+    "front": "戻",
+    "back": "return",
+    "exampleJp": "経済は徐々に回復しているが、元の水準に戻るには時間がかかる。",
+    "exampleTranslation": "The economy is gradually recovering, but it will take time to return to previous levels.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0015"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 650
+  },
+  {
+    "category": "kanji",
+    "front": "届",
+    "back": "deliver",
+    "exampleJp": "提出期限までに必要な書類が役所に届いていなければならない。",
+    "exampleTranslation": "The necessary documents must be delivered to the government office by the submission deadline.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0016"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 651
+  },
+  {
+    "category": "kanji",
+    "front": "払",
+    "back": "pay",
+    "exampleJp": "消費者の不信感を払拭するため、企業は透明性を高めるべきだ。",
+    "exampleTranslation": "Companies should increase transparency to clear away consumer distrust.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0017"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 652
+  },
+  {
+    "category": "kanji",
+    "front": "抜",
+    "back": "extract",
+    "exampleJp": "競争の激しい市場で抜け出すには、独自のアイデアが不可欠だ。",
+    "exampleTranslation": "Original ideas are essential to break away from the highly competitive market.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0018"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 653
+  },
+  {
+    "category": "kanji",
+    "front": "捕",
+    "back": "catch",
+    "exampleJp": "警察は逃げた容疑者を捕まえるため、駅周辺の警備を強化した。",
+    "exampleTranslation": "The police strengthened security around the station to catch the fleeing suspect.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0019"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 654
+  },
+  {
+    "category": "kanji",
+    "front": "探",
+    "back": "search",
+    "exampleJp": "警察は、行方不明になった子供の行方を懸命に探している。",
+    "exampleTranslation": "The police are desperately searching for the whereabouts of the missing child.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0020"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 655
+  },
+  {
+    "category": "kanji",
+    "front": "抱",
+    "back": "embrace",
+    "exampleJp": "多くの若者が将来に対する漠然とした不安を抱えている。",
+    "exampleTranslation": "Many young people harbor vague anxieties about the future.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0021"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 656
+  },
+  {
+    "category": "kanji",
+    "front": "乾",
+    "back": "dry",
+    "exampleJp": "空気が乾燥する季節は、火災が発生しやすいので注意が必要だ。",
+    "exampleTranslation": "During the season when the air is dry, fires easily break out, so caution is required.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0022"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 657
+  },
+  {
+    "category": "kanji",
+    "front": "破",
+    "back": "tear",
+    "exampleJp": "既存の常識を打破するような、革新的な製品が求められている。",
+    "exampleTranslation": "Innovative products that break through existing common sense are in demand.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0023"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 658
+  },
+  {
+    "category": "kanji",
+    "front": "敗",
+    "back": "defeat",
+    "exampleJp": "過去の失敗から学び、次の挑戦に活かすことが重要である。",
+    "exampleTranslation": "It is important to learn from past defeats and apply those lessons to your next challenge.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0024"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 659
+  },
+  {
+    "category": "kanji",
+    "front": "逃",
+    "back": "escape",
+    "exampleJp": "責任から逃れることはできないと、彼はついに事実を認めた。",
+    "exampleTranslation": "Realizing he could not escape responsibility, he finally admitted the truth.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0025"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 660
+  },
+  {
+    "category": "kanji",
+    "front": "離",
+    "back": "detach",
+    "exampleJp": "家族と離れて暮らすことで、自立心が大いに養われた。",
+    "exampleTranslation": "Living apart from my family greatly fostered my sense of independence.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0026"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 661
+  },
+  {
+    "category": "kanji",
+    "front": "荒",
+    "back": "rough",
+    "exampleJp": "長年放置されていたため、その土地は完全に荒れ果てていた。",
+    "exampleTranslation": "Having been abandoned for many years, the land had become completely desolate.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0027"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 662
+  },
+  {
+    "category": "kanji",
+    "front": "爆",
+    "back": "explode",
+    "exampleJp": "ネット上でその話題が爆発的に広まり、一躍有名になった。",
+    "exampleTranslation": "The topic spread explosively on the internet, and he suddenly became famous.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0028"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 663
+  },
+  {
+    "category": "kanji",
+    "front": "縮",
+    "back": "shrink",
+    "exampleJp": "高齢化に伴い、国内の労働市場は徐々に縮小している。",
+    "exampleTranslation": "With the aging population, the domestic labor market is gradually shrinking.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0029"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 664
+  },
+  {
+    "category": "kanji",
+    "front": "努",
+    "back": "toil",
+    "exampleJp": "目標を達成するためには、日々の地道な努力が欠かせない。",
+    "exampleTranslation": "Steady daily effort is indispensable for achieving one's goals.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0030"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 665
+  },
+  {
+    "category": "kanji",
+    "front": "燃",
+    "back": "burn",
+    "exampleJp": "ロケットは大量の燃料を消費して宇宙へと飛び立った。",
+    "exampleTranslation": "The rocket launched into space consuming a massive amount of fuel.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0031"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 666
+  },
+  {
+    "category": "kanji",
+    "front": "驚",
+    "back": "surprise",
+    "exampleJp": "彼の突然の辞任発表に、多くの社員が驚きを隠せなかった。",
+    "exampleTranslation": "Many employees could not hide their surprise at his sudden resignation announcement.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0032"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 667
+  },
+  {
+    "category": "kanji",
+    "front": "震",
+    "back": "quake",
+    "exampleJp": "大地震の直後は、通信網が完全に麻痺してしまった。",
+    "exampleTranslation": "Immediately after the major earthquake, the communication networks were completely paralyzed.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0033"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 668
+  },
+  {
+    "category": "kanji",
+    "front": "響",
+    "back": "echo",
+    "exampleJp": "彼の力強い演説は、集まった人々の心に深く響いた。",
+    "exampleTranslation": "His powerful speech resonated deeply in the hearts of the gathered people.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0034"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 669
+  },
+  {
+    "category": "kanji",
+    "front": "飾",
+    "back": "decorate",
+    "exampleJp": "部屋をきれいに飾り付け、友人を招いてパーティーを開いた。",
+    "exampleTranslation": "I decorated the room beautifully and invited friends over for a party.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0035"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 670
+  },
+  {
+    "category": "kanji",
+    "front": "掛",
+    "back": "hang",
+    "exampleJp": "この問題の解決には、予想以上の時間と費用が掛かるだろう。",
+    "exampleTranslation": "Solving this problem will likely take more time and money than expected.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0036"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 671
+  },
+  {
+    "category": "kanji",
+    "front": "塗",
+    "back": "paint",
+    "exampleJp": "壁にペンキを塗る作業は、見た目以上に重労働だった。",
+    "exampleTranslation": "Painting the walls was much harder physical labor than it looked.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0037"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 672
+  },
+  {
+    "category": "kanji",
+    "front": "掃",
+    "back": "sweep",
+    "exampleJp": "年末の大掃除で、家中の不用品を全て処分した。",
+    "exampleTranslation": "During the year-end deep cleaning, we disposed of all the unnecessary items in the house.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0038"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 673
+  },
+  {
+    "category": "kanji",
+    "front": "磨",
+    "back": "polish",
+    "exampleJp": "プレゼンテーションのスキルを磨くために、研修に参加した。",
+    "exampleTranslation": "I participated in a training session to polish my presentation skills.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0039"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 674
+  },
+  {
+    "category": "kanji",
+    "front": "削",
+    "back": "shave",
+    "exampleJp": "予算が削減されたため、プロジェクトの規模を縮小せざるを得ない。",
+    "exampleTranslation": "Because the budget was slashed, we have no choice but to scale down the project.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0040"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 675
+  },
+  {
+    "category": "kanji",
+    "front": "絞",
+    "back": "squeeze",
+    "exampleJp": "企画のターゲット層をもっと絞り込む必要がある。",
+    "exampleTranslation": "We need to narrow down the target audience for the proposal even further.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0041"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 676
+  },
+  {
+    "category": "kanji",
+    "front": "縛",
+    "back": "tie",
+    "exampleJp": "伝統的なルールに縛られず、新しい発想を取り入れるべきだ。",
+    "exampleTranslation": "We should adopt new ideas without being bound by traditional rules.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0042"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 677
+  },
+  {
+    "category": "kanji",
+    "front": "縫",
+    "back": "sew",
+    "exampleJp": "仕事の合間を縫って、資格取得のための勉強を続けている。",
+    "exampleTranslation": "I continue studying to get certified by squeezing it into the gaps between my work.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0043"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 678
+  },
+  {
+    "category": "kanji",
+    "front": "織",
+    "back": "weave",
+    "exampleJp": "この地域では、古くから独自の技術で布が織られてきた。",
+    "exampleTranslation": "In this region, fabric has been woven using unique techniques since ancient times.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0044"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 679
+  },
+  {
+    "category": "kanji",
+    "front": "編",
+    "back": "compile",
+    "exampleJp": "様々なデータを集めて、新しい辞書を編集する作業が進んでいる。",
+    "exampleTranslation": "The work of compiling a new dictionary by gathering various data is underway.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0045"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 680
+  },
+  {
+    "category": "kanji",
+    "front": "染",
+    "back": "dye",
+    "exampleJp": "工場の排水によって、近くの川が深刻に汚染されている。",
+    "exampleTranslation": "The nearby river is seriously polluted by the factory's wastewater.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0046"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 681
+  },
+  {
+    "category": "kanji",
+    "front": "沸",
+    "back": "boil",
+    "exampleJp": "コンサートが始まり、会場はファンの熱気で沸き上がった。",
+    "exampleTranslation": "As the concert began, the venue boiled over with the enthusiasm of the fans.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0047"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 682
+  },
+  {
+    "category": "kanji",
+    "front": "湧",
+    "back": "spring",
+    "exampleJp": "彼の作品からは、次々と新しいアイデアが湧き出てくる。",
+    "exampleTranslation": "New ideas keep springing forth one after another from his work.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0048"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 683
+  },
+  {
+    "category": "kanji",
+    "front": "枯",
+    "back": "wither",
+    "exampleJp": "雨が全く降らないため、畑の作物が枯れ始めている。",
+    "exampleTranslation": "Because it hasn't rained at all, the crops in the fields are beginning to wither.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0049"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 684
+  },
+  {
+    "category": "kanji",
+    "front": "腐",
+    "back": "rot",
+    "exampleJp": "夏場は食べ物が腐りやすいので、冷蔵庫での保存が必須だ。",
+    "exampleTranslation": "Food spoils easily in the summer, so storing it in the refrigerator is essential.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0050"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 685
+  },
+  {
+    "category": "kanji",
+    "front": "濁",
+    "back": "turbid",
+    "exampleJp": "大雨の後で、川の水が茶色く濁っている。",
+    "exampleTranslation": "After the heavy rain, the river water has become a muddy brown.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0051"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 686
+  },
+  {
+    "category": "kanji",
+    "front": "湿",
+    "back": "damp",
+    "exampleJp": "日本の夏は湿度が高く、非常に蒸し暑いのが特徴だ。",
+    "exampleTranslation": "Japanese summers are characterized by high humidity and extreme mugginess.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0052"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 687
+  },
+  {
+    "category": "kanji",
+    "front": "漏",
+    "back": "leak",
+    "exampleJp": "個人情報の漏洩を防ぐため、セキュリティ対策が強化された。",
+    "exampleTranslation": "Security measures were strengthened to prevent the leakage of personal information.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0053"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 688
+  },
+  {
+    "category": "kanji",
+    "front": "焦",
+    "back": "char",
+    "exampleJp": "時間に追われて焦ると、思わぬミスをしてしまうことが多い。",
+    "exampleTranslation": "When you are pressed for time and panic, you often make unexpected mistakes.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0054"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 689
+  },
+  {
+    "category": "kanji",
+    "front": "煮",
+    "back": "boil",
+    "exampleJp": "この料理は、弱火でじっくりと煮込むのが美味しく作るコツだ。",
+    "exampleTranslation": "The secret to making this dish delicious is to simmer it slowly over low heat.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0055"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 690
+  },
+  {
+    "category": "kanji",
+    "front": "蒸",
+    "back": "steam",
+    "exampleJp": "温泉の熱を利用して、野菜を蒸す調理法が人気を集めている。",
+    "exampleTranslation": "A cooking method that steams vegetables using the heat of hot springs is gaining popularity.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0056"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 691
+  },
+  {
+    "category": "kanji",
+    "front": "揚",
+    "back": "hoist",
+    "exampleJp": "国の代表として、国際大会で国旗を掲揚するのは名誉なことだ。",
+    "exampleTranslation": "It is an honor to hoist the national flag at an international tournament as a representative of the country.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0057"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 692
+  },
+  {
+    "category": "kanji",
+    "front": "焼",
+    "back": "bake",
+    "exampleJp": "廃棄物を燃焼させる際に発生するガスが問題になっている。",
+    "exampleTranslation": "The gas emitted when burning waste has become a problem.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0058"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 693
+  },
+  {
+    "category": "kanji",
+    "front": "隠",
+    "back": "hide",
+    "exampleJp": "彼女は笑顔の裏に、深い悲しみを隠しているように見えた。",
+    "exampleTranslation": "She seemed to be hiding a deep sorrow behind her smile.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0059"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 694
+  },
+  {
+    "category": "kanji",
+    "front": "飽",
+    "back": "bored",
+    "exampleJp": "彼はどんな趣味もすぐに飽きてしまい、長続きしない。",
+    "exampleTranslation": "He gets bored of any hobby quickly, so nothing lasts long.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0060"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 695
+  },
+  {
+    "category": "kanji",
+    "front": "酔",
+    "back": "drunk",
+    "exampleJp": "電車の中で酒に酔った乗客がトラブルを起こしたらしい。",
+    "exampleTranslation": "It seems a drunk passenger caused a disturbance on the train.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0061"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 696
+  },
+  {
+    "category": "kanji",
+    "front": "眠",
+    "back": "sleep",
+    "exampleJp": "睡眠不足が続くと、仕事中の集中力が極端に低下する。",
+    "exampleTranslation": "When lack of sleep continues, concentration during work drops extremely.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0062"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 697
+  },
+  {
+    "category": "kanji",
+    "front": "疲",
+    "back": "exhaustion",
+    "exampleJp": "日々の過労が蓄積し、彼はすっかり疲弊してしまった。",
+    "exampleTranslation": "The daily overwork accumulated, and he became completely exhausted.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0063"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 698
+  },
+  {
+    "category": "kanji",
+    "front": "健",
+    "back": "healthy",
+    "exampleJp": "子供たちが健やかに成長できる環境を整えることが大人の責任だ。",
+    "exampleTranslation": "It is the responsibility of adults to create an environment where children can grow up healthily.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0064"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 699
+  },
+  {
+    "category": "kanji",
+    "front": "康",
+    "back": "health",
+    "exampleJp": "健康を維持するために、定期的な運動とバランスの取れた食事を心がけている。",
+    "exampleTranslation": "To maintain my health, I try to exercise regularly and eat a balanced diet.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0065"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 700
+  },
+  {
+    "category": "kanji",
+    "front": "療",
+    "back": "medical treatment",
+    "exampleJp": "新しい医療技術の発展により、これまで治らなかった病気も治療可能になりつつある。",
+    "exampleTranslation": "With the development of new medical technologies, diseases that were previously incurable are becoming treatable.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0066"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 701
+  },
+  {
+    "category": "kanji",
+    "front": "治",
+    "back": "govern; cure",
+    "exampleJp": "その政治家は長年にわたり、この地域を平和に治めてきた。",
+    "exampleTranslation": "That politician has governed this region peacefully for many years.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0067"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 702
+  },
+  {
+    "category": "kanji",
+    "front": "防",
+    "back": "prevent",
+    "exampleJp": "サイバー攻撃から会社のデータを防衛するため、最新のシステムを導入した。",
+    "exampleTranslation": "We introduced the latest system to defend company data from cyberattacks.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0068"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 703
+  },
+  {
+    "category": "kanji",
+    "front": "衛",
+    "back": "defense",
+    "exampleJp": "人工衛星を利用した気象予報のおかげで、災害対策が進歩した。",
+    "exampleTranslation": "Thanks to weather forecasts using artificial satellites, disaster countermeasures have advanced.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0069"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 704
+  },
+  {
+    "category": "kanji",
+    "front": "攻",
+    "back": "attack",
+    "exampleJp": "チームは後半に入ってから一気に攻勢に出た。",
+    "exampleTranslation": "The team went on the offensive all at once after entering the second half.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0070"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 705
+  },
+  {
+    "category": "kanji",
+    "front": "撃",
+    "back": "strike",
+    "exampleJp": "相手チームの反撃に備えて、監督は守備の位置を細かく指示した。",
+    "exampleTranslation": "The coach gave detailed defensive instructions to prepare for the opposing team's counterattack.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0071"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 706
+  },
+  {
+    "category": "kanji",
+    "front": "弾",
+    "back": "bullet",
+    "exampleJp": "そのニュースは、世界中に大きな衝撃弾のように広がった。",
+    "exampleTranslation": "The news spread around the world like a massive shockwave.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0072"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 707
+  },
+  {
+    "category": "kanji",
+    "front": "銃",
+    "back": "gun",
+    "exampleJp": "厳しい銃砲刀剣類所持等取締法により、国内の治安は守られている。",
+    "exampleTranslation": "Domestic public safety is maintained by strict laws regulating the possession of firearms and swords.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0073"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 708
+  },
+  {
+    "category": "kanji",
+    "front": "剣",
+    "back": "sword",
+    "exampleJp": "彼は幼い頃から剣道を習っており、礼儀作法にも厳しい。",
+    "exampleTranslation": "He has been practicing kendo since childhood and is strict about etiquette.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0074"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 709
+  },
+  {
+    "category": "kanji",
+    "front": "盾",
+    "back": "shield",
+    "exampleJp": "その弁護士は法律を盾にして、依頼人の利益を徹底的に守り抜いた。",
+    "exampleTranslation": "That lawyer used the law as a shield to thoroughly protect the client's interests.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0075"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 710
+  },
+  {
+    "category": "kanji",
+    "front": "矛",
+    "back": "halberd",
+    "exampleJp": "彼の意見は最初と言っていることが違い、完全に矛盾している。",
+    "exampleTranslation": "His opinion is different from what he said at the beginning, making it completely contradictory.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0076"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 711
+  },
+  {
+    "category": "kanji",
+    "front": "矢",
+    "back": "arrow",
+    "exampleJp": "彼は光陰矢の如しという言葉通り、毎日を無駄にせず生きている。",
+    "exampleTranslation": "Living true to the saying 'time flies like an arrow', he spends every day without wasting it.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0077"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 712
+  },
+  {
+    "category": "kanji",
+    "front": "弓",
+    "back": "bow",
+    "exampleJp": "伝統的な弓道の試合では、精神の集中が何よりも求められる。",
+    "exampleTranslation": "In traditional kyudo matches, mental concentration is required above all else.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0078"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 713
+  },
+  {
+    "category": "kanji",
+    "front": "兵",
+    "back": "soldier",
+    "exampleJp": "歴史の授業で、戦争に徴兵された若者たちの悲劇について学んだ。",
+    "exampleTranslation": "In history class, we learned about the tragedy of young people conscripted into war.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0079"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 714
+  },
+  {
+    "category": "kanji",
+    "front": "隊",
+    "back": "squad",
+    "exampleJp": "災害発生後、ただちに自衛隊の救助部隊が現地へ派遣された。",
+    "exampleTranslation": "Immediately after the disaster occurred, the SDF rescue squad was dispatched to the site.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0080"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 715
+  },
+  {
+    "category": "kanji",
+    "front": "軍",
+    "back": "army",
+    "exampleJp": "軍事費の削減をめぐって、議会で激しい議論が交わされている。",
+    "exampleTranslation": "A fierce debate is taking place in the parliament over the reduction of military expenditures.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0081"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 716
+  },
+  {
+    "category": "kanji",
+    "front": "陣",
+    "back": "camp",
+    "exampleJp": "選挙戦が始まり、各候補者の陣営は活発なアピールを続けている。",
+    "exampleTranslation": "With the start of the election campaign, each candidate's camp continues their vigorous appeals.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0082"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 717
+  },
+  {
+    "category": "kanji",
+    "front": "営",
+    "back": "manage",
+    "exampleJp": "彼は大学を卒業後、自らIT関連の企業を経営している。",
+    "exampleTranslation": "After graduating from university, he has been managing his own IT-related company.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0083"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 718
+  },
+  {
+    "category": "kanji",
+    "front": "旗",
+    "back": "flag",
+    "exampleJp": "オリンピックの開会式で、各国の選手団が国旗を掲げて入場した。",
+    "exampleTranslation": "At the Olympic opening ceremony, athletes from each country entered hoisting their national flags.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0084"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 719
+  },
+  {
+    "category": "kanji",
+    "front": "幕",
+    "back": "curtain",
+    "exampleJp": "感動的なスピーチが終わり、ついに会議はその幕を閉じた。",
+    "exampleTranslation": "After an inspiring speech, the conference finally drew to a close.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0085"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 720
+  },
+  {
+    "category": "kanji",
+    "front": "帳",
+    "back": "notebook",
+    "exampleJp": "日々の予定を管理するために、常に手帳を持ち歩いている。",
+    "exampleTranslation": "To manage my daily schedule, I always carry a pocket notebook with me.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0086"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 721
+  },
+  {
+    "category": "kanji",
+    "front": "網",
+    "back": "net",
+    "exampleJp": "インターネットの通信網は、今や世界中をくまなく覆っている。",
+    "exampleTranslation": "The Internet communication network now covers the entire world comprehensively.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0087"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 722
+  },
+  {
+    "category": "kanji",
+    "front": "線",
+    "back": "line",
+    "exampleJp": "警察は現場に残されたわずかな手がかりから、犯人の足取りを捜査線上に浮かび上がらせた。",
+    "exampleTranslation": "From a few clues left at the scene, the police brought the suspect's movements to light on their investigation line.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0088"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 723
+  },
+  {
+    "category": "kanji",
+    "front": "索",
+    "back": "search",
+    "exampleJp": "問題の解決策を模索するため、各部門のリーダーが集まって会議を開いた。",
+    "exampleTranslation": "Leaders from each department gathered to hold a meeting to grope for a solution to the problem.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0089"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 724
+  },
+  {
+    "category": "kanji",
+    "front": "縄",
+    "back": "rope",
+    "exampleJp": "伝統的な祭りの準備として、村人たちが神社のしめ縄を新しく綯った。",
+    "exampleTranslation": "In preparation for the traditional festival, the villagers newly braided the sacred rope of the shrine.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0090"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 725
+  },
+  {
+    "category": "kanji",
+    "front": "鎖",
+    "back": "chain",
+    "exampleJp": "不況の連鎖が止まらず、多くの企業が倒産の危機に瀕している。",
+    "exampleTranslation": "The chain reaction of the recession hasn't stopped, and many companies are on the verge of bankruptcy.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0091"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 726
+  },
+  {
+    "category": "kanji",
+    "front": "鈴",
+    "back": "bell",
+    "exampleJp": "山を歩く時は、熊よけの鈴を鳴らしながら進むのが安全だ。",
+    "exampleTranslation": "When walking in the mountains, it is safe to proceed while ringing a bear bell.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0092"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 727
+  },
+  {
+    "category": "kanji",
+    "front": "鏡",
+    "back": "mirror",
+    "exampleJp": "彼女は毎日鏡の前で、笑顔の練習を欠かさない。",
+    "exampleTranslation": "She never misses practicing her smile in front of the mirror every day.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0093"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 728
+  },
+  {
+    "category": "kanji",
+    "front": "鐘",
+    "back": "bell",
+    "exampleJp": "大晦日の夜、除夜の鐘の音が街中に響き渡った。",
+    "exampleTranslation": "On New Year's Eve, the sound of the temple bell echoed throughout the town.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0094"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 729
+  },
+  {
+    "category": "kanji",
+    "front": "鳴",
+    "back": "ring; chirp",
+    "exampleJp": "会議中に突然スマートフォンの着信音が鳴り響き、気まずい空気が流れた。",
+    "exampleTranslation": "During the meeting, a smartphone suddenly rang loudly, creating an awkward atmosphere.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0095"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 730
+  },
+  {
+    "category": "kanji",
+    "front": "揺",
+    "back": "shake",
+    "exampleJp": "大企業の経営破綻は、金融市場全体に大きな動揺を与えた。",
+    "exampleTranslation": "The bankruptcy of the large corporation caused immense unrest across the entire financial market.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0096"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 731
+  },
+  {
+    "category": "kanji",
+    "front": "墜",
+    "back": "crash",
+    "exampleJp": "その航空機は原因不明のエンジントラブルにより、山中に墜落した。",
+    "exampleTranslation": "That aircraft crashed in the mountains due to unexplained engine trouble.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0097"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 732
+  },
+  {
+    "category": "kanji",
+    "front": "堕",
+    "back": "degenerate",
+    "exampleJp": "権力を手にしたことで、彼は徐々に自堕落な生活を送るようになってしまった。",
+    "exampleTranslation": "Having obtained power, he gradually fell into a degenerate and lazy lifestyle.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0098"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 733
+  },
+  {
+    "category": "kanji",
+    "front": "陥",
+    "back": "cave in; fall into",
+    "exampleJp": "判断を誤れば、会社全体が取り返しのつかない危機に陥る恐れがある。",
+    "exampleTranslation": "If we make the wrong decision, there is a risk that the entire company will fall into an irreversible crisis.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0099"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 734
+  },
+  {
+    "category": "kanji",
+    "front": "党",
+    "back": "party; faction",
+    "exampleJp": "野党は政府の経済対策を厳しく批判した。",
+    "exampleTranslation": "The opposition party strictly criticized the government's economic measures.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0100"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 735
+  },
+  {
+    "category": "kanji",
+    "front": "協",
+    "back": "cooperation",
+    "exampleJp": "両国は環境問題の解決に向けて協力することで合意した。",
+    "exampleTranslation": "Both countries agreed to cooperate toward resolving environmental issues.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0101"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 736
+  },
+  {
+    "category": "kanji",
+    "front": "総",
+    "back": "general; whole",
+    "exampleJp": "総合的に判断して、今回は見送るべきだという結論に至った。",
+    "exampleTranslation": "Judging comprehensively, we came to the conclusion that we should pass on it this time.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0102"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 737
+  },
+  {
+    "category": "kanji",
+    "front": "閣",
+    "back": "cabinet; tower",
+    "exampleJp": "内閣の支持率が急激に低下している。",
+    "exampleTranslation": "The cabinet's approval rating is dropping rapidly.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0103"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 738
+  },
+  {
+    "category": "kanji",
+    "front": "領",
+    "back": "territory",
+    "exampleJp": "その問題は私の専門領域を超えている。",
+    "exampleTranslation": "That issue is beyond my area of expertise.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0104"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 739
+  },
+  {
+    "category": "kanji",
+    "front": "宗",
+    "back": "religion; sect",
+    "exampleJp": "彼は特定の宗教を信仰しているわけではない。",
+    "exampleTranslation": "He does not practice any specific religion.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0105"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 740
+  },
+  {
+    "category": "kanji",
+    "front": "仏",
+    "back": "Buddha; France",
+    "exampleJp": "京都のお寺で美しい仏像を鑑賞した。",
+    "exampleTranslation": "I appreciated a beautiful Buddhist statue at a temple in Kyoto.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0106"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 741
+  },
+  {
+    "category": "kanji",
+    "front": "改",
+    "back": "reform; change",
+    "exampleJp": "時代に合わせて法律を改正する必要がある。",
+    "exampleTranslation": "It is necessary to revise the laws to suit the times.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0107"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 742
+  },
+  {
+    "category": "kanji",
+    "front": "府",
+    "back": "government office; prefecture",
+    "exampleJp": "政府は景気回復に向けた新たな方針を示した。",
+    "exampleTranslation": "The government outlined a new policy aimed at economic recovery.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0108"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 743
+  },
+  {
+    "category": "kanji",
+    "front": "査",
+    "back": "investigate",
+    "exampleJp": "事故の原因について、現在詳しい調査が行われている。",
+    "exampleTranslation": "A detailed investigation is currently underway regarding the cause of the accident.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0109"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 744
+  },
+  {
+    "category": "kanji",
+    "front": "委",
+    "back": "committee; entrust",
+    "exampleJp": "彼は安全保障委員会の委員長に任命された。",
+    "exampleTranslation": "He was appointed chairman of the security committee.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0110"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 745
+  },
+  {
+    "category": "kanji",
+    "front": "挙",
+    "back": "election; raise",
+    "exampleJp": "今度の選挙は国の将来を左右する重要なものになる。",
+    "exampleTranslation": "The upcoming election will be an important one that determines the country's future.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0111"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 746
+  },
+  {
+    "category": "kanji",
+    "front": "将",
+    "back": "commander; general; future",
+    "exampleJp": "彼は将来、海外で働くことを希望している。",
+    "exampleTranslation": "He hopes to work abroad in the future.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0112"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 747
+  },
+  {
+    "category": "kanji",
+    "front": "統",
+    "back": "unite; govern",
+    "exampleJp": "プロジェクトを成功させるには、チームを統率するリーダーが必要だ。",
+    "exampleTranslation": "To make the project a success, we need a leader who can guide the team.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0113"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 748
+  },
+  {
+    "category": "kanji",
+    "front": "権",
+    "back": "rights; power",
+    "exampleJp": "全ての子供には教育を受ける権利がある。",
+    "exampleTranslation": "All children have the right to receive an education.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0114"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 749
+  },
+  {
+    "category": "kanji",
+    "front": "著",
+    "back": "author; outstanding",
+    "exampleJp": "彼の最新の著書は、すでに多くの言語に翻訳されている。",
+    "exampleTranslation": "His latest book has already been translated into many languages.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0115"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 750
+  },
+  {
+    "category": "kanji",
+    "front": "刊",
+    "back": "publish; edition",
+    "exampleJp": "その雑誌は毎月第一月曜日に刊行される。",
+    "exampleTranslation": "That magazine is published on the first Monday of every month.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0116"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 751
+  },
+  {
+    "category": "kanji",
+    "front": "庁",
+    "back": "government agency",
+    "exampleJp": "気象庁から大雨の警報が発表された。",
+    "exampleTranslation": "A heavy rain warning was issued by the Meteorological Agency.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0117"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 752
+  },
+  {
+    "category": "kanji",
+    "front": "裁",
+    "back": "judge; tailor",
+    "exampleJp": "裁判で彼が無実であることが証明された。",
+    "exampleTranslation": "He was proven innocent in the trial.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0118"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 753
+  },
+  {
+    "category": "kanji",
+    "front": "制",
+    "back": "system; control",
+    "exampleJp": "会社の新しい評価制度に不満を持つ社員が多い。",
+    "exampleTranslation": "Many employees are dissatisfied with the company's new evaluation system.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0119"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 754
+  },
+  {
+    "category": "kanji",
+    "front": "策",
+    "back": "scheme; policy",
+    "exampleJp": "少子化に対する有効な対策を早急に立てる必要がある。",
+    "exampleTranslation": "There is an urgent need to formulate effective countermeasures against the declining birthrate.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0120"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 755
+  },
+  {
+    "category": "kanji",
+    "front": "財",
+    "back": "wealth",
+    "exampleJp": "多くの文化財が戦争によって失われてしまった。",
+    "exampleTranslation": "Many cultural properties were lost due to the war.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0121"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 756
+  },
+  {
+    "category": "kanji",
+    "front": "価",
+    "back": "value",
+    "exampleJp": "商品の価格が高騰しており、生活が厳しくなっている。",
+    "exampleTranslation": "The price of goods is soaring, making life difficult.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0122"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 757
+  },
+  {
+    "category": "kanji",
+    "front": "率",
+    "back": "rate; ratio",
+    "exampleJp": "調査の結果、新製品の支持率は予想以上に高かった。",
+    "exampleTranslation": "As a result of the survey, the approval rating for the new product was higher than expected.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0123"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 758
+  },
+  {
+    "category": "kanji",
+    "front": "額",
+    "back": "amount; forehead",
+    "exampleJp": "予算の総額が決まり次第、具体的な計画を立てよう。",
+    "exampleTranslation": "Let's make a concrete plan as soon as the total budget amount is decided.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0124"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 759
+  },
+  {
+    "category": "kanji",
+    "front": "税",
+    "back": "tax",
+    "exampleJp": "来月から消費税が引き上げられるため、駆け込み需要が増えている。",
+    "exampleTranslation": "Because the consumption tax will be raised starting next month, last-minute demand is increasing.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0125"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 760
+  },
+  {
+    "category": "kanji",
+    "front": "崩",
+    "back": "collapse; crumble",
+    "exampleJp": "大雨の影響で、崖が崩れる危険性がある。",
+    "exampleTranslation": "Due to the heavy rain, there is a risk that the cliff may collapse.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0126"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 761
+  },
+  {
+    "category": "kanji",
+    "front": "暴",
+    "back": "violence; expose",
+    "exampleJp": "怒りに任せて暴力を振るうのは絶対に許されない。",
+    "exampleTranslation": "Using violence out of anger is absolutely unacceptable.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0127"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 762
+  },
+  {
+    "category": "kanji",
+    "front": "損",
+    "back": "loss; damage",
+    "exampleJp": "彼の不注意で、会社に大きな損害を与えてしまった。",
+    "exampleTranslation": "Due to his carelessness, he caused major damage to the company.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0128"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 763
+  },
+  {
+    "category": "kanji",
+    "front": "巨",
+    "back": "giant; huge",
+    "exampleJp": "そのプロジェクトには巨額の資金が投入された。",
+    "exampleTranslation": "A huge amount of funds was invested in that project.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0129"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 764
+  },
+  {
+    "category": "kanji",
+    "front": "貧",
+    "back": "poor",
+    "exampleJp": "世界から貧困をなくすための支援活動が行われている。",
+    "exampleTranslation": "Support activities are underway to eliminate poverty from the world.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0130"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 765
+  },
+  {
+    "category": "kanji",
+    "front": "競",
+    "back": "compete",
+    "exampleJp": "オリンピックで世界中の選手がメダルを競い合う。",
+    "exampleTranslation": "Athletes from all over the world compete for medals at the Olympics.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0131"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 766
+  },
+  {
+    "category": "kanji",
+    "front": "貨",
+    "back": "freight; currency",
+    "exampleJp": "トラックから大量の貨物が港に運び込まれた。",
+    "exampleTranslation": "A large amount of cargo was transported into the port from the trucks.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0132"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 767
+  },
+  {
+    "category": "kanji",
+    "front": "賃",
+    "back": "wages; rent; fare",
+    "exampleJp": "アパートの家賃を滞納してしまい、大家さんに怒られた。",
+    "exampleTranslation": "I fell behind on my apartment rent and got yelled at by the landlord.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0133"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 768
+  },
+  {
+    "category": "kanji",
+    "front": "貿",
+    "back": "trade",
+    "exampleJp": "日本は昔から外国との貿易によって発展してきた国だ。",
+    "exampleTranslation": "Japan is a country that has historically developed through foreign trade.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0134"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 769
+  },
+  {
+    "category": "kanji",
+    "front": "障",
+    "back": "hinder; barrier",
+    "exampleJp": "彼らは仕事におけるコミュニケーションの障害を取り除いた。",
+    "exampleTranslation": "They removed the communication barriers at work.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0135"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 770
+  },
+  {
+    "category": "kanji",
+    "front": "輸",
+    "back": "transport",
+    "exampleJp": "日本は石油の多くを中東からの輸入に頼っている。",
+    "exampleTranslation": "Japan relies on imports from the Middle East for most of its oil.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0136"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 771
+  },
+  {
+    "category": "kanji",
+    "front": "就",
+    "back": "settle in; take position",
+    "exampleJp": "大学卒業後、彼は地元の銀行に就職した。",
+    "exampleTranslation": "After graduating from college, he found employment at a local bank.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0137"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 772
+  },
+  {
+    "category": "kanji",
+    "front": "退",
+    "back": "retreat; retire",
+    "exampleJp": "祖父は去年、長年勤めた会社を退職した。",
+    "exampleTranslation": "My grandfather retired last year from the company where he worked for many years.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0138"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 773
+  },
+  {
+    "category": "kanji",
+    "front": "辞",
+    "back": "resign; diction; formal remarks",
+    "exampleJp": "会議の冒頭で、社長から感謝の辞が述べられた。",
+    "exampleTranslation": "At the beginning of the meeting, the company president gave remarks of gratitude.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0139"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 774
+  },
+  {
+    "category": "kanji",
+    "front": "募",
+    "back": "recruit; collect",
+    "exampleJp": "新しいプロジェクトの参加者を広く募集している。",
+    "exampleTranslation": "We are widely recruiting participants for the new project.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0140"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 775
+  },
+  {
+    "category": "kanji",
+    "front": "採",
+    "back": "pick; gather; adopt",
+    "exampleJp": "面接の結果、彼を採用することに決定した。",
+    "exampleTranslation": "As a result of the interview, we have decided to hire him.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0141"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 776
+  },
+  {
+    "category": "kanji",
+    "front": "刑",
+    "back": "punish; penalty",
+    "exampleJp": "彼は重大な罪を犯し、重い刑を受けた。",
+    "exampleTranslation": "He committed a serious crime and received a heavy sentence.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0142"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 777
+  },
+  {
+    "category": "kanji",
+    "front": "批",
+    "back": "criticize",
+    "exampleJp": "その映画は多くの批評家から高い評価を受けた。",
+    "exampleTranslation": "The movie received high praise from many critics.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0143"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 778
+  },
+  {
+    "category": "kanji",
+    "front": "評",
+    "back": "evaluate",
+    "exampleJp": "従業員の業績を公平に評価するシステムが必要だ。",
+    "exampleTranslation": "We need a system that fairly evaluates the performance of employees.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0144"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 779
+  },
+  {
+    "category": "kanji",
+    "front": "管",
+    "back": "pipe; manage",
+    "exampleJp": "彼は新しい部署の管理を任された。",
+    "exampleTranslation": "He was put in charge of managing the new department.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0145"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 780
+  },
+  {
+    "category": "kanji",
+    "front": "罰",
+    "back": "penalty; punishment",
+    "exampleJp": "規則を破った生徒には、何らかの罰が与えられる。",
+    "exampleTranslation": "Students who break the rules will be given some form of punishment.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0146"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 781
+  },
+  {
+    "category": "kanji",
+    "front": "罪",
+    "back": "crime; sin",
+    "exampleJp": "彼は他人のせいにして自分の罪から逃れようとした。",
+    "exampleTranslation": "He tried to escape his crime by blaming others.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0147"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 782
+  },
+  {
+    "category": "kanji",
+    "front": "犯",
+    "back": "commit; offense",
+    "exampleJp": "防犯カメラの映像から、犯人の特定が急がれている。",
+    "exampleTranslation": "Based on the security camera footage, there is an urgent push to identify the culprit.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0148"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 783
+  },
+  {
+    "category": "kanji",
+    "front": "奪",
+    "back": "rob; steal",
+    "exampleJp": "強盗は店員を脅し、レジの現金を奪って逃走した。",
+    "exampleTranslation": "The robber threatened the clerk, snatched the cash from the register, and fled.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0149"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 784
+  },
+  {
+    "category": "kanji",
+    "front": "捜",
+    "back": "search",
+    "exampleJp": "行方不明になった犬を、近所の人が一緒に捜してくれた。",
+    "exampleTranslation": "The neighbors helped search for the missing dog.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0150"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 785
+  },
+  {
+    "category": "kanji",
+    "front": "略",
+    "back": "abbreviation; strategy",
+    "exampleJp": "詳しい説明は省略して、要点だけをお話しします。",
+    "exampleTranslation": "I will omit the detailed explanation and just talk about the main points.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0151"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 786
+  },
+  {
+    "category": "kanji",
+    "front": "劇",
+    "back": "drama; play",
+    "exampleJp": "週末は妻と一緒に、有名な劇団のミュージカルを観に行った。",
+    "exampleTranslation": "Over the weekend, I went with my wife to see a musical by a famous theater company.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0152"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 787
+  },
+  {
+    "category": "kanji",
+    "front": "績",
+    "back": "achievement",
+    "exampleJp": "チーム全員の努力のおかげで、素晴らしい業績を上げることができた。",
+    "exampleTranslation": "Thanks to the efforts of everyone on the team, we were able to achieve outstanding results.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0153"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 788
+  },
+  {
+    "category": "kanji",
+    "front": "駐",
+    "back": "park; resident",
+    "exampleJp": "近くの駐車場に車を停めてから歩いて向かいます。",
+    "exampleTranslation": "I'll park my car in a nearby parking lot and walk from there.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0154"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 789
+  },
+  {
+    "category": "kanji",
+    "front": "齢",
+    "back": "age",
+    "exampleJp": "応募資格は年齢や性別を問いません。",
+    "exampleTranslation": "The application requirements do not specify age or gender.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0155"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 790
+  },
+  {
+    "category": "kanji",
+    "front": "拡",
+    "back": "expand",
+    "exampleJp": "会社は海外にも事業を拡大する計画を進めている。",
+    "exampleTranslation": "The company is moving forward with plans to expand its business overseas.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0156"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 791
+  },
+  {
+    "category": "kanji",
+    "front": "逮",
+    "back": "chase; arrest",
+    "exampleJp": "警察はついに、逃走していた犯人を逮捕した。",
+    "exampleTranslation": "The police finally arrested the criminal who had been on the run.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0157"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 792
+  },
+  {
+    "category": "kanji",
+    "front": "贈",
+    "back": "present; give",
+    "exampleJp": "彼女の誕生日に、美しい花束を贈った。",
+    "exampleTranslation": "I presented her with a beautiful bouquet of flowers for her birthday.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0158"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 793
+  },
+  {
+    "category": "kanji",
+    "front": "属",
+    "back": "belong; genus",
+    "exampleJp": "彼はどこの組織にも属さず、フリーランスとして働いている。",
+    "exampleTranslation": "He doesn't belong to any organization and works as a freelancer.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0159"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 794
+  },
+  {
+    "category": "kanji",
+    "front": "版",
+    "back": "edition; printing block",
+    "exampleJp": "その辞書の最新版は明日発売される予定だ。",
+    "exampleTranslation": "The latest edition of that dictionary is scheduled to be released tomorrow.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0160"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 795
+  },
+  {
+    "category": "kanji",
+    "front": "刷",
+    "back": "Print",
+    "exampleJp": "その本は人気があり、何度も印刷されている。",
+    "exampleTranslation": "That book is popular and has been printed many times.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0161"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 796
+  },
+  {
+    "category": "kanji",
+    "front": "誌",
+    "back": "Magazine; document",
+    "exampleJp": "彼は有名なファッション誌で編集長を務めている。",
+    "exampleTranslation": "He serves as the editor-in-chief for a famous fashion magazine.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0162"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 797
+  },
+  {
+    "category": "kanji",
+    "front": "巻",
+    "back": "Roll; volume",
+    "exampleJp": "この歴史漫画は全二十巻で完結している。",
+    "exampleTranslation": "This historical manga is completed in a total of twenty volumes.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0163"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 798
+  },
+  {
+    "category": "kanji",
+    "front": "測",
+    "back": "Measure",
+    "exampleJp": "新しい機器を使って、部屋の温度を正確に測定した。",
+    "exampleTranslation": "Using the new equipment, I accurately measured the temperature of the room.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0164"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 799
+  },
+  {
+    "category": "kanji",
+    "front": "録",
+    "back": "Record; register",
+    "exampleJp": "会議の主な決定事項は議事録にまとめられた。",
+    "exampleTranslation": "The main decisions of the meeting were summarized in the minutes.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0165"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 800
+  },
+  {
+    "category": "kanji",
+    "front": "載",
+    "back": "Publish; load",
+    "exampleJp": "今日の新聞に彼のインタビュー記事が掲載されている。",
+    "exampleTranslation": "His interview article is published in today's newspaper.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0166"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 801
+  },
+  {
+    "category": "kanji",
+    "front": "購",
+    "back": "Purchase; buy",
+    "exampleJp": "新しいソフトウェアを購入するための予算を申請した。",
+    "exampleTranslation": "I applied for the budget to purchase the new software.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0167"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 802
+  },
+  {
+    "category": "kanji",
+    "front": "標",
+    "back": "Sign; mark",
+    "exampleJp": "目標を達成するために、毎日の努力が必要だ。",
+    "exampleTranslation": "Daily effort is necessary to achieve the goal.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0168"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 803
+  },
+  {
+    "category": "kanji",
+    "front": "濃",
+    "back": "Dark; concentrated",
+    "exampleJp": "私は毎朝、濃いコーヒーを飲むのが習慣だ。",
+    "exampleTranslation": "It is my habit to drink strong coffee every morning.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0169"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 804
+  },
+  {
+    "category": "kanji",
+    "front": "薄",
+    "back": "Thin; pale",
+    "exampleJp": "寒くなってきたので、薄いジャケットでは風邪を引くかもしれない。",
+    "exampleTranslation": "Since it has gotten cold, you might catch a cold in a thin jacket.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0170"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 805
+  },
+  {
+    "category": "kanji",
+    "front": "浅",
+    "back": "Shallow",
+    "exampleJp": "この川は浅いので、子供でも安全に遊べる。",
+    "exampleTranslation": "Because this river is shallow, even children can play safely.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0171"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 806
+  },
+  {
+    "category": "kanji",
+    "front": "帯",
+    "back": "Belt; zone",
+    "exampleJp": "この一帯は国立公園に指定されており、自然が保護されている。",
+    "exampleTranslation": "This whole area is designated as a national park, and nature is protected.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0172"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 807
+  },
+  {
+    "category": "kanji",
+    "front": "券",
+    "back": "Ticket; certificate",
+    "exampleJp": "コンサートの入場券は販売開始から数分で売り切れた。",
+    "exampleTranslation": "Admission tickets for the concert sold out within minutes of going on sale.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0173"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 808
+  },
+  {
+    "category": "kanji",
+    "front": "換",
+    "back": "Exchange; interchange",
+    "exampleJp": "違うサイズの商品と交換していただくことは可能ですか。",
+    "exampleTranslation": "Is it possible to exchange this for a product of a different size?",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0174"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 809
+  },
+  {
+    "category": "kanji",
+    "front": "偉",
+    "back": "Great; remarkable",
+    "exampleJp": "彼は多くの人々を救った偉大な医者として知られている。",
+    "exampleTranslation": "He is known as a great doctor who saved many people.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0175"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 810
+  },
+  {
+    "category": "kanji",
+    "front": "険",
+    "back": "Steep; danger",
+    "exampleJp": "彼は海外に行く前、必ず旅行保険に加入する。",
+    "exampleTranslation": "He always buys travel insurance before going abroad.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0176"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 811
+  },
+  {
+    "category": "kanji",
+    "front": "奇",
+    "back": "Strange; odd",
+    "exampleJp": "最近、この森で奇妙な出来事が続いている。",
+    "exampleTranslation": "Recently, strange events have been continuing in this forest.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0177"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 812
+  },
+  {
+    "category": "kanji",
+    "front": "籍",
+    "back": "Register; membership",
+    "exampleJp": "彼女は日本国籍を取得するための手続きを進めている。",
+    "exampleTranslation": "She is proceeding with the procedures to acquire Japanese citizenship.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0178"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 813
+  },
+  {
+    "category": "kanji",
+    "front": "輩",
+    "back": "Comrade; generation",
+    "exampleJp": "職場の先輩が仕事のやり方を丁寧に教えてくれた。",
+    "exampleTranslation": "A senior colleague at work taught me how to do the job thoroughly.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0179"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 814
+  },
+  {
+    "category": "kanji",
+    "front": "徒",
+    "back": "Follower; empty",
+    "exampleJp": "学生時代、多くの生徒が彼の講義に感銘を受けた。",
+    "exampleTranslation": "During my student days, many pupils were deeply impressed by his lectures.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0180"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 815
+  },
+  {
+    "category": "kanji",
+    "front": "孫",
+    "back": "Grandchild",
+    "exampleJp": "祖父母は毎年お正月に孫たちに会うのを楽しみにしている。",
+    "exampleTranslation": "The grandparents look forward to seeing their grandchildren every New Year.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0181"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 816
+  },
+  {
+    "category": "kanji",
+    "front": "嫁",
+    "back": "Bride; marry into",
+    "exampleJp": "兄のお嫁さんはとても優しくて料理が上手だ。",
+    "exampleTranslation": "My older brother's wife is very kind and a good cook.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0182"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 817
+  },
+  {
+    "category": "kanji",
+    "front": "婿",
+    "back": "Groom; son-in-law",
+    "exampleJp": "彼らは娘の結婚式で、新しい花婿を温かく迎えた。",
+    "exampleTranslation": "At their daughter's wedding, they warmly welcomed the new groom.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0183"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 818
+  },
+  {
+    "category": "kanji",
+    "front": "尊",
+    "back": "Respect; revere",
+    "exampleJp": "異なる文化や価値観を尊重することが大切だ。",
+    "exampleTranslation": "It is important to respect different cultures and values.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0184"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 819
+  },
+  {
+    "category": "kanji",
+    "front": "敬",
+    "back": "Respect; honor",
+    "exampleJp": "彼はその優れた功績から、多くの人に尊敬されている。",
+    "exampleTranslation": "He is respected by many people for his outstanding achievements.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0185"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 820
+  },
+  {
+    "category": "kanji",
+    "front": "伺",
+    "back": "Inquire; visit humbly",
+    "exampleJp": "明日の午後、そちらのオフィスにお伺いしてもよろしいでしょうか。",
+    "exampleTranslation": "Would it be alright if I visit your office tomorrow afternoon?",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0186"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 821
+  },
+  {
+    "category": "kanji",
+    "front": "召",
+    "back": "Summon; eat humbly",
+    "exampleJp": "会議の前に、どうぞこちらのコーヒーをお召し上がりください。",
+    "exampleTranslation": "Please enjoy this coffee before the meeting.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0187"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 822
+  },
+  {
+    "category": "kanji",
+    "front": "拝",
+    "back": "Worship; see humbly",
+    "exampleJp": "送っていただいた資料は、すでに拝見いたしました。",
+    "exampleTranslation": "I have already looked over the materials you sent.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0188"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 823
+  },
+  {
+    "category": "kanji",
+    "front": "謙",
+    "back": "Humble; modesty",
+    "exampleJp": "彼女はあれほど成功しているのに、常に謙虚な姿勢を崩さない。",
+    "exampleTranslation": "Even though she is so successful, she always maintains a humble attitude.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0189"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 824
+  },
+  {
+    "category": "kanji",
+    "front": "譲",
+    "back": "Yield; concede",
+    "exampleJp": "電車の中で、お年寄りに席を譲る若者を見かけた。",
+    "exampleTranslation": "I saw a young person giving up their seat to an elderly person on the train.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0190"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 825
+  },
+  {
+    "category": "kanji",
+    "front": "恨",
+    "back": "Grudge; resent",
+    "exampleJp": "過去の失敗をいつまでも恨んでいても状況は変わらない。",
+    "exampleTranslation": "Holding a grudge forever about past failures will not change the situation.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0191"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 826
+  },
+  {
+    "category": "kanji",
+    "front": "悔",
+    "back": "Regret; repent",
+    "exampleJp": "十分な準備をせずに試験に臨んだことを深く後悔している。",
+    "exampleTranslation": "I deeply regret going into the exam without sufficient preparation.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0192"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 827
+  },
+  {
+    "category": "kanji",
+    "front": "酸",
+    "back": "Acid; sour",
+    "exampleJp": "この果物は酸味が強いため、砂糖を加えてジャムにする。",
+    "exampleTranslation": "Because this fruit is very sour, we add sugar and make it into jam.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0193"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 828
+  },
+  {
+    "category": "kanji",
+    "front": "渋",
+    "back": "Astringent; hesitate",
+    "exampleJp": "彼は難しい顔をして、新しい計画への賛成を渋っている。",
+    "exampleTranslation": "He has a difficult expression and is hesitating to approve the new plan.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0194"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 829
+  },
+  {
+    "category": "kanji",
+    "front": "滴",
+    "back": "Drop; drip",
+    "exampleJp": "彼は疲れた目に目薬を数滴さした。",
+    "exampleTranslation": "He put a few drops of eye medicine into his tired eyes.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0195"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 830
+  },
+  {
+    "category": "kanji",
+    "front": "汁",
+    "back": "Juice; soup",
+    "exampleJp": "日本の伝統的な朝食には、ご飯と味噌汁が欠かせない。",
+    "exampleTranslation": "Rice and miso soup are essential for a traditional Japanese breakfast.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0196"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 831
+  },
+  {
+    "category": "kanji",
+    "front": "脈",
+    "back": "Vein; pulse",
+    "exampleJp": "医者は患者の手首に触れて、静かに脈を測った。",
+    "exampleTranslation": "The doctor touched the patient's wrist and quietly checked their pulse.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0197"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 832
+  },
+  {
+    "category": "kanji",
+    "front": "胃",
+    "back": "Stomach",
+    "exampleJp": "ストレスが原因で、胃の痛みを訴える人が増えている。",
+    "exampleTranslation": "Due to stress, an increasing number of people are complaining of stomach pain.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0198"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 833
+  },
+  {
+    "category": "kanji",
+    "front": "腸",
+    "back": "Intestines; bowels",
+    "exampleJp": "ヨーグルトに含まれる乳酸菌は腸の働きを良くする。",
+    "exampleTranslation": "The lactic acid bacteria in yogurt improve the function of the intestines.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0199"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 834
+  },
+  {
+    "category": "kanji",
+    "front": "肝",
+    "back": "Liver",
+    "exampleJp": "お酒の飲み過ぎは肝臓に悪い影響を与える。",
+    "exampleTranslation": "Drinking too much alcohol has a bad effect on the liver.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0200"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 835
+  },
+  {
+    "category": "kanji",
+    "front": "肺",
+    "back": "Lung",
+    "exampleJp": "深呼吸をして、新鮮な空気を肺の奥まで吸い込んだ。",
+    "exampleTranslation": "I took a deep breath and inhaled fresh air deep into my lungs.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0201"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 836
+  },
+  {
+    "category": "kanji",
+    "front": "脳",
+    "back": "Brain",
+    "exampleJp": "睡眠不足は脳の機能を低下させることが研究で分かっている。",
+    "exampleTranslation": "Studies show that lack of sleep reduces brain function.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0202"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 837
+  },
+  {
+    "category": "kanji",
+    "front": "腰",
+    "back": "Waist; hips",
+    "exampleJp": "重い荷物を持ち上げたとき、うっかり腰を痛めてしまった。",
+    "exampleTranslation": "When I lifted the heavy luggage, I accidentally hurt my lower back.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0203"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 838
+  },
+  {
+    "category": "kanji",
+    "front": "肌",
+    "back": "Skin; bare",
+    "exampleJp": "冬は空気が乾燥して、肌が荒れやすくなるので注意が必要だ。",
+    "exampleTranslation": "Care is needed in winter because the dry air makes skin prone to roughness.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0204"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 839
+  },
+  {
+    "category": "kanji",
+    "front": "膚",
+    "back": "Skin; surface",
+    "exampleJp": "強い紫外線は皮膚にダメージを与えるため、日焼け止めを塗る。",
+    "exampleTranslation": "Since strong UV rays damage the skin, I apply sunscreen.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0205"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 840
+  },
+  {
+    "category": "kanji",
+    "front": "肪",
+    "back": "Obese; fat",
+    "exampleJp": "適度な運動は体脂肪を減らすのに効果的だ。",
+    "exampleTranslation": "Moderate exercise is effective in reducing body fat.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0206"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 841
+  },
+  {
+    "category": "kanji",
+    "front": "脂",
+    "back": "Fat; grease",
+    "exampleJp": "この肉は少し脂っこいので、さっぱりしたソースが合う。",
+    "exampleTranslation": "This meat is a bit greasy, so a refreshing sauce goes well with it.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0207"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 842
+  },
+  {
+    "category": "kanji",
+    "front": "塔",
+    "back": "Tower; pagoda",
+    "exampleJp": "街のシンボルとして、丘の上に高いテレビ塔が建設された。",
+    "exampleTranslation": "A tall TV tower was built on the hill as a symbol of the city.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0208"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 843
+  },
+  {
+    "category": "kanji",
+    "front": "珍",
+    "back": "Rare; unusual",
+    "exampleJp": "この動物園には、世界でも珍しい鳥がいる。",
+    "exampleTranslation": "In this zoo, there is a bird that is rare even in the world.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0209"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 844
+  },
+  {
+    "category": "kanji",
+    "front": "殿",
+    "back": "Palace; lord",
+    "exampleJp": "京都には美しい庭園を持つ立派な御殿が数多く残っている。",
+    "exampleTranslation": "In Kyoto, many magnificent palaces with beautiful gardens remain.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0210"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 845
+  },
+  {
+    "category": "kanji",
+    "front": "邸",
+    "back": "Mansion; residence",
+    "exampleJp": "大使の官邸で、各国の代表を集めたパーティーが開かれた。",
+    "exampleTranslation": "A party gathering representatives from various countries was held at the ambassador's official residence.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0211"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 846
+  },
+  {
+    "category": "kanji",
+    "front": "銅",
+    "back": "Copper",
+    "exampleJp": "この博物館には、古代に作られた銅の剣が展示されている。",
+    "exampleTranslation": "Bronze/copper swords made in ancient times are exhibited in this museum.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0212"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 847
+  },
+  {
+    "category": "kanji",
+    "front": "柔",
+    "back": "Soft; flexible",
+    "exampleJp": "問題を解決するには、柔軟な考え方が必要だ。",
+    "exampleTranslation": "To solve the problem, a flexible way of thinking is necessary.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0213"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 848
+  },
+  {
+    "category": "kanji",
+    "front": "築",
+    "back": "Construct; build",
+    "exampleJp": "彼は有名な建築家として、世界中に多くの建物を設計した。",
+    "exampleTranslation": "As a famous architect, he designed many buildings around the world.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0214"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 849
+  },
+  {
+    "category": "kanji",
+    "front": "堅",
+    "back": "Hard; strict",
+    "exampleJp": "彼は非常に堅実な性格で、リスクのある投資は避ける。",
+    "exampleTranslation": "He has a very steady character and avoids risky investments.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0215"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 850
+  },
+  {
+    "category": "kanji",
+    "front": "壁",
+    "back": "Wall",
+    "exampleJp": "隣の部屋からの音が聞こえないように、壁に防音材を入れた。",
+    "exampleTranslation": "Soundproofing material was put into the walls so that noise from the next room cannot be heard.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0216"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 851
+  },
+  {
+    "category": "kanji",
+    "front": "鉱",
+    "back": "Mineral; ore",
+    "exampleJp": "この地域はかつて、石炭を採掘する鉱山として栄えていた。",
+    "exampleTranslation": "This region once prospered as a mine that extracted coal.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0217"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 852
+  },
+  {
+    "category": "kanji",
+    "front": "鋼",
+    "back": "Steel",
+    "exampleJp": "この車は強度の高い鋼鉄を使用して作られている。",
+    "exampleTranslation": "This car is made using high-strength steel.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0218"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 853
+  },
+  {
+    "category": "kanji",
+    "front": "郊",
+    "back": "Suburbs",
+    "exampleJp": "退職後は、静かな郊外に家を買ってのんびり暮らしたい。",
+    "exampleTranslation": "After I retire, I want to buy a house in the quiet suburbs and live a relaxed life.",
+    "tags": [
+      "n2",
+      "kanji"
+    ],
+    "sourceIds": [
+      "n2-kanji-0219"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 854
+  },
+  {
+    "category": "grammar",
+    "front": "〜あまり",
+    "back": "so much that",
+    "exampleJp": "心配するあまり、夜も眠れなくなってしまった。",
+    "exampleTranslation": "I was so worried that I couldn't even sleep at night.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0001"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 855
+  },
+  {
+    "category": "grammar",
+    "front": "〜以上（は）",
+    "back": "now that; since",
+    "exampleJp": "契約書にサインした以上、この条件に従う義務がある。",
+    "exampleTranslation": "Now that you have signed the contract, you are obligated to follow these conditions.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0002"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 856
+  },
+  {
+    "category": "grammar",
+    "front": "〜一方だ",
+    "back": "increasingly; continuously (negative tendency)",
+    "exampleJp": "都市部の物価は上がる一方だ。",
+    "exampleTranslation": "Prices in urban areas are continuously rising.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0003"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 857
+  },
+  {
+    "category": "grammar",
+    "front": "〜一方で",
+    "back": "on the other hand; while",
+    "exampleJp": "彼は優秀な研究者である一方で、良き父親でもある。",
+    "exampleTranslation": "While he is a brilliant researcher, he is also a good father.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0004"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 858
+  },
+  {
+    "category": "grammar",
+    "front": "〜上で",
+    "back": "upon; after; in order to",
+    "exampleJp": "担当者と相談した上で、後日改めてお返事いたします。",
+    "exampleTranslation": "I will reply to you at a later date after consulting with the person in charge.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0005"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 859
+  },
+  {
+    "category": "grammar",
+    "front": "〜うちに",
+    "back": "while; before",
+    "exampleJp": "鉄は熱いうちに打てというが、語学も若いうちに始めた方がいい。",
+    "exampleTranslation": "They say strike while the iron is hot, and it's better to start learning languages while you're young too.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0006"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 860
+  },
+  {
+    "category": "grammar",
+    "front": "〜得る / 〜得ない",
+    "back": "can/cannot; is possible/impossible",
+    "exampleJp": "現代の科学では説明し得ない現象がまだ多く存在する。",
+    "exampleTranslation": "There still exist many phenomena that cannot be explained by modern science.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0007"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 861
+  },
+  {
+    "category": "grammar",
+    "front": "〜おかげで",
+    "back": "thanks to",
+    "exampleJp": "適切なアドバイスをいただいたおかげで、無事にプロジェクトが成功しました。",
+    "exampleTranslation": "Thanks to the appropriate advice I received, the project succeeded without issue.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0008"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 862
+  },
+  {
+    "category": "grammar",
+    "front": "〜おそれがある",
+    "back": "there is a fear/risk that",
+    "exampleJp": "このまま赤字が続けば、会社が倒産するおそれがある。",
+    "exampleTranslation": "If the deficit continues like this, there is a risk that the company will go bankrupt.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0009"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 863
+  },
+  {
+    "category": "grammar",
+    "front": "〜かぎり（は）",
+    "back": "as long as",
+    "exampleJp": "私が社長であるかぎり、この方針を変えるつもりはありません。",
+    "exampleTranslation": "As long as I am the president, I have no intention of changing this policy.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0010"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 864
+  },
+  {
+    "category": "grammar",
+    "front": "〜かけの",
+    "back": "half-done; unfinished",
+    "exampleJp": "テーブルの上に飲みかけのコーヒーが置かれている。",
+    "exampleTranslation": "There is a half-drunk cup of coffee left on the table.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0011"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 865
+  },
+  {
+    "category": "grammar",
+    "front": "〜かと思うと",
+    "back": "just when; no sooner than",
+    "exampleJp": "晴れていたかと思うと、急に激しい雨が降り出した。",
+    "exampleTranslation": "Just when I thought it was sunny, heavy rain suddenly started falling.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0012"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 866
+  },
+  {
+    "category": "grammar",
+    "front": "〜かねない",
+    "back": "might; could possibly",
+    "exampleJp": "十分な休息を取らないと、深刻な健康被害を引き起こしかねない。",
+    "exampleTranslation": "Failing to get enough rest could potentially cause serious health damage.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0013"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 867
+  },
+  {
+    "category": "grammar",
+    "front": "〜かねる",
+    "back": "cannot; hesitate to",
+    "exampleJp": "申し訳ありませんが、そのご要望には応じかねます。",
+    "exampleTranslation": "I apologize, but we are unable to comply with that request.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0014"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 868
+  },
+  {
+    "category": "grammar",
+    "front": "〜からして",
+    "back": "judging from; based on",
+    "exampleJp": "彼のあの態度からして、もう協力する気はないのだろう。",
+    "exampleTranslation": "Judging from that attitude of his, he probably has no intention of cooperating anymore.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0015"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 869
+  },
+  {
+    "category": "grammar",
+    "front": "〜からすると / 〜からすれば",
+    "back": "judging from",
+    "exampleJp": "専門家の見地からすると、この対策は不十分と言わざるを得ない。",
+    "exampleTranslation": "From an expert's point of view, one must say this countermeasure is insufficient.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0016"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 870
+  },
+  {
+    "category": "grammar",
+    "front": "〜から見ると / 〜から見れば",
+    "back": "from the perspective of",
+    "exampleJp": "外国人から見ると、日本の名刺交換の作法は独特で面白いらしい。",
+    "exampleTranslation": "From a foreigner's perspective, Japanese business card exchange etiquette seems unique and interesting.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0017"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 871
+  },
+  {
+    "category": "grammar",
+    "front": "〜代わりに",
+    "back": "instead of; in exchange for",
+    "exampleJp": "日曜日に出勤した代わりに、明日は休みを取る予定だ。",
+    "exampleTranslation": "In exchange for working on Sunday, I plan to take tomorrow off.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0018"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 872
+  },
+  {
+    "category": "grammar",
+    "front": "〜きる / 〜きれる",
+    "back": "completely; entirely",
+    "exampleJp": "どんなに苦しくても、このマラソンは最後まで走りきるつもりだ。",
+    "exampleTranslation": "No matter how painful it gets, I plan to finish the marathon.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0019"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 873
+  },
+  {
+    "category": "grammar",
+    "front": "〜くせに",
+    "back": "although; despite (negative/critical tone)",
+    "exampleJp": "彼は何も知らないくせに、いつも専門家のように偉そうに話す。",
+    "exampleTranslation": "Even though he knows nothing, he always talks pompously like an expert.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0020"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 874
+  },
+  {
+    "category": "grammar",
+    "front": "〜くらい / 〜ぐらい",
+    "back": "at least; to the extent that",
+    "exampleJp": "忙しくても、月に一度くらいは家族と食事をする時間を作りたい。",
+    "exampleTranslation": "Even if I'm busy, I want to make time to have dinner with my family at least once a month.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0021"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 875
+  },
+  {
+    "category": "grammar",
+    "front": "〜げ",
+    "back": "looking; seeming",
+    "exampleJp": "彼女は何か言いたげな表情で、私の顔を見つめていた。",
+    "exampleTranslation": "She was staring at my face with an expression as if she wanted to say something.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0022"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 876
+  },
+  {
+    "category": "grammar",
+    "front": "〜こそ",
+    "back": "for sure (emphasis)",
+    "exampleJp": "今度こそ絶対に志望校に合格してみせる。",
+    "exampleTranslation": "This time for sure, I will show you that I can pass my school of choice.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0023"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 877
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことか",
+    "back": "how!; what!",
+    "exampleJp": "この企画を通すために、どれほど多くの苦労をしたことか。",
+    "exampleTranslation": "You have no idea how much hardship we endured to get this project approved!",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0024"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 878
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことから",
+    "back": "from the fact that",
+    "exampleJp": "指紋が一致したことから、彼が犯人であると断定された。",
+    "exampleTranslation": "From the fact that the fingerprints matched, he was concluded to be the culprit.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0025"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 879
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことだ",
+    "back": "should; must (giving advice)",
+    "exampleJp": "語学を上達させたいなら、毎日少しでも継続することだ。",
+    "exampleTranslation": "If you want to improve your language skills, you should continue practicing even a little every day.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0026"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 880
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことになっている",
+    "back": "it is a rule/custom that",
+    "exampleJp": "当社では、機密情報の持ち出しは一切禁止されていることになっている。",
+    "exampleTranslation": "At our company, it is a rule that taking out confidential information is strictly prohibited.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0027"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 881
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことはない",
+    "back": "there is no need to",
+    "exampleJp": "単なる風邪ですから、そんなに心配することはありませんよ。",
+    "exampleTranslation": "It's just a simple cold, so there is no need to worry that much.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0028"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 882
+  },
+  {
+    "category": "grammar",
+    "front": "〜際（は）",
+    "back": "when; on the occasion of",
+    "exampleJp": "非常口は、火災や地震の際にのみ使用してください。",
+    "exampleTranslation": "Please use the emergency exit only in the event of a fire or earthquake.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0029"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 883
+  },
+  {
+    "category": "grammar",
+    "front": "〜最中に / 〜最中だ",
+    "back": "right in the middle of",
+    "exampleJp": "大事な会議の最中に、携帯電話が鳴ってしまって焦った。",
+    "exampleTranslation": "My cell phone rang right in the middle of an important meeting, and I panicked.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0030"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 884
+  },
+  {
+    "category": "grammar",
+    "front": "〜しかない",
+    "back": "have no choice but",
+    "exampleJp": "最終電車を逃してしまったので、タクシーで帰るしかない。",
+    "exampleTranslation": "I missed the last train, so I have no choice but to go home by taxi.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0031"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 885
+  },
+  {
+    "category": "grammar",
+    "front": "〜次第だ / 〜次第で",
+    "back": "depending on",
+    "exampleJp": "このプロジェクトが成功するかどうかは、チームの協力次第だ。",
+    "exampleTranslation": "Whether this project succeeds or not depends entirely on the team's cooperation.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0032"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 886
+  },
+  {
+    "category": "grammar",
+    "front": "〜上（は）",
+    "back": "from the standpoint of; for the sake of",
+    "exampleJp": "職業上、顧客の個人情報を第三者に漏らすことは許されない。",
+    "exampleTranslation": "From an occupational standpoint, leaking customer personal information to third parties is not permitted.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0033"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 887
+  },
+  {
+    "category": "grammar",
+    "front": "〜せいか",
+    "back": "perhaps because of",
+    "exampleJp": "最近睡眠不足のせいか、日中も頭がぼーっとしている。",
+    "exampleTranslation": "Perhaps because of a lack of sleep recently, my head feels foggy even during the day.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0034"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 888
+  },
+  {
+    "category": "grammar",
+    "front": "〜せいで",
+    "back": "because of (negative result)",
+    "exampleJp": "電車が遅れたせいで、重要な取引先との約束に遅刻してしまった。",
+    "exampleTranslation": "Because the train was delayed, I ended up being late for an appointment with an important client.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0035"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 889
+  },
+  {
+    "category": "grammar",
+    "front": "〜だけあって",
+    "back": "being the case; as might be expected",
+    "exampleJp": "彼は長年海外で暮らしていただけあって、英語の発音が素晴らしい。",
+    "exampleTranslation": "As might be expected from someone who lived abroad for many years, his English pronunciation is excellent.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0036"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 890
+  },
+  {
+    "category": "grammar",
+    "front": "〜たとたん（に）",
+    "back": "as soon as; the moment",
+    "exampleJp": "家を出たとたんに、ポツポツと雨が降り始めた。",
+    "exampleTranslation": "The moment I left the house, it began to rain lightly.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0037"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 891
+  },
+  {
+    "category": "grammar",
+    "front": "〜たび（に）",
+    "back": "every time",
+    "exampleJp": "この曲を聴くたびに、学生時代の楽しかった思い出が蘇る。",
+    "exampleTranslation": "Every time I hear this song, joyful memories of my student days come rushing back.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0038"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 892
+  },
+  {
+    "category": "grammar",
+    "front": "〜について / 〜につき",
+    "back": "about; regarding",
+    "exampleJp": "本日の議題について、ご意見のある方は挙手をお願いします。",
+    "exampleTranslation": "Regarding today's agenda, anyone with an opinion please raise your hand.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0039"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 893
+  },
+  {
+    "category": "grammar",
+    "front": "〜にとって",
+    "back": "to; for; concerning",
+    "exampleJp": "現代人にとって、スマートフォンは手放せない必須アイテムとなっている。",
+    "exampleTranslation": "To modern people, the smartphone has become an indispensable item they cannot part with.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0040"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 894
+  },
+  {
+    "category": "grammar",
+    "front": "〜に伴って",
+    "back": "along with; as a consequence of",
+    "exampleJp": "経済の発展に伴って、人々の生活水準も大きく向上した。",
+    "exampleTranslation": "Along with economic development, people's standard of living has also greatly improved.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0041"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 895
+  },
+  {
+    "category": "grammar",
+    "front": "〜に反して",
+    "back": "contrary to; against",
+    "exampleJp": "周囲の予想に反して、その無名チームが優勝を果たした。",
+    "exampleTranslation": "Contrary to everyone's expectations, that unknown team secured the championship.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0042"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 896
+  },
+  {
+    "category": "grammar",
+    "front": "〜にほかならない",
+    "back": "nothing other than",
+    "exampleJp": "この事業の成功は、皆さんの日々の努力の賜物にほかならない。",
+    "exampleTranslation": "The success of this enterprise is nothing other than the fruit of everyone's daily efforts.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0043"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 897
+  },
+  {
+    "category": "grammar",
+    "front": "〜に基づいて",
+    "back": "based on",
+    "exampleJp": "当社は独自のデータに基づいて、新しいマーケティング戦略を立てた。",
+    "exampleTranslation": "Our company devised a new marketing strategy based on proprietary data.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0044"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 898
+  },
+  {
+    "category": "grammar",
+    "front": "〜によって / 〜により",
+    "back": "by; due to; depending on",
+    "exampleJp": "この問題は、専門家のチームによって慎重に調査されている。",
+    "exampleTranslation": "This problem is being carefully investigated by a team of experts.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0045"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 899
+  },
+  {
+    "category": "grammar",
+    "front": "〜によると / 〜によれば",
+    "back": "according to",
+    "exampleJp": "天気予報によると、明日は関東地方で大雪になるそうだ。",
+    "exampleTranslation": "According to the weather forecast, there will be heavy snow in the Kanto region tomorrow.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0046"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 900
+  },
+  {
+    "category": "grammar",
+    "front": "〜にわたって",
+    "back": "throughout; over a period of",
+    "exampleJp": "会議は三日間にわたって行われ、多くの重要な決議がなされた。",
+    "exampleTranslation": "The conference was held over a span of three days, and many important resolutions were made.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0047"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 901
+  },
+  {
+    "category": "grammar",
+    "front": "〜ぬく",
+    "back": "to do something completely/to the end",
+    "exampleJp": "どんな困難な状況でも、最後まで考えぬく力が求められている。",
+    "exampleTranslation": "The ability to think things through to the very end, no matter how difficult the situation, is required.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0048"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 902
+  },
+  {
+    "category": "grammar",
+    "front": "〜のもとで / 〜のもとに",
+    "back": "under (supervision/influence)",
+    "exampleJp": "新しい指導者のもとで、チームは再び活気を取り戻した。",
+    "exampleTranslation": "Under the new leader, the team regained its vitality once again.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0049"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 903
+  },
+  {
+    "category": "grammar",
+    "front": "〜ばかりか / 〜ばかりでなく",
+    "back": "not only but also",
+    "exampleJp": "あのレストランは味が悪いばかりか、店員の態度も最悪だ。",
+    "exampleTranslation": "Not only does the food taste bad at that restaurant, but the staff's attitude is also the worst.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0050"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 904
+  },
+  {
+    "category": "grammar",
+    "front": "〜ばかりに",
+    "back": "simply because",
+    "exampleJp": "ちょっと油断したばかりに、取り返しのつかないミスをしてしまった。",
+    "exampleTranslation": "Simply because I let my guard down for a moment, I made an irreversible mistake.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0051"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 905
+  },
+  {
+    "category": "grammar",
+    "front": "〜はともかく",
+    "back": "setting aside",
+    "exampleJp": "デザインはともかく、この製品は機能性が非常に優れている。",
+    "exampleTranslation": "Setting the design aside, this product's functionality is extremely outstanding.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0052"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 906
+  },
+  {
+    "category": "grammar",
+    "front": "〜はもちろん / 〜はもとより",
+    "back": "not to mention; let alone",
+    "exampleJp": "彼は英語はもちろん、フランス語や中国語も流暢に話せる。",
+    "exampleTranslation": "He can speak French and Chinese fluently, not to mention English.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0053"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 907
+  },
+  {
+    "category": "grammar",
+    "front": "〜べきだ / 〜べきではない",
+    "back": "should; should not",
+    "exampleJp": "人のプライバシーに必要以上に立ち入るべきではない。",
+    "exampleTranslation": "One should not intrude on people's privacy more than necessary.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0054"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 908
+  },
+  {
+    "category": "grammar",
+    "front": "〜ほかない",
+    "back": "have no choice but",
+    "exampleJp": "資金が底を尽きた今、このプロジェクトは中止するほかない。",
+    "exampleTranslation": "Now that our funds have hit bottom, we have no choice but to cancel this project.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0055"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 909
+  },
+  {
+    "category": "grammar",
+    "front": "〜ほど",
+    "back": "to the extent that; as much as",
+    "exampleJp": "今年ほど、異常気象の恐ろしさを痛感した年はなかった。",
+    "exampleTranslation": "There has never been a year where I acutely felt the terror of abnormal weather as much as this year.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0056"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 910
+  },
+  {
+    "category": "grammar",
+    "front": "〜向き",
+    "back": "suitable for",
+    "exampleJp": "このマンションは間取りが広いので、大家族向きの物件と言える。",
+    "exampleTranslation": "Because this apartment has a spacious layout, it can be said to be a property suitable for large families.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0057"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 911
+  },
+  {
+    "category": "grammar",
+    "front": "〜もかまわず",
+    "back": "without caring about; disregarding",
+    "exampleJp": "彼は周囲の目もかまわず、電車の中で大声で電話をしていた。",
+    "exampleTranslation": "He was talking loudly on the phone on the train, completely disregarding the stares of people around him.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0058"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 912
+  },
+  {
+    "category": "grammar",
+    "front": "〜ものだ",
+    "back": "used to; should; it is natural that",
+    "exampleJp": "学生時代はよく友達と朝まで語り明かしたものだ。",
+    "exampleTranslation": "In my student days, I used to stay up talking with friends until morning.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0059"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 913
+  },
+  {
+    "category": "grammar",
+    "front": "〜ものだから / 〜もので",
+    "back": "because (giving a reason/excuse)",
+    "exampleJp": "急に雨が降ってきたものだから、服が濡れてしまった。",
+    "exampleTranslation": "Because it suddenly started raining, my clothes ended up getting wet.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0060"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 914
+  },
+  {
+    "category": "grammar",
+    "front": "〜ものなら",
+    "back": "if one can (but it's unlikely/impossible)",
+    "exampleJp": "やれるものならやってみろと、彼は挑発的な態度をとった。",
+    "exampleTranslation": "He took a provocative attitude, telling me to try it if I could.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0061"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 915
+  },
+  {
+    "category": "grammar",
+    "front": "〜ものの",
+    "back": "although; even though",
+    "exampleJp": "契約書にサインはしたものの、まだいくつかの不安要素が残っている。",
+    "exampleTranslation": "Although I signed the contract, there are still several elements of anxiety remaining.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0062"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 916
+  },
+  {
+    "category": "grammar",
+    "front": "〜やら〜やら",
+    "back": "such things as A and B",
+    "exampleJp": "部屋の中は、古い雑誌やら脱いだ服やらで足の踏み場もない。",
+    "exampleTranslation": "The room has no place to step, covered with things like old magazines and taken-off clothes.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0063"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 917
+  },
+  {
+    "category": "grammar",
+    "front": "〜ようがない / 〜ようもない",
+    "back": "there is no way to",
+    "exampleJp": "彼の連絡先を知らないので、これ以上確かめようがない。",
+    "exampleTranslation": "Since I don't know his contact information, there is no way for me to confirm any further.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0064"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 918
+  },
+  {
+    "category": "grammar",
+    "front": "〜ようなら / 〜ようだったら",
+    "back": "if it looks like; if it's the case that",
+    "exampleJp": "もし熱が下がらないようなら、すぐに病院に行ってください。",
+    "exampleTranslation": "If your fever doesn't seem to go down, please go to the hospital immediately.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0065"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 919
+  },
+  {
+    "category": "grammar",
+    "front": "〜わりに（は）",
+    "back": "considering; for",
+    "exampleJp": "彼はたくさん食べるわりに、全く太らない体質らしい。",
+    "exampleTranslation": "Considering how much he eats, he seems to have a constitution that doesn't gain weight at all.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0066"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 920
+  },
+  {
+    "category": "grammar",
+    "front": "〜をきっかけに",
+    "back": "triggered by; with something as a catalyst",
+    "exampleJp": "留学をきっかけに、彼女の価値観は大きく変わった。",
+    "exampleTranslation": "Using her study abroad as a catalyst, her values changed significantly.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0067"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 921
+  },
+  {
+    "category": "grammar",
+    "front": "〜を中心に",
+    "back": "centering around; mainly",
+    "exampleJp": "当社はアジア地域を中心に、事業のグローバル展開を進めている。",
+    "exampleTranslation": "Our company is advancing the global expansion of its business, centering on the Asian region.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0068"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 922
+  },
+  {
+    "category": "grammar",
+    "front": "〜をめぐって",
+    "back": "over; concerning",
+    "exampleJp": "新しい工場の建設地をめぐって、住民と企業の間で激しい対立が起きている。",
+    "exampleTranslation": "A fierce conflict has arisen between residents and the corporation over the construction site of the new factory.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0069"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 923
+  },
+  {
+    "category": "grammar",
+    "front": "〜がたい",
+    "back": "hard to; difficult to",
+    "exampleJp": "長年苦楽を共にした彼が裏切るなど、到底信じがたい。",
+    "exampleTranslation": "It is completely hard to believe that he, with whom I shared joys and sorrows for years, would betray us.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0070"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 924
+  },
+  {
+    "category": "grammar",
+    "front": "〜て以来",
+    "back": "since; ever since",
+    "exampleJp": "新しいプロジェクトのリーダーに任命されて以来、一日も休んでいない。",
+    "exampleTranslation": "Ever since being appointed leader of the new project, I haven't taken a single day off.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0071"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 925
+  },
+  {
+    "category": "grammar",
+    "front": "〜にあたって",
+    "back": "on the occasion of; prior to",
+    "exampleJp": "新店舗のオープンにあたって、関係者への挨拶状を送付した。",
+    "exampleTranslation": "On the occasion of opening the new store, we sent greeting cards to those involved.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0072"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 926
+  },
+  {
+    "category": "grammar",
+    "front": "〜に際して",
+    "back": "when; on the occasion of",
+    "exampleJp": "契約の更新に際して、いくつか確認させていただきたい事項がございます。",
+    "exampleTranslation": "Upon renewing the contract, there are a few items we would like to confirm.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0073"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 927
+  },
+  {
+    "category": "grammar",
+    "front": "〜をはじめ",
+    "back": "starting with; including",
+    "exampleJp": "社長をはじめ、多くの社員が地域のボランティア活動に参加している。",
+    "exampleTranslation": "Many employees, starting with the president, participate in local volunteer activities.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0074"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 928
+  },
+  {
+    "category": "grammar",
+    "front": "〜にしたがって",
+    "back": "as; in accordance with",
+    "exampleJp": "標高が高くなるにしたがって、気温はどんどん下がっていく。",
+    "exampleTranslation": "As the altitude increases, the temperature steadily drops.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0075"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 929
+  },
+  {
+    "category": "grammar",
+    "front": "〜にともなって",
+    "back": "along with; as a consequence of",
+    "exampleJp": "スマートフォンの普及にともなって、SNSの利用者数も急増した。",
+    "exampleTranslation": "Along with the spread of smartphones, the number of SNS users has rapidly increased.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0076"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 930
+  },
+  {
+    "category": "grammar",
+    "front": "〜につれて",
+    "back": "as; in proportion to",
+    "exampleJp": "発売日が近づくにつれて、ファンの間での期待が高まっている。",
+    "exampleTranslation": "As the release date approaches, expectations among fans are rising.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0077"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 931
+  },
+  {
+    "category": "grammar",
+    "front": "〜に応えて",
+    "back": "in response to",
+    "exampleJp": "消費者の声に応えて、パッケージのデザインを刷新した。",
+    "exampleTranslation": "In response to consumer feedback, we revamped the packaging design.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0078"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 932
+  },
+  {
+    "category": "grammar",
+    "front": "〜に応じて",
+    "back": "depending on; in accordance with",
+    "exampleJp": "収入に応じて、支払うべき税金の額が変わる仕組みになっている。",
+    "exampleTranslation": "The system is designed so that the amount of tax to be paid changes depending on one's income.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0079"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 933
+  },
+  {
+    "category": "grammar",
+    "front": "〜に沿って",
+    "back": "along with; following",
+    "exampleJp": "事前に配布されたマニュアルに沿って、避難訓練を実施した。",
+    "exampleTranslation": "We conducted the evacuation drill in accordance with the manual distributed beforehand.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0080"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 934
+  },
+  {
+    "category": "grammar",
+    "front": "〜のもとで",
+    "back": "under the supervision of; under",
+    "exampleJp": "優れた指導者のもとで厳しいトレーニングを積み、彼は大きく成長した。",
+    "exampleTranslation": "He grew significantly by undergoing rigorous training under the supervision of an excellent coach.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0081"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 935
+  },
+  {
+    "category": "grammar",
+    "front": "〜のもとに",
+    "back": "under; with the support or authority of",
+    "exampleJp": "両国の合意のもとに、新たな経済連携協定が結ばれた。",
+    "exampleTranslation": "A new economic partnership agreement was signed under the mutual agreement of both countries.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0082"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 936
+  },
+  {
+    "category": "grammar",
+    "front": "〜反面",
+    "back": "on the other hand; while",
+    "exampleJp": "リモートワークは通勤時間が省ける反面、オンとオフの切り替えが難しい。",
+    "exampleTranslation": "While remote work saves commuting time, on the other hand, it makes it difficult to switch between work and personal life.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0083"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 937
+  },
+  {
+    "category": "grammar",
+    "front": "〜一方",
+    "back": "on the other hand; meanwhile",
+    "exampleJp": "彼は優秀な研究者である一方、良き父親でもある。",
+    "exampleTranslation": "He is an excellent researcher, while on the other hand, he is also a good father.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0084"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 938
+  },
+  {
+    "category": "grammar",
+    "front": "〜かわりに",
+    "back": "instead of; in exchange for",
+    "exampleJp": "日曜日に出勤するかわりに、来週の平日に代休を取るつもりだ。",
+    "exampleTranslation": "Instead of working on Sunday, I plan to take a compensatory day off on a weekday next week.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0085"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 939
+  },
+  {
+    "category": "grammar",
+    "front": "〜にかわって",
+    "back": "on behalf of; in place of",
+    "exampleJp": "出張中の部長にかわって、私が会議でプレゼンテーションを行った。",
+    "exampleTranslation": "On behalf of the department manager who is on a business trip, I gave the presentation at the meeting.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0086"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 940
+  },
+  {
+    "category": "grammar",
+    "front": "〜からいうと",
+    "back": "from the perspective of; judging from",
+    "exampleJp": "会社の現状からいうと、これ以上の設備投資は厳しい。",
+    "exampleTranslation": "Judging from the current state of the company, any further capital investment would be tough.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0087"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 941
+  },
+  {
+    "category": "grammar",
+    "front": "〜からいえば",
+    "back": "from the perspective of",
+    "exampleJp": "消費者の立場からいえば、価格は安ければ安いほどありがたい。",
+    "exampleTranslation": "From a consumer's perspective, the cheaper the price, the more appreciated it is.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0088"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 942
+  },
+  {
+    "category": "grammar",
+    "front": "〜からいって",
+    "back": "judging from",
+    "exampleJp": "彼の性格からいって、途中で投げ出すようなことは絶対にしないだろう。",
+    "exampleTranslation": "Judging from his personality, he would never do something like giving up halfway.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0089"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 943
+  },
+  {
+    "category": "grammar",
+    "front": "〜からすると",
+    "back": "judging from; based on",
+    "exampleJp": "あの様子からすると、昨日の交渉はあまりうまくいかなかったようだ。",
+    "exampleTranslation": "Judging from that demeanor, it seems yesterday's negotiations didn't go very well.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0090"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 944
+  },
+  {
+    "category": "grammar",
+    "front": "〜からすれば",
+    "back": "judging from",
+    "exampleJp": "親からすれば子供の将来が心配なのは当然のことだ。",
+    "exampleTranslation": "From a parent's perspective, it is only natural to worry about their child's future.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0091"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 945
+  },
+  {
+    "category": "grammar",
+    "front": "〜から見ると",
+    "back": "looking from; from the point of view of",
+    "exampleJp": "外国人から見ると、日本の年末年始の習慣はとても独特で興味深いらしい。",
+    "exampleTranslation": "Looking from a foreigner's point of view, Japan's New Year customs seem very unique and interesting.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0092"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 946
+  },
+  {
+    "category": "grammar",
+    "front": "〜から見れば",
+    "back": "looking from",
+    "exampleJp": "専門家から見れば、このシステムにはまだ改善の余地が多く残されている。",
+    "exampleTranslation": "From an expert's perspective, this system still has a lot of room for improvement.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0093"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 947
+  },
+  {
+    "category": "grammar",
+    "front": "〜から見て",
+    "back": "looking from",
+    "exampleJp": "過去の統計から見て、この地域で大地震が起きる確率は決して低くない。",
+    "exampleTranslation": "Looking at past statistics, the probability of a major earthquake occurring in this region is by no means low.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0094"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 948
+  },
+  {
+    "category": "grammar",
+    "front": "〜ことだから",
+    "back": "because it is; since it's",
+    "exampleJp": "いつも時間に正確な彼のことだから、きっともうすぐ到着するだろう。",
+    "exampleTranslation": "Since it's him, who is always punctual, I'm sure he will arrive very soon.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0095"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 949
+  },
+  {
+    "category": "grammar",
+    "front": "〜だけに",
+    "back": "precisely because; as one would expect",
+    "exampleJp": "期待が大きかっただけに、試合に負けた時のショックも計り知れない。",
+    "exampleTranslation": "Precisely because expectations were high, the shock of losing the match is immeasurable.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0096"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 950
+  },
+  {
+    "category": "grammar",
+    "front": "〜からには",
+    "back": "now that; since",
+    "exampleJp": "プロとして引き受けたからには、最後まで責任を持ってやり遂げる覚悟だ。",
+    "exampleTranslation": "Now that I've taken this on as a professional, I am resolved to see it through with full responsibility to the end.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0097"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 951
+  },
+  {
+    "category": "grammar",
+    "front": "〜以上は",
+    "back": "now that; since",
+    "exampleJp": "契約書にサインした以上は、そこに書かれている条件を守らなければならない。",
+    "exampleTranslation": "Since you've signed the contract, you must abide by the conditions written in it.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0098"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 952
+  },
+  {
+    "category": "grammar",
+    "front": "〜上は",
+    "back": "now that; since",
+    "exampleJp": "こうなった上は、法的な手段に訴えることも辞さない構えだ。",
+    "exampleTranslation": "Now that it has come to this, we are prepared to not hesitate in resorting to legal measures.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0099"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 953
+  },
+  {
+    "category": "grammar",
+    "front": "〜がち",
+    "back": "tend to; apt to",
+    "exampleJp": "疲れているときは、どうしてもネガティブな方向に物事を考えがちだ。",
+    "exampleTranslation": "When feeling tired, one tends to inevitably think about things in a negative direction.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0100"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 954
+  },
+  {
+    "category": "grammar",
+    "front": "〜気味",
+    "back": "feeling a bit; slight tendency to",
+    "exampleJp": "連日の残業で少し寝不足気味なので、今日は早く帰らせてもらいます。",
+    "exampleTranslation": "I'm feeling a bit sleep-deprived due to working overtime day after day, so I'll be leaving early today.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0101"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 955
+  },
+  {
+    "category": "grammar",
+    "front": "〜だらけ",
+    "back": "full of; covered with",
+    "exampleJp": "しばらく掃除をしていなかったせいで、部屋の隅は埃だらけになっていた。",
+    "exampleTranslation": "Because I hadn't cleaned for a while, the corners of the room were full of dust.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0102"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 956
+  },
+  {
+    "category": "grammar",
+    "front": "〜っぽい",
+    "back": "ish; like; tends to",
+    "exampleJp": "あの人は年齢の割には怒りっぽくて、すぐ部下に八つ当たりをする。",
+    "exampleTranslation": "That person is quick-tempered for their age and easily takes it out on subordinates.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0103"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 957
+  },
+  {
+    "category": "grammar",
+    "front": "〜をこめて",
+    "back": "with emotion; filled with",
+    "exampleJp": "退職する先輩へ、感謝の気持ちをこめて記念品を贈った。",
+    "exampleTranslation": "We presented a commemorative gift to our retiring senior, filled with feelings of gratitude.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0104"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 958
+  },
+  {
+    "category": "grammar",
+    "front": "〜を通じて",
+    "back": "through; via",
+    "exampleJp": "彼は生涯を通じて、環境保護活動に多大な貢献をした。",
+    "exampleTranslation": "Throughout his life, he made significant contributions to environmental protection activities.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0105"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 959
+  },
+  {
+    "category": "grammar",
+    "front": "〜を通して",
+    "back": "throughout; through",
+    "exampleJp": "この問題については、弁護士を通して話し合うことにしている。",
+    "exampleTranslation": "Regarding this issue, we have decided to discuss it through our lawyers.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0106"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 960
+  },
+  {
+    "category": "grammar",
+    "front": "〜にかけては",
+    "back": "when it comes to; concerning",
+    "exampleJp": "顧客データの分析にかけては、社内で彼の右に出る者はいない。",
+    "exampleTranslation": "When it comes to analyzing customer data, there is no one in the company who surpasses him.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0107"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 961
+  },
+  {
+    "category": "grammar",
+    "front": "〜に先立って",
+    "back": "prior to; before",
+    "exampleJp": "新製品の一般販売に先立って、一部の店舗で先行予約を受け付ける。",
+    "exampleTranslation": "Prior to the general sale of the new product, advance reservations will be accepted at select stores.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0108"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 962
+  },
+  {
+    "category": "grammar",
+    "front": "〜に限り",
+    "back": "only; restricted to",
+    "exampleJp": "本日に限り、全ての商品を通常の半額でご提供いたします。",
+    "exampleTranslation": "Restricted to today only, we are offering all products at half their usual price.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0109"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 963
+  },
+  {
+    "category": "grammar",
+    "front": "〜に限って",
+    "back": "only; specifically",
+    "exampleJp": "傘を持っていない日に限って、突然ゲリラ豪雨に見舞われるものだ。",
+    "exampleTranslation": "It is only on days when I don't have an umbrella that I get hit by sudden torrential rain.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0110"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 964
+  },
+  {
+    "category": "grammar",
+    "front": "〜に限らず",
+    "back": "not limited to; not only",
+    "exampleJp": "このアプリケーションはスマートフォンに限らず、タブレットでも利用できる。",
+    "exampleTranslation": "This application is not limited to smartphones; it can also be used on tablets.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0111"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 965
+  },
+  {
+    "category": "grammar",
+    "front": "〜を問わず",
+    "back": "regardless of",
+    "exampleJp": "弊社では、年齢や性別、国籍を問わず、優秀な人材を広く募集しています。",
+    "exampleTranslation": "At our company, we are broadly recruiting talented individuals regardless of age, gender, or nationality.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0112"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 966
+  },
+  {
+    "category": "grammar",
+    "front": "〜にかかわらず",
+    "back": "regardless of",
+    "exampleJp": "試合は天候にかかわらず、予定通り実施されることになっている。",
+    "exampleTranslation": "The match is scheduled to take place as planned, regardless of the weather.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0113"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 967
+  },
+  {
+    "category": "grammar",
+    "front": "〜はさておき",
+    "back": "setting aside; leaving aside",
+    "exampleJp": "冗談はさておき、そろそろ今後の具体的なスケジュールを決めましょう。",
+    "exampleTranslation": "Jokes aside, let's start deciding on the concrete schedule moving forward.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0114"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 968
+  },
+  {
+    "category": "grammar",
+    "front": "〜どころか",
+    "back": "far from; let alone",
+    "exampleJp": "景気は回復するどころか、ますます悪化の一途をたどっている。",
+    "exampleTranslation": "Far from recovering, the economy is steadily continuing to worsen.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0115"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 969
+  },
+  {
+    "category": "grammar",
+    "front": "〜どころではない",
+    "back": "not the time for; out of the question",
+    "exampleJp": "明日までに提出するレポートが終わっておらず、遊びに行くどころではない。",
+    "exampleTranslation": "I haven't finished the report due tomorrow, so going out to play is out of the question.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0116"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 970
+  },
+  {
+    "category": "grammar",
+    "front": "〜ばかりか",
+    "back": "not only; moreover",
+    "exampleJp": "彼は約束の時間を破ったばかりか、謝罪の一言もなかった。",
+    "exampleTranslation": "Not only did he miss the promised time, but he also offered no apology.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0117"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 971
+  },
+  {
+    "category": "grammar",
+    "front": "〜ばかりでなく",
+    "back": "not only",
+    "exampleJp": "この薬は効果が優れているばかりでなく、副作用の心配もほとんどない。",
+    "exampleTranslation": "This medicine is not only highly effective, but it also has almost no risk of side effects.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0118"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 972
+  },
+  {
+    "category": "grammar",
+    "front": "〜のみならず",
+    "back": "not only; besides",
+    "exampleJp": "少子高齢化は日本のみならず、多くの先進国が直面している課題である。",
+    "exampleTranslation": "The declining birthrate and aging population is an issue faced not only by Japan, but by many developed countries.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0119"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 973
+  },
+  {
+    "category": "grammar",
+    "front": "〜上",
+    "back": "from the viewpoint of; for the sake of",
+    "exampleJp": "法律上、未成年の飲酒や喫煙は厳しく禁じられている。",
+    "exampleTranslation": "From a legal standpoint, drinking and smoking by minors are strictly prohibited.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0120"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 974
+  },
+  {
+    "category": "grammar",
+    "front": "〜向け",
+    "back": "intended for; aimed at",
+    "exampleJp": "高齢者向けの使いやすいスマートフォンの需要が年々高まっている。",
+    "exampleTranslation": "The demand for easy-to-use smartphones intended for the elderly is increasing year by year.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0121"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 975
+  },
+  {
+    "category": "grammar",
+    "front": "〜次第",
+    "back": "as soon as; depending on",
+    "exampleJp": "スケジュールの詳細が決まり次第、改めて関係各位にご連絡いたします。",
+    "exampleTranslation": "As soon as the schedule details are finalized, we will contact all concerned parties again.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0122"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 976
+  },
+  {
+    "category": "grammar",
+    "front": "〜てはじめて",
+    "back": "not until; only after",
+    "exampleJp": "大きな病気をしてはじめて、日々の健康のありがたさを痛感した。",
+    "exampleTranslation": "It was only after getting a serious illness that I keenly realized the blessing of daily health.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0123"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 977
+  },
+  {
+    "category": "grammar",
+    "front": "〜つつ",
+    "back": "while; even though",
+    "exampleJp": "リスクがあると知りつつ、彼はあえてその困難なプロジェクトに挑戦した。",
+    "exampleTranslation": "Even though he knew there were risks, he dared to challenge that difficult project.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0124"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 978
+  },
+  {
+    "category": "grammar",
+    "front": "〜つつある",
+    "back": "is doing; is in the process of",
+    "exampleJp": "医療技術の進歩により、かつては不治の病とされた病気も克服されつつある。",
+    "exampleTranslation": "Due to advances in medical technology, diseases that were once considered incurable are in the process of being overcome.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0125"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 979
+  },
+  {
+    "category": "grammar",
+    "front": "〜きり",
+    "back": "since; only",
+    "exampleJp": "息子は今朝「行ってきます」と言って家を出たきり、夜になっても帰ってこない。",
+    "exampleTranslation": "My son left the house this morning saying 'I'm off,' and hasn't returned even though it's already night.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0126"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 980
+  },
+  {
+    "category": "grammar",
+    "front": "〜あげく",
+    "back": "in the end; after all that",
+    "exampleJp": "夫婦で何時間も口論したあげく、結局何も解決せずに終わってしまった。",
+    "exampleTranslation": "After arguing as a couple for hours, it ended in the end without resolving anything at all.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0127"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 981
+  },
+  {
+    "category": "grammar",
+    "front": "〜末に",
+    "back": "at the end of; after a long process",
+    "exampleJp": "悩みに悩んだ末に、長年勤めた会社を辞めて独立する決意を固めた。",
+    "exampleTranslation": "At the end of agonizing over it, I solidified my decision to quit the company I worked at for years and become independent.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0128"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 982
+  },
+  {
+    "category": "grammar",
+    "front": "〜抜く",
+    "back": "do completely; see through to the end",
+    "exampleJp": "どんなに苦しい状況に陥っても、彼は最後まで走り抜く意志を持っていた。",
+    "exampleTranslation": "No matter how painful a situation he fell into, he had the will to run completely through to the end.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0129"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 983
+  },
+  {
+    "category": "grammar",
+    "front": "〜きる",
+    "back": "do fully; completely",
+    "exampleJp": "これほど膨大な量の資料を、たった一日で読みきることは不可能だ。",
+    "exampleTranslation": "It is impossible to completely read through such a massive volume of documents in just one day.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0130"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 984
+  },
+  {
+    "category": "grammar",
+    "front": "〜きれない",
+    "back": "cannot do completely",
+    "exampleJp": "両手に抱えきれないほどの花束をもらい、彼女は感極まっていた。",
+    "exampleTranslation": "Receiving a bouquet of flowers too large to fully hold in both hands, she was overcome with emotion.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0131"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 985
+  },
+  {
+    "category": "grammar",
+    "front": "〜うる",
+    "back": "can; possible",
+    "exampleJp": "現在の科学技術では、人間が火星に定住することも起こりうる未来だ。",
+    "exampleTranslation": "With current science and technology, humans settling on Mars is a future that can occur.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0132"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 986
+  },
+  {
+    "category": "grammar",
+    "front": "〜えない",
+    "back": "cannot; impossible",
+    "exampleJp": "彼が会社の資金を横領したなど、私の知る彼からは到底ありえないことだ。",
+    "exampleTranslation": "Him embezzling company funds is something completely impossible coming from the person I know him to be.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0133"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 987
+  },
+  {
+    "category": "grammar",
+    "front": "〜ざるを得ない",
+    "back": "cannot help but; forced to",
+    "exampleJp": "予算が大幅に削減されたため、この計画は中止せざるを得ない。",
+    "exampleTranslation": "Because the budget was drastically reduced, we cannot help but cancel this plan.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0134"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 988
+  },
+  {
+    "category": "grammar",
+    "front": "〜ずにはいられない",
+    "back": "can't help but",
+    "exampleJp": "あの悲惨なドキュメンタリー映画を見て、誰もが涙を流さずにはいられなかった。",
+    "exampleTranslation": "Watching that tragic documentary film, everyone couldn't help but shed tears.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0135"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 989
+  },
+  {
+    "category": "grammar",
+    "front": "〜ないではいられない",
+    "back": "can't help but",
+    "exampleJp": "彼の不誠実な態度を見て、一言文句を言わないではいられなかった。",
+    "exampleTranslation": "Seeing his insincere attitude, I could not help but complain.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0136"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 990
+  },
+  {
+    "category": "grammar",
+    "front": "〜にすぎない",
+    "back": "nothing more than; merely",
+    "exampleJp": "彼が提示したデータは氷山の一角にすぎず、根本的な問題は別に存在する。",
+    "exampleTranslation": "The data he presented is nothing more than the tip of the iceberg, and the fundamental problem exists elsewhere.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0137"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 991
+  },
+  {
+    "category": "grammar",
+    "front": "〜に違いない",
+    "back": "must be; surely",
+    "exampleJp": "誰もいないはずの部屋から物音がしたのだから、泥棒に違いない。",
+    "exampleTranslation": "Since there was a noise from a room that should be empty, it must be a thief.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0138"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 992
+  },
+  {
+    "category": "grammar",
+    "front": "〜に相違ない",
+    "back": "must be; undoubtedly",
+    "exampleJp": "本件に関して、彼が何か重要な情報を隠していることに相違ない。",
+    "exampleTranslation": "Regarding this matter, there is no doubt that he is hiding some important information.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0139"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 993
+  },
+  {
+    "category": "grammar",
+    "front": "〜まい",
+    "back": "will not; probably will not",
+    "exampleJp": "あんなブラック企業では、二度と働くまいと固く心に誓った。",
+    "exampleTranslation": "I firmly swore in my heart that I would never work at such an exploitative company again.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0140"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 994
+  },
+  {
+    "category": "grammar",
+    "front": "〜ようか〜まいか",
+    "back": "whether or not to",
+    "exampleJp": "転職のオファーを受けるべきか受けまいか、一晩中悩んで答えが出なかった。",
+    "exampleTranslation": "I agonized all night over whether or not to accept the job change offer, and couldn't reach an answer.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0141"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 995
+  },
+  {
+    "category": "grammar",
+    "front": "〜てしかたがない",
+    "back": "can't help but; dying to",
+    "exampleJp": "久しぶりの海外旅行が楽しみで楽しみで、今からワクワクしてしかたがない。",
+    "exampleTranslation": "I am so looking forward to my first overseas trip in a long time that I am unbearably excited from now.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0142"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 996
+  },
+  {
+    "category": "grammar",
+    "front": "〜てたまらない",
+    "back": "can't stand; unbearably",
+    "exampleJp": "真夏の炎天下で長時間作業していたので、喉が渇いてたまらない。",
+    "exampleTranslation": "Because I was working outside under the blazing midsummer sun for a long time, I am unbearably thirsty.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0143"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 997
+  },
+  {
+    "category": "grammar",
+    "front": "〜てならない",
+    "back": "can't help but feel; naturally feel",
+    "exampleJp": "遠く離れた街で一人暮らしを始めた娘のことが、心配でならない。",
+    "exampleTranslation": "I can't help but feel worried about my daughter who started living alone in a town far away.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0144"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 998
+  },
+  {
+    "category": "grammar",
+    "front": "〜ないことには",
+    "back": "unless",
+    "exampleJp": "上司の承認を得ないことには、この契約を正式に進めることはできない。",
+    "exampleTranslation": "Unless we get the boss's approval, we cannot formally proceed with this contract.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0145"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 999
+  },
+  {
+    "category": "grammar",
+    "front": "〜抜きで",
+    "back": "without; leaving out",
+    "exampleJp": "今夜は仕事の話は抜きにして、純粋に食事と会話を楽しもうじゃないか。",
+    "exampleTranslation": "Let's leave out work talk tonight and purely enjoy the meal and conversation, shall we?",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0146"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1000
+  },
+  {
+    "category": "grammar",
+    "front": "〜ようがない",
+    "back": "no way to",
+    "exampleJp": "パソコンが完全に壊れてしまい、中のデータは復旧のしようがない。",
+    "exampleTranslation": "The computer is completely broken, and there is no way to recover the data inside.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0147"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1001
+  },
+  {
+    "category": "grammar",
+    "front": "〜っこない",
+    "back": "no chance of; absolutely impossible",
+    "exampleJp": "準備期間がたった一週間で、あの難しい国家試験に受かりっこない。",
+    "exampleTranslation": "With a preparation period of just one week, there's no chance of passing that difficult national exam.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0148"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1002
+  },
+  {
+    "category": "grammar",
+    "front": "〜に決まっている",
+    "back": "bound to be; definitely",
+    "exampleJp": "ろくに練習もせずに本番に臨めば、失敗するに決まっている。",
+    "exampleTranslation": "If you face the real performance without proper practice, you are bound to fail.",
+    "tags": [
+      "n2",
+      "grammar"
+    ],
+    "sourceIds": [
+      "n2-grammar-0149"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1003
+  },
+  {
+    "category": "sentence",
+    "front": "弊社では、全社員の残業時間を削減するための新たな施策を導入しました。",
+    "back": "Our company has introduced new measures to reduce overtime hours for all employees.",
+    "exampleJp": "弊社では、全社員の残業時間を削減するための新たな施策を導入しました。",
+    "exampleTranslation": "Our company has introduced new measures to reduce overtime hours for all employees.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0001"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1004
+  },
+  {
+    "category": "sentence",
+    "front": "企画書の提出期限は明日の正午となっておりますので、遅れないようにお願いします。",
+    "back": "The deadline for submitting the proposal is noon tomorrow, so please make sure not to be late.",
+    "exampleJp": "企画書の提出期限は明日の正午となっておりますので、遅れないようにお願いします。",
+    "exampleTranslation": "The deadline for submitting the proposal is noon tomorrow, so please make sure not to be late.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0002"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1005
+  },
+  {
+    "category": "sentence",
+    "front": "本日の会議では、次期モデルの開発スケジュールについて意見を交換する予定です。",
+    "back": "In today's meeting, we plan to exchange opinions regarding the development schedule for the next model.",
+    "exampleJp": "本日の会議では、次期モデルの開発スケジュールについて意見を交換する予定です。",
+    "exampleTranslation": "In today's meeting, we plan to exchange opinions regarding the development schedule for the next model.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0003"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1006
+  },
+  {
+    "category": "sentence",
+    "front": "誠に恐れ入りますが、担当者が不在のため、折り返しご連絡させていただきます。",
+    "back": "I am truly sorry, but the person in charge is not here right now, so we will call you back.",
+    "exampleJp": "誠に恐れ入りますが、担当者が不在のため、折り返しご連絡させていただきます。",
+    "exampleTranslation": "I am truly sorry, but the person in charge is not here right now, so we will call you back.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0004"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1007
+  },
+  {
+    "category": "sentence",
+    "front": "システムの障害により、一部のサービスがご利用いただけない状態が続いております。",
+    "back": "Due to a system failure, some services continue to be unavailable.",
+    "exampleJp": "システムの障害により、一部のサービスがご利用いただけない状態が続いております。",
+    "exampleTranslation": "Due to a system failure, some services continue to be unavailable.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0005"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1008
+  },
+  {
+    "category": "sentence",
+    "front": "新商品の売上は順調に伸びており、来月には目標を達成する見込みです。",
+    "back": "Sales of the new product are growing steadily, and we expect to reach our target by next month.",
+    "exampleJp": "新商品の売上は順調に伸びており、来月には目標を達成する見込みです。",
+    "exampleTranslation": "Sales of the new product are growing steadily, and we expect to reach our target by next month.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0006"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1009
+  },
+  {
+    "category": "sentence",
+    "front": "退職後は、長年の夢だった田舎での農業に挑戦したいと考えています。",
+    "back": "After retirement, I plan to take up farming in the countryside, which has long been a dream of mine.",
+    "exampleJp": "退職後は、長年の夢だった田舎での農業に挑戦したいと考えています。",
+    "exampleTranslation": "After retirement, I plan to take up farming in the countryside, which has long been a dream of mine.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0007"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1010
+  },
+  {
+    "category": "sentence",
+    "front": "クレーム対応の際には、まずお客様の話を最後まで丁寧に聞くことが重要です。",
+    "back": "When handling complaints, it is important to first listen to the customer's story carefully until the end.",
+    "exampleJp": "クレーム対応の際には、まずお客様の話を最後まで丁寧に聞くことが重要です。",
+    "exampleTranslation": "When handling complaints, it is important to first listen to the customer's story carefully until the end.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0008"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1011
+  },
+  {
+    "category": "sentence",
+    "front": "この業務は専門的な知識が求められるため、新人には少し荷が重いかもしれません。",
+    "back": "Because this work requires specialized knowledge, it might be a bit too much of a burden for a new employee.",
+    "exampleJp": "この業務は専門的な知識が求められるため、新人には少し荷が重いかもしれません。",
+    "exampleTranslation": "Because this work requires specialized knowledge, it might be a bit too much of a burden for a new employee.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0009"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1012
+  },
+  {
+    "category": "sentence",
+    "front": "取引先との交渉を円滑に進めるため、事前に綿密な資料を準備しておいてください。",
+    "back": "To proceed smoothly with negotiations with our client, please prepare detailed materials in advance.",
+    "exampleJp": "取引先との交渉を円滑に進めるため、事前に綿密な資料を準備しておいてください。",
+    "exampleTranslation": "To proceed smoothly with negotiations with our client, please prepare detailed materials in advance.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0010"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1013
+  },
+  {
+    "category": "sentence",
+    "front": "少子高齢化が進む中、労働力不足への対策が社会全体の急務となっている。",
+    "back": "With the declining birthrate and aging population, measures against labor shortages have become an urgent task for society as a whole.",
+    "exampleJp": "少子高齢化が進む中、労働力不足への対策が社会全体の急務となっている。",
+    "exampleTranslation": "With the declining birthrate and aging population, measures against labor shortages have become an urgent task for society as a whole.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0011"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1014
+  },
+  {
+    "category": "sentence",
+    "front": "地球温暖化を食い止めるためには、国レベルだけでなく個人の意識改革も不可欠だ。",
+    "back": "In order to halt global warming, a change in mindset is essential not only at the national level but also at the individual level.",
+    "exampleJp": "地球温暖化を食い止めるためには、国レベルだけでなく個人の意識改革も不可欠だ。",
+    "exampleTranslation": "In order to halt global warming, a change in mindset is essential not only at the national level but also at the individual level.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0012"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1015
+  },
+  {
+    "category": "sentence",
+    "front": "ネット上の匿名の誹謗中傷が深刻な社会問題として取り上げられることが増えた。",
+    "back": "Anonymous slander on the internet is increasingly being brought up as a serious social problem.",
+    "exampleJp": "ネット上の匿名の誹謗中傷が深刻な社会問題として取り上げられることが増えた。",
+    "exampleTranslation": "Anonymous slander on the internet is increasingly being brought up as a serious social problem.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0013"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1016
+  },
+  {
+    "category": "sentence",
+    "front": "景気の低迷により、多くの企業が採用計画の見直しを余儀なくされている。",
+    "back": "Due to the economic slump, many companies are being forced to review their hiring plans.",
+    "exampleJp": "景気の低迷により、多くの企業が採用計画の見直しを余儀なくされている。",
+    "exampleTranslation": "Due to the economic slump, many companies are being forced to review their hiring plans.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0014"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1017
+  },
+  {
+    "category": "sentence",
+    "front": "都市部への人口集中が、地方の過疎化や伝統文化の衰退を招いている。",
+    "back": "The concentration of population in urban areas is bringing about rural depopulation and the decline of traditional culture.",
+    "exampleJp": "都市部への人口集中が、地方の過疎化や伝統文化の衰退を招いている。",
+    "exampleTranslation": "The concentration of population in urban areas is bringing about rural depopulation and the decline of traditional culture.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0015"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1018
+  },
+  {
+    "category": "sentence",
+    "front": "災害時に正しい情報を迅速に収集できる仕組みづくりが、今後の課題である。",
+    "back": "Creating a system to quickly gather accurate information during disasters is a challenge for the future.",
+    "exampleJp": "災害時に正しい情報を迅速に収集できる仕組みづくりが、今後の課題である。",
+    "exampleTranslation": "Creating a system to quickly gather accurate information during disasters is a challenge for the future.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0016"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1019
+  },
+  {
+    "category": "sentence",
+    "front": "男女の賃金格差を是正するため、政府は企業に対して情報開示を義務付けた。",
+    "back": "To correct the wage gap between men and women, the government has obligated companies to disclose information.",
+    "exampleJp": "男女の賃金格差を是正するため、政府は企業に対して情報開示を義務付けた。",
+    "exampleTranslation": "To correct the wage gap between men and women, the government has obligated companies to disclose information.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0017"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1020
+  },
+  {
+    "category": "sentence",
+    "front": "消費者の環境意識の高まりを受け、プラスチックごみの削減に取り組む企業が増加している。",
+    "back": "In response to rising environmental awareness among consumers, an increasing number of companies are working to reduce plastic waste.",
+    "exampleJp": "消費者の環境意識の高まりを受け、プラスチックごみの削減に取り組む企業が増加している。",
+    "exampleTranslation": "In response to rising environmental awareness among consumers, an increasing number of companies are working to reduce plastic waste.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0018"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1021
+  },
+  {
+    "category": "sentence",
+    "front": "感染症の流行により、人々のライフスタイルや働き方は根本的な変化を強いられた。",
+    "back": "The spread of the infectious disease forced fundamental changes in people's lifestyles and ways of working.",
+    "exampleJp": "感染症の流行により、人々のライフスタイルや働き方は根本的な変化を強いられた。",
+    "exampleTranslation": "The spread of the infectious disease forced fundamental changes in people's lifestyles and ways of working.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0019"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1022
+  },
+  {
+    "category": "sentence",
+    "front": "児童の待機問題を解決するには、施設の増設だけでなく保育士の待遇改善も必要だ。",
+    "back": "To solve the issue of children waiting for daycare, it is necessary not only to build more facilities but also to improve the treatment of childcare workers.",
+    "exampleJp": "児童の待機問題を解決するには、施設の増設だけでなく保育士の待遇改善も必要だ。",
+    "exampleTranslation": "To solve the issue of children waiting for daycare, it is necessary not only to build more facilities but also to improve the treatment of childcare workers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0020"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1023
+  },
+  {
+    "category": "sentence",
+    "front": "館内での携帯電話の通話は、他のお客様のご迷惑となりますのでご遠慮ください。",
+    "back": "Please refrain from talking on your cell phone inside the building, as it causes inconvenience to other customers.",
+    "exampleJp": "館内での携帯電話の通話は、他のお客様のご迷惑となりますのでご遠慮ください。",
+    "exampleTranslation": "Please refrain from talking on your cell phone inside the building, as it causes inconvenience to other customers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0021"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1024
+  },
+  {
+    "category": "sentence",
+    "front": "指定されたゴミの収集日以外に廃棄物を出すことは、条例で固く禁じられています。",
+    "back": "Taking out waste on days other than the designated garbage collection days is strictly prohibited by regulations.",
+    "exampleJp": "指定されたゴミの収集日以外に廃棄物を出すことは、条例で固く禁じられています。",
+    "exampleTranslation": "Taking out waste on days other than the designated garbage collection days is strictly prohibited by regulations.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0022"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1025
+  },
+  {
+    "category": "sentence",
+    "front": "本契約を中途解約する場合、規定の手数料が発生しますのであらかじめご了承ください。",
+    "back": "Please note in advance that if you cancel this contract midway, a prescribed fee will be incurred.",
+    "exampleJp": "本契約を中途解約する場合、規定の手数料が発生しますのであらかじめご了承ください。",
+    "exampleTranslation": "Please note in advance that if you cancel this contract midway, a prescribed fee will be incurred.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0023"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1026
+  },
+  {
+    "category": "sentence",
+    "front": "このチケットはいかなる理由があっても、再発行や払い戻しはいたしかねます。",
+    "back": "This ticket cannot be reissued or refunded under any circumstances.",
+    "exampleJp": "このチケットはいかなる理由があっても、再発行や払い戻しはいたしかねます。",
+    "exampleTranslation": "This ticket cannot be reissued or refunded under any circumstances.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0024"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1027
+  },
+  {
+    "category": "sentence",
+    "front": "歩きながらのスマートフォンの操作は大変危険ですので、絶対におやめください。",
+    "back": "Operating a smartphone while walking is extremely dangerous, so please absolutely stop doing it.",
+    "exampleJp": "歩きながらのスマートフォンの操作は大変危険ですので、絶対におやめください。",
+    "exampleTranslation": "Operating a smartphone while walking is extremely dangerous, so please absolutely stop doing it.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0025"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1028
+  },
+  {
+    "category": "sentence",
+    "front": "図書館の資料を紛失・破損した場合は、原則として同一のものを弁償していただきます。",
+    "back": "In the event that library materials are lost or damaged, as a general rule, you will be asked to compensate with an identical item.",
+    "exampleJp": "図書館の資料を紛失・破損した場合は、原則として同一のものを弁償していただきます。",
+    "exampleTranslation": "In the event that library materials are lost or damaged, as a general rule, you will be asked to compensate with an identical item.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0026"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1029
+  },
+  {
+    "category": "sentence",
+    "front": "悪天候のため、本日の屋外イベントはすべて中止とさせていただきます。",
+    "back": "Due to severe weather, all outdoor events today will be canceled.",
+    "exampleJp": "悪天候のため、本日の屋外イベントはすべて中止とさせていただきます。",
+    "exampleTranslation": "Due to severe weather, all outdoor events today will be canceled.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0027"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1030
+  },
+  {
+    "category": "sentence",
+    "front": "当駐車場内における車両の盗難や事故について、管理者は一切の責任を負いません。",
+    "back": "The management assumes no responsibility whatsoever for vehicle theft or accidents within this parking lot.",
+    "exampleJp": "当駐車場内における車両の盗難や事故について、管理者は一切の責任を負いません。",
+    "exampleTranslation": "The management assumes no responsibility whatsoever for vehicle theft or accidents within this parking lot.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0028"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1031
+  },
+  {
+    "category": "sentence",
+    "front": "優先席付近では、混雑時には携帯電話の電源をお切りいただきますようご協力をお願いします。",
+    "back": "Near priority seating areas, we ask for your cooperation in turning off your cell phones during crowded times.",
+    "exampleJp": "優先席付近では、混雑時には携帯電話の電源をお切りいただきますようご協力をお願いします。",
+    "exampleTranslation": "Near priority seating areas, we ask for your cooperation in turning off your cell phones during crowded times.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0029"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1032
+  },
+  {
+    "category": "sentence",
+    "front": "商品の返品をご希望の際は、購入時のレシートと未開封の商品をお持ちください。",
+    "back": "If you wish to return a product, please bring the receipt from the time of purchase along with the unopened item.",
+    "exampleJp": "商品の返品をご希望の際は、購入時のレシートと未開封の商品をお持ちください。",
+    "exampleTranslation": "If you wish to return a product, please bring the receipt from the time of purchase along with the unopened item.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0030"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1033
+  },
+  {
+    "category": "sentence",
+    "front": "彼の提案は理論的ではあるものの、現場の実態を反映していないという点で問題がある。",
+    "back": "Although his proposal is theoretical, it has a problem in that it does not reflect the actual situation on the ground.",
+    "exampleJp": "彼の提案は理論的ではあるものの、現場の実態を反映していないという点で問題がある。",
+    "exampleTranslation": "Although his proposal is theoretical, it has a problem in that it does not reflect the actual situation on the ground.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0031"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1034
+  },
+  {
+    "category": "sentence",
+    "front": "コスト削減の必要性は理解できるが、品質を落とすような見直しには絶対に賛成できない。",
+    "back": "I can understand the necessity of cutting costs, but I absolutely cannot agree to any revisions that would compromise quality.",
+    "exampleJp": "コスト削減の必要性は理解できるが、品質を落とすような見直しには絶対に賛成できない。",
+    "exampleTranslation": "I can understand the necessity of cutting costs, but I absolutely cannot agree to any revisions that would compromise quality.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0032"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1035
+  },
+  {
+    "category": "sentence",
+    "front": "この新しい制度が導入されれば、長期的には多くのメリットをもたらすと私は確信している。",
+    "back": "I firmly believe that if this new system is introduced, it will bring many benefits in the long term.",
+    "exampleJp": "この新しい制度が導入されれば、長期的には多くのメリットをもたらすと私は確信している。",
+    "exampleTranslation": "I firmly believe that if this new system is introduced, it will bring many benefits in the long term.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0033"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1036
+  },
+  {
+    "category": "sentence",
+    "front": "賛否両論はあるが、まずは小規模なテストランを実施して効果を検証すべきではないか。",
+    "back": "There are arguments both for and against it, but shouldn't we first run a small-scale test to verify its effectiveness?",
+    "exampleJp": "賛否両論はあるが、まずは小規模なテストランを実施して効果を検証すべきではないか。",
+    "exampleTranslation": "There are arguments both for and against it, but shouldn't we first run a small-scale test to verify its effectiveness?",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0034"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1037
+  },
+  {
+    "category": "sentence",
+    "front": "リスクを恐れて何もしないことこそが、現代のビジネスにおいて最大の危機であると言える。",
+    "back": "One could say that doing nothing out of fear of risk is exactly the greatest danger in modern business.",
+    "exampleJp": "リスクを恐れて何もしないことこそが、現代のビジネスにおいて最大の危機であると言える。",
+    "exampleTranslation": "One could say that doing nothing out of fear of risk is exactly the greatest danger in modern business.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0035"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1038
+  },
+  {
+    "category": "sentence",
+    "front": "個人の自由を尊重することは大切だが、それが他人の権利を侵害するものであってはならない。",
+    "back": "While it is important to respect individual freedom, that must not be something that infringes upon the rights of others.",
+    "exampleJp": "個人の自由を尊重することは大切だが、それが他人の権利を侵害するものであってはならない。",
+    "exampleTranslation": "While it is important to respect individual freedom, that must not be something that infringes upon the rights of others.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0036"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1039
+  },
+  {
+    "category": "sentence",
+    "front": "結論から申し上げますと、現在の予算規模でこのプロジェクトを遂行するのは困難です。",
+    "back": "To state the conclusion first, it is difficult to execute this project within the current budget scale.",
+    "exampleJp": "結論から申し上げますと、現在の予算規模でこのプロジェクトを遂行するのは困難です。",
+    "exampleTranslation": "To state the conclusion first, it is difficult to execute this project within the current budget scale.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0037"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1040
+  },
+  {
+    "category": "sentence",
+    "front": "自動運転技術の普及には、技術的な課題よりも法整備や社会の受容性の方が壁になるだろう。",
+    "back": "For the spread of autonomous driving technology, legal frameworks and social acceptance will likely be a bigger hurdle than technical issues.",
+    "exampleJp": "自動運転技術の普及には、技術的な課題よりも法整備や社会の受容性の方が壁になるだろう。",
+    "exampleTranslation": "For the spread of autonomous driving technology, legal frameworks and social acceptance will likely be a bigger hurdle than technical issues.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0038"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1041
+  },
+  {
+    "category": "sentence",
+    "front": "多様な価値観が混在する現代社会において、一つの正解を押し付けることはもはや不可能だ。",
+    "back": "In modern society where diverse values coexist, imposing a single correct answer is no longer possible.",
+    "exampleJp": "多様な価値観が混在する現代社会において、一つの正解を押し付けることはもはや不可能だ。",
+    "exampleTranslation": "In modern society where diverse values coexist, imposing a single correct answer is no longer possible.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0039"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1042
+  },
+  {
+    "category": "sentence",
+    "front": "話し合いを重ねた結果、双方が少しずつ妥協することで最終的な合意に至った。",
+    "back": "As a result of repeated discussions, they reached a final agreement by having both sides compromise a little.",
+    "exampleJp": "話し合いを重ねた結果、双方が少しずつ妥協することで最終的な合意に至った。",
+    "exampleTranslation": "As a result of repeated discussions, they reached a final agreement by having both sides compromise a little.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0040"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1043
+  },
+  {
+    "category": "sentence",
+    "front": "現代の教育現場では、知識の暗記よりも生徒が自ら課題を発見し解決する力が重視されている。",
+    "back": "In modern educational settings, the ability of students to discover and solve problems themselves is emphasized more than memorizing knowledge.",
+    "exampleJp": "現代の教育現場では、知識の暗記よりも生徒が自ら課題を発見し解決する力が重視されている。",
+    "exampleTranslation": "In modern educational settings, the ability of students to discover and solve problems themselves is emphasized more than memorizing knowledge.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0041"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1044
+  },
+  {
+    "category": "sentence",
+    "front": "彼は奨学金を得て海外の大学院に進学し、長年興味を持っていた分野の研究に没頭している。",
+    "back": "He obtained a scholarship, went on to a graduate school overseas, and is devoting himself to research in a field he has been interested in for years.",
+    "exampleJp": "彼は奨学金を得て海外の大学院に進学し、長年興味を持っていた分野の研究に没頭している。",
+    "exampleTranslation": "He obtained a scholarship, went on to a graduate school overseas, and is devoting himself to research in a field he has been interested in for years.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0042"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1045
+  },
+  {
+    "category": "sentence",
+    "front": "語学の習得には特効薬はなく、毎日少しずつでも地道に継続することが何よりの近道だ。",
+    "back": "There is no magic cure for acquiring a language; continuing steadily every day, even just a little, is the best shortcut.",
+    "exampleJp": "語学の習得には特効薬はなく、毎日少しずつでも地道に継続することが何よりの近道だ。",
+    "exampleTranslation": "There is no magic cure for acquiring a language; continuing steadily every day, even just a little, is the best shortcut.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0043"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1046
+  },
+  {
+    "category": "sentence",
+    "front": "今度の資格試験に合格するため、週末は図書館にこもって過去問の分析を徹底的に行っている。",
+    "back": "In order to pass the upcoming certification exam, I am locking myself in the library on weekends and thoroughly analyzing past questions.",
+    "exampleJp": "今度の資格試験に合格するため、週末は図書館にこもって過去問の分析を徹底的に行っている。",
+    "exampleTranslation": "In order to pass the upcoming certification exam, I am locking myself in the library on weekends and thoroughly analyzing past questions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0044"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1047
+  },
+  {
+    "category": "sentence",
+    "front": "インターネットの普及により、誰もが場所や時間を問わず高度な教育を受けられるようになった。",
+    "back": "Thanks to the spread of the internet, it has become possible for anyone to receive advanced education regardless of time or place.",
+    "exampleJp": "インターネットの普及により、誰もが場所や時間を問わず高度な教育を受けられるようになった。",
+    "exampleTranslation": "Thanks to the spread of the internet, it has become possible for anyone to receive advanced education regardless of time or place.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0045"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1048
+  },
+  {
+    "category": "sentence",
+    "front": "論文を執筆する際は、他者の著作物を引用する際の明確なルールを必ず守らなければならない。",
+    "back": "When writing a thesis, you must absolutely follow the clear rules for citing the works of others.",
+    "exampleJp": "論文を執筆する際は、他者の著作物を引用する際の明確なルールを必ず守らなければならない。",
+    "exampleTranslation": "When writing a thesis, you must absolutely follow the clear rules for citing the works of others.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0046"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1049
+  },
+  {
+    "category": "sentence",
+    "front": "子供の好奇心を伸ばすには、失敗を責めるのではなく、挑戦した過程を褒めることが大切だ。",
+    "back": "To develop a child's curiosity, it is important to praise the process of trying rather than blaming them for failing.",
+    "exampleJp": "子供の好奇心を伸ばすには、失敗を責めるのではなく、挑戦した過程を褒めることが大切だ。",
+    "exampleTranslation": "To develop a child's curiosity, it is important to praise the process of trying rather than blaming them for failing.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0047"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1050
+  },
+  {
+    "category": "sentence",
+    "front": "理論を学ぶだけでなく、実際の現場でインターンシップを経験することが学生の成長につながる。",
+    "back": "Experiencing an internship in an actual workplace, not just learning theory, leads to the growth of students.",
+    "exampleJp": "理論を学ぶだけでなく、実際の現場でインターンシップを経験することが学生の成長につながる。",
+    "exampleTranslation": "Experiencing an internship in an actual workplace, not just learning theory, leads to the growth of students.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0048"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1051
+  },
+  {
+    "category": "sentence",
+    "front": "グローバル化が進む中、異文化を理解し柔軟にコミュニケーションをとるスキルが求められている。",
+    "back": "As globalization advances, skills to understand different cultures and communicate flexibly are being demanded.",
+    "exampleJp": "グローバル化が進む中、異文化を理解し柔軟にコミュニケーションをとるスキルが求められている。",
+    "exampleTranslation": "As globalization advances, skills to understand different cultures and communicate flexibly are being demanded.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0049"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1052
+  },
+  {
+    "category": "sentence",
+    "front": "教育格差を是正するためには、家庭の経済状況に左右されない支援体制の構築が急務である。",
+    "back": "In order to correct educational inequality, establishing a support system that is not influenced by a family's economic situation is an urgent task.",
+    "exampleJp": "教育格差を是正するためには、家庭の経済状況に左右されない支援体制の構築が急務である。",
+    "exampleTranslation": "In order to correct educational inequality, establishing a support system that is not influenced by a family's economic situation is an urgent task.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0050"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1053
+  },
+  {
+    "category": "sentence",
+    "front": "今朝の新聞の社説は、現在の政治腐敗に対して非常に厳しい批判を展開していた。",
+    "back": "The editorial in this morning's newspaper developed a very harsh criticism of the current political corruption.",
+    "exampleJp": "今朝の新聞の社説は、現在の政治腐敗に対して非常に厳しい批判を展開していた。",
+    "exampleTranslation": "The editorial in this morning's newspaper developed a very harsh criticism of the current political corruption.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0051"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1054
+  },
+  {
+    "category": "sentence",
+    "front": "SNSで拡散されたその情報は、後に全く根拠のないフェイクニュースであったことが判明した。",
+    "back": "That information which spread on social media was later revealed to be completely baseless fake news.",
+    "exampleJp": "SNSで拡散されたその情報は、後に全く根拠のないフェイクニュースであったことが判明した。",
+    "exampleTranslation": "That information which spread on social media was later revealed to be completely baseless fake news.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0052"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1055
+  },
+  {
+    "category": "sentence",
+    "front": "最新の世論調査によれば、政府の経済対策を評価しないと答えた人が全体の過半数を占めている。",
+    "back": "According to the latest public opinion poll, people who responded that they do not approve of the government's economic measures make up the majority.",
+    "exampleJp": "最新の世論調査によれば、政府の経済対策を評価しないと答えた人が全体の過半数を占めている。",
+    "exampleTranslation": "According to the latest public opinion poll, people who responded that they do not approve of the government's economic measures make up the majority.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0053"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1056
+  },
+  {
+    "category": "sentence",
+    "front": "そのスキャンダルが報道されるや否や、彼のSNSアカウントには批判のコメントが殺到した。",
+    "back": "As soon as that scandal was reported, critical comments flooded his social media accounts.",
+    "exampleJp": "そのスキャンダルが報道されるや否や、彼のSNSアカウントには批判のコメントが殺到した。",
+    "exampleTranslation": "As soon as that scandal was reported, critical comments flooded his social media accounts.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0054"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1057
+  },
+  {
+    "category": "sentence",
+    "front": "テレビ局は視聴率を獲得するために、時に事実を誇張して伝える傾向があるため注意が必要だ。",
+    "back": "Television stations sometimes tend to exaggerate facts in order to gain ratings, so caution is necessary.",
+    "exampleJp": "テレビ局は視聴率を獲得するために、時に事実を誇張して伝える傾向があるため注意が必要だ。",
+    "exampleTranslation": "Television stations sometimes tend to exaggerate facts in order to gain ratings, so caution is necessary.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0055"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1058
+  },
+  {
+    "category": "sentence",
+    "front": "有名スポーツ選手の突然の引退発表は、国内のみならず海外のメディアでも大きく取り上げられた。",
+    "back": "The sudden retirement announcement of the famous athlete was widely covered not only domestically but also by overseas media.",
+    "exampleJp": "有名スポーツ選手の突然の引退発表は、国内のみならず海外のメディアでも大きく取り上げられた。",
+    "exampleTranslation": "The sudden retirement announcement of the famous athlete was widely covered not only domestically but also by overseas media.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0056"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1059
+  },
+  {
+    "category": "sentence",
+    "front": "マスメディアの役割は、単に事実を伝えるだけでなく、社会の問題点を掘り下げることにもある。",
+    "back": "The role of mass media lies not only in simply reporting facts, but also in delving into the problems of society.",
+    "exampleJp": "マスメディアの役割は、単に事実を伝えるだけでなく、社会の問題点を掘り下げることにもある。",
+    "exampleTranslation": "The role of mass media lies not only in simply reporting facts, but also in delving into the problems of society.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0057"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1060
+  },
+  {
+    "category": "sentence",
+    "front": "インタビューに応じた社長は、今後の経営再建に向けて強い決意をカメラの前で語った。",
+    "back": "The president, who agreed to the interview, spoke in front of the cameras with strong determination towards future business restructuring.",
+    "exampleJp": "インタビューに応じた社長は、今後の経営再建に向けて強い決意をカメラの前で語った。",
+    "exampleTranslation": "The president, who agreed to the interview, spoke in front of the cameras with strong determination towards future business restructuring.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0058"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1061
+  },
+  {
+    "category": "sentence",
+    "front": "活字離れが進む中で、新聞社はデジタル配信の強化へとビジネスモデルの転換を図っている。",
+    "back": "Amidst the shift away from print reading, newspaper companies are attempting to transition their business models toward strengthening digital distribution.",
+    "exampleJp": "活字離れが進む中で、新聞社はデジタル配信の強化へとビジネスモデルの転換を図っている。",
+    "exampleTranslation": "Amidst the shift away from print reading, newspaper companies are attempting to transition their business models toward strengthening digital distribution.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0059"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1062
+  },
+  {
+    "category": "sentence",
+    "front": "事件の全容が明らかになるにつれて、警察の初動捜査の遅れを指摘する声が高まっている。",
+    "back": "As the full picture of the incident becomes clear, voices pointing out the delay in the police's initial investigation are growing louder.",
+    "exampleJp": "事件の全容が明らかになるにつれて、警察の初動捜査の遅れを指摘する声が高まっている。",
+    "exampleTranslation": "As the full picture of the incident becomes clear, voices pointing out the delay in the police's initial investigation are growing louder.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0060"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1063
+  },
+  {
+    "category": "sentence",
+    "front": "現代人は仕事や人間関係で過度なストレスを抱えがちであり、心のケアが重要視されている。",
+    "back": "Modern people tend to harbor excessive stress from work and human relationships, and mental care is being viewed as important.",
+    "exampleJp": "現代人は仕事や人間関係で過度なストレスを抱えがちであり、心のケアが重要視されている。",
+    "exampleTranslation": "Modern people tend to harbor excessive stress from work and human relationships, and mental care is being viewed as important.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0061"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1064
+  },
+  {
+    "category": "sentence",
+    "front": "健康診断の結果、コレステロール値が高いと指摘されたため、食生活の改善を決意した。",
+    "back": "As a result of my health checkup, it was pointed out that my cholesterol levels are high, so I decided to improve my diet.",
+    "exampleJp": "健康診断の結果、コレステロール値が高いと指摘されたため、食生活の改善を決意した。",
+    "exampleTranslation": "As a result of my health checkup, it was pointed out that my cholesterol levels are high, so I decided to improve my diet.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0062"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1065
+  },
+  {
+    "category": "sentence",
+    "front": "定期的な運動とバランスの取れた食事が、生活習慣病を予防するための基本中の基本だ。",
+    "back": "Regular exercise and a well-balanced diet are the absolute basics for preventing lifestyle-related diseases.",
+    "exampleJp": "定期的な運動とバランスの取れた食事が、生活習慣病を予防するための基本中の基本だ。",
+    "exampleTranslation": "Regular exercise and a well-balanced diet are the absolute basics for preventing lifestyle-related diseases.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0063"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1066
+  },
+  {
+    "category": "sentence",
+    "front": "医師の指示に従って処方された薬を正しく服用しないと、症状が悪化するおそれがある。",
+    "back": "If you do not correctly take the medicine prescribed according to the doctor's instructions, there is a risk that your symptoms will worsen.",
+    "exampleJp": "医師の指示に従って処方された薬を正しく服用しないと、症状が悪化するおそれがある。",
+    "exampleTranslation": "If you do not correctly take the medicine prescribed according to the doctor's instructions, there is a risk that your symptoms will worsen.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0064"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1067
+  },
+  {
+    "category": "sentence",
+    "front": "睡眠の質を向上させるには、就寝の数時間前からスマートフォンの画面を見ないことが効果的だ。",
+    "back": "To improve the quality of your sleep, it is effective to avoid looking at smartphone screens for several hours before going to bed.",
+    "exampleJp": "睡眠の質を向上させるには、就寝の数時間前からスマートフォンの画面を見ないことが効果的だ。",
+    "exampleTranslation": "To improve the quality of your sleep, it is effective to avoid looking at smartphone screens for several hours before going to bed.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0065"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1068
+  },
+  {
+    "category": "sentence",
+    "front": "彼女は病気を克服した経験をきっかけに、同じ病気で苦しむ人々を支援する活動を始めた。",
+    "back": "Using her experience of overcoming illness as a catalyst, she began activities to support people suffering from the same disease.",
+    "exampleJp": "彼女は病気を克服した経験をきっかけに、同じ病気で苦しむ人々を支援する活動を始めた。",
+    "exampleTranslation": "Using her experience of overcoming illness as a catalyst, she began activities to support people suffering from the same disease.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0066"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1069
+  },
+  {
+    "category": "sentence",
+    "front": "年齢を重ねるにつれて基礎代謝が落ちるため、若い頃と同じように食べていると太りやすくなる。",
+    "back": "Because basal metabolism drops as you age, you will easily gain weight if you eat the same way you did when you were young.",
+    "exampleJp": "年齢を重ねるにつれて基礎代謝が落ちるため、若い頃と同じように食べていると太りやすくなる。",
+    "exampleTranslation": "Because basal metabolism drops as you age, you will easily gain weight if you eat the same way you did when you were young.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0067"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1070
+  },
+  {
+    "category": "sentence",
+    "front": "禁煙は最初の数日間が最も辛いと言われているが、そこを乗り越えれば次第に楽になっていく。",
+    "back": "It is said that the first few days of quitting smoking are the hardest, but if you get past that, it gradually becomes easier.",
+    "exampleJp": "禁煙は最初の数日間が最も辛いと言われているが、そこを乗り越えれば次第に楽になっていく。",
+    "exampleTranslation": "It is said that the first few days of quitting smoking are the hardest, but if you get past that, it gradually becomes easier.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0068"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1071
+  },
+  {
+    "category": "sentence",
+    "front": "リモートワークの普及に伴い、運動不足を解消するために自宅で筋トレを始める人が増えている。",
+    "back": "Along with the spread of remote work, an increasing number of people are starting muscle training at home to resolve their lack of exercise.",
+    "exampleJp": "リモートワークの普及に伴い、運動不足を解消するために自宅で筋トレを始める人が増えている。",
+    "exampleTranslation": "Along with the spread of remote work, an increasing number of people are starting muscle training at home to resolve their lack of exercise.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0069"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1072
+  },
+  {
+    "category": "sentence",
+    "front": "栄養価の高い旬の食材を積極的に取り入れることは、免疫力を高める上で非常に理にかなっている。",
+    "back": "Actively incorporating highly nutritious seasonal ingredients makes a lot of sense when it comes to boosting your immune system.",
+    "exampleJp": "栄養価の高い旬の食材を積極的に取り入れることは、免疫力を高める上で非常に理にかなっている。",
+    "exampleTranslation": "Actively incorporating highly nutritious seasonal ingredients makes a lot of sense when it comes to boosting your immune system.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0070"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1073
+  },
+  {
+    "category": "sentence",
+    "front": "人工知能の目覚ましい進化により、将来的には現在ある職業の多くが自動化されると予測されている。",
+    "back": "Due to the remarkable evolution of artificial intelligence, it is predicted that many currently existing occupations will be automated in the future.",
+    "exampleJp": "人工知能の目覚ましい進化により、将来的には現在ある職業の多くが自動化されると予測されている。",
+    "exampleTranslation": "Due to the remarkable evolution of artificial intelligence, it is predicted that many currently existing occupations will be automated in the future.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0071"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1074
+  },
+  {
+    "category": "sentence",
+    "front": "キャッシュレス決済の導入が進んだことで、消費者の利便性は飛躍的に向上したと言える。",
+    "back": "It can be said that consumer convenience has improved dramatically due to the advancement in introducing cashless payments.",
+    "exampleJp": "キャッシュレス決済の導入が進んだことで、消費者の利便性は飛躍的に向上したと言える。",
+    "exampleTranslation": "It can be said that consumer convenience has improved dramatically due to the advancement in introducing cashless payments.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0072"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1075
+  },
+  {
+    "category": "sentence",
+    "front": "企業が個人情報を収集・活用するにあたり、プライバシーの保護とセキュリティの確保が絶対条件となる。",
+    "back": "When companies collect and utilize personal information, the protection of privacy and ensuring of security become absolute conditions.",
+    "exampleJp": "企業が個人情報を収集・活用するにあたり、プライバシーの保護とセキュリティの確保が絶対条件となる。",
+    "exampleTranslation": "When companies collect and utilize personal information, the protection of privacy and ensuring of security become absolute conditions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0073"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1076
+  },
+  {
+    "category": "sentence",
+    "front": "自動翻訳の精度は年々上がっているが、文化的な背景を含む微妙なニュアンスの伝達にはまだ限界がある。",
+    "back": "The accuracy of automatic translation is improving year by year, but there are still limits to conveying subtle nuances that include cultural backgrounds.",
+    "exampleJp": "自動翻訳の精度は年々上がっているが、文化的な背景を含む微妙なニュアンスの伝達にはまだ限界がある。",
+    "exampleTranslation": "The accuracy of automatic translation is improving year by year, but there are still limits to conveying subtle nuances that include cultural backgrounds.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0074"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1077
+  },
+  {
+    "category": "sentence",
+    "front": "スマートホーム家電の普及により、私たちは外出先からでもスマートフォン一つで部屋の温度を管理できる。",
+    "back": "With the spread of smart home appliances, we can manage the temperature of our rooms with just a smartphone, even from outside.",
+    "exampleJp": "スマートホーム家電の普及により、私たちは外出先からでもスマートフォン一つで部屋の温度を管理できる。",
+    "exampleTranslation": "With the spread of smart home appliances, we can manage the temperature of our rooms with just a smartphone, even from outside.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0075"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1078
+  },
+  {
+    "category": "sentence",
+    "front": "ドローンを活用した配送サービスは、過疎地や離島における物流の課題を解決する切り札として期待されている。",
+    "back": "Delivery services utilizing drones are expected to be the trump card for solving logistics issues in depopulated areas and remote islands.",
+    "exampleJp": "ドローンを活用した配送サービスは、過疎地や離島における物流の課題を解決する切り札として期待されている。",
+    "exampleTranslation": "Delivery services utilizing drones are expected to be the trump card for solving logistics issues in depopulated areas and remote islands.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0076"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1079
+  },
+  {
+    "category": "sentence",
+    "front": "クラウドサービスの導入により、社員はどこにいてもリアルタイムで重要なデータにアクセスできるようになった。",
+    "back": "Through the introduction of cloud services, employees have become able to access important data in real time no matter where they are.",
+    "exampleJp": "クラウドサービスの導入により、社員はどこにいてもリアルタイムで重要なデータにアクセスできるようになった。",
+    "exampleTranslation": "Through the introduction of cloud services, employees have become able to access important data in real time no matter where they are.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0077"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1080
+  },
+  {
+    "category": "sentence",
+    "front": "仮想現実技術は、ゲームなどのエンターテインメント分野だけでなく、医療や教育の現場でも実用化が進んでいる。",
+    "back": "Virtual reality technology is being practically applied not only in entertainment fields like games, but also in medical and educational settings.",
+    "exampleJp": "仮想現実技術は、ゲームなどのエンターテインメント分野だけでなく、医療や教育の現場でも実用化が進んでいる。",
+    "exampleTranslation": "Virtual reality technology is being practically applied not only in entertainment fields like games, but also in medical and educational settings.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0078"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1081
+  },
+  {
+    "category": "sentence",
+    "front": "新たなテクノロジーの登場は、人々の生活を豊かにする一方で、新たな倫理的課題も突きつけている。",
+    "back": "While the emergence of new technologies enriches people's lives, it is simultaneously thrusting new ethical challenges upon us.",
+    "exampleJp": "新たなテクノロジーの登場は、人々の生活を豊かにする一方で、新たな倫理的課題も突きつけている。",
+    "exampleTranslation": "While the emergence of new technologies enriches people's lives, it is simultaneously thrusting new ethical challenges upon us.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0079"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1082
+  },
+  {
+    "category": "sentence",
+    "front": "デジタル化の波に乗り遅れた企業は、激しい市場競争の中で生き残ることが極めて困難になるだろう。",
+    "back": "Companies that miss the wave of digitalization will likely find it extremely difficult to survive in the fierce market competition.",
+    "exampleJp": "デジタル化の波に乗り遅れた企業は、激しい市場競争の中で生き残ることが極めて困難になるだろう。",
+    "exampleTranslation": "Companies that miss the wave of digitalization will likely find it extremely difficult to survive in the fierce market competition.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0080"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1083
+  },
+  {
+    "category": "sentence",
+    "front": "いつもお世話になっております。先ほどお送りした添付ファイルに誤りがございました。",
+    "back": "Thank you as always for your continued support. There was an error in the attachment I sent earlier.",
+    "exampleJp": "いつもお世話になっております。先ほどお送りした添付ファイルに誤りがございました。",
+    "exampleTranslation": "Thank you as always for your continued support. There was an error in the attachment I sent earlier.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0081"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1084
+  },
+  {
+    "category": "sentence",
+    "front": "来週の定例会議ですが、誠に勝手ながら日程を変更していただくことは可能でしょうか。",
+    "back": "Regarding next week's regular meeting, would it be possible to change the schedule, though I apologize for the selfish request?",
+    "exampleJp": "来週の定例会議ですが、誠に勝手ながら日程を変更していただくことは可能でしょうか。",
+    "exampleTranslation": "Regarding next week's regular meeting, would it be possible to change the schedule, though I apologize for the selfish request?",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0082"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1085
+  },
+  {
+    "category": "sentence",
+    "front": "プロジェクトの進捗状況について、明日の午後までに簡単なレポートにまとめて提出してください。",
+    "back": "Please summarize the progress of the project into a brief report and submit it by tomorrow afternoon.",
+    "exampleJp": "プロジェクトの進捗状況について、明日の午後までに簡単なレポートにまとめて提出してください。",
+    "exampleTranslation": "Please summarize the progress of the project into a brief report and submit it by tomorrow afternoon.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0083"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1086
+  },
+  {
+    "category": "sentence",
+    "front": "先日のプレゼンテーションは非常に説得力があり、クライアントからも高い評価をいただきました。",
+    "back": "The presentation the other day was extremely persuasive and received high praise from the client.",
+    "exampleJp": "先日のプレゼンテーションは非常に説得力があり、クライアントからも高い評価をいただきました。",
+    "exampleTranslation": "The presentation the other day was extremely persuasive and received high praise from the client.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0084"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1087
+  },
+  {
+    "category": "sentence",
+    "front": "誠に遺憾ながら、今回のご提案は当社の現在の予算に見合わないため、見送らせていただきます。",
+    "back": "It is truly regrettable, but we will have to pass on your proposal this time as it does not fit our current budget.",
+    "exampleJp": "誠に遺憾ながら、今回のご提案は当社の現在の予算に見合わないため、見送らせていただきます。",
+    "exampleTranslation": "It is truly regrettable, but we will have to pass on your proposal this time as it does not fit our current budget.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0085"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1088
+  },
+  {
+    "category": "sentence",
+    "front": "納入された商品の一部に不良品が見つかりましたので、至急代替品の手配をお願いいたします。",
+    "back": "We found defects in some of the delivered products, so please arrange for replacements urgently.",
+    "exampleJp": "納入された商品の一部に不良品が見つかりましたので、至急代替品の手配をお願いいたします。",
+    "exampleTranslation": "We found defects in some of the delivered products, so please arrange for replacements urgently.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0086"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1089
+  },
+  {
+    "category": "sentence",
+    "front": "彼はチームのリーダーとして、メンバーの意見をうまく調整し、目標達成に大きく貢献した。",
+    "back": "As the team leader, he successfully coordinated the members' opinions and contributed greatly to achieving the goal.",
+    "exampleJp": "彼はチームのリーダーとして、メンバーの意見をうまく調整し、目標達成に大きく貢献した。",
+    "exampleTranslation": "As the team leader, he successfully coordinated the members' opinions and contributed greatly to achieving the goal.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0087"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1090
+  },
+  {
+    "category": "sentence",
+    "front": "今後の事業展開を見据えて、海外市場における競合他社の動向を徹底的に調査する必要がある。",
+    "back": "With an eye on future business expansion, it is necessary to thoroughly investigate the trends of competitors in overseas markets.",
+    "exampleJp": "今後の事業展開を見据えて、海外市場における競合他社の動向を徹底的に調査する必要がある。",
+    "exampleTranslation": "With an eye on future business expansion, it is necessary to thoroughly investigate the trends of competitors in overseas markets.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0088"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1091
+  },
+  {
+    "category": "sentence",
+    "front": "突然のシステム障害により、多くのお客様にご不便をおかけしましたことを深くお詫び申し上げます。",
+    "back": "We deeply apologize for the inconvenience caused to many of our customers due to the sudden system failure.",
+    "exampleJp": "突然のシステム障害により、多くのお客様にご不便をおかけしましたことを深くお詫び申し上げます。",
+    "exampleTranslation": "We deeply apologize for the inconvenience caused to many of our customers due to the sudden system failure.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0089"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1092
+  },
+  {
+    "category": "sentence",
+    "front": "新規顧客の獲得も重要ですが、既存顧客の満足度を向上させることが長期的な利益に繋がります。",
+    "back": "While acquiring new customers is important, improving the satisfaction of existing customers leads to long-term profits.",
+    "exampleJp": "新規顧客の獲得も重要ですが、既存顧客の満足度を向上させることが長期的な利益に繋がります。",
+    "exampleTranslation": "While acquiring new customers is important, improving the satisfaction of existing customers leads to long-term profits.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0090"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1093
+  },
+  {
+    "category": "sentence",
+    "front": "政府は景気回復に向けた新たな経済対策として、大規模な公共投資を行う方針を固めた。",
+    "back": "The government has solidified a policy to make large-scale public investments as a new economic measure aimed at economic recovery.",
+    "exampleJp": "政府は景気回復に向けた新たな経済対策として、大規模な公共投資を行う方針を固めた。",
+    "exampleTranslation": "The government has solidified a policy to make large-scale public investments as a new economic measure aimed at economic recovery.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0091"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1094
+  },
+  {
+    "category": "sentence",
+    "front": "深刻な労働力不足を背景に、多くの企業が外国人労働者の受け入れを積極的に進めている。",
+    "back": "Against the backdrop of a severe labor shortage, many companies are actively proceeding with the acceptance of foreign workers.",
+    "exampleJp": "深刻な労働力不足を背景に、多くの企業が外国人労働者の受け入れを積極的に進めている。",
+    "exampleTranslation": "Against the backdrop of a severe labor shortage, many companies are actively proceeding with the acceptance of foreign workers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0092"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1095
+  },
+  {
+    "category": "sentence",
+    "front": "最近の物価高騰は、家計に大きな打撃を与えており、消費者の節約志向がいっそう強まっている。",
+    "back": "The recent surge in prices has dealt a heavy blow to household budgets, and consumers' tendency to save money is growing even stronger.",
+    "exampleJp": "最近の物価高騰は、家計に大きな打撃を与えており、消費者の節約志向がいっそう強まっている。",
+    "exampleTranslation": "The recent surge in prices has dealt a heavy blow to household budgets, and consumers' tendency to save money is growing even stronger.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0093"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1096
+  },
+  {
+    "category": "sentence",
+    "front": "そのベンチャー企業は画期的なAI技術を開発し、世界中から巨額の投資を集めることに成功した。",
+    "back": "That startup company developed a groundbreaking AI technology and succeeded in gathering massive investments from all over the world.",
+    "exampleJp": "そのベンチャー企業は画期的なAI技術を開発し、世界中から巨額の投資を集めることに成功した。",
+    "exampleTranslation": "That startup company developed a groundbreaking AI technology and succeeded in gathering massive investments from all over the world.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0094"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1097
+  },
+  {
+    "category": "sentence",
+    "front": "不正な会計処理が発覚した影響で、同社の株価はストップ安まで急落し、市場に衝撃が走った。",
+    "back": "Due to the impact of the discovery of fraudulent accounting practices, the company's stock price plummeted to its daily limit low, sending a shock through the market.",
+    "exampleJp": "不正な会計処理が発覚した影響で、同社の株価はストップ安まで急落し、市場に衝撃が走った。",
+    "exampleTranslation": "Due to the impact of the discovery of fraudulent accounting practices, the company's stock price plummeted to its daily limit low, sending a shock through the market.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0095"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1098
+  },
+  {
+    "category": "sentence",
+    "front": "原油価格の高止まりが続けば、物流コストの上昇を通じて幅広い商品の値上げに繋がる恐れがある。",
+    "back": "If crude oil prices continue to stay high, there is a fear that it will lead to price hikes for a wide range of products through increased distribution costs.",
+    "exampleJp": "原油価格の高止まりが続けば、物流コストの上昇を通じて幅広い商品の値上げに繋がる恐れがある。",
+    "exampleTranslation": "If crude oil prices continue to stay high, there is a fear that it will lead to price hikes for a wide range of products through increased distribution costs.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0096"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1099
+  },
+  {
+    "category": "sentence",
+    "front": "大手通信キャリア各社は、顧客獲得の競争を勝ち抜くために、より安価な新料金プランを相次いで発表した。",
+    "back": "Major telecommunications carriers successively announced cheaper new pricing plans to win out in the competition for acquiring customers.",
+    "exampleJp": "大手通信キャリア各社は、顧客獲得の競争を勝ち抜くために、より安価な新料金プランを相次いで発表した。",
+    "exampleTranslation": "Major telecommunications carriers successively announced cheaper new pricing plans to win out in the competition for acquiring customers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0097"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1100
+  },
+  {
+    "category": "sentence",
+    "front": "インバウンド需要の急速な回復に伴い、観光地では宿泊施設や人手の確保が急務となっている。",
+    "back": "Along with the rapid recovery of inbound tourism demand, securing accommodations and manpower has become an urgent task in tourist destinations.",
+    "exampleJp": "インバウンド需要の急速な回復に伴い、観光地では宿泊施設や人手の確保が急務となっている。",
+    "exampleTranslation": "Along with the rapid recovery of inbound tourism demand, securing accommodations and manpower has become an urgent task in tourist destinations.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0098"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1101
+  },
+  {
+    "category": "sentence",
+    "front": "少子高齢化による人口減少は、地方経済の衰退を招く深刻な要因として懸念されている。",
+    "back": "The population decline caused by the falling birthrate and aging population is feared as a serious factor inviting the decline of regional economies.",
+    "exampleJp": "少子高齢化による人口減少は、地方経済の衰退を招く深刻な要因として懸念されている。",
+    "exampleTranslation": "The population decline caused by the falling birthrate and aging population is feared as a serious factor inviting the decline of regional economies.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0099"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1102
+  },
+  {
+    "category": "sentence",
+    "front": "日銀は現在の金融緩和政策を維持しつつ、市場の動向を慎重に見極める姿勢を示した。",
+    "back": "The Bank of Japan indicated a stance of carefully assessing market trends while maintaining its current monetary easing policy.",
+    "exampleJp": "日銀は現在の金融緩和政策を維持しつつ、市場の動向を慎重に見極める姿勢を示した。",
+    "exampleTranslation": "The Bank of Japan indicated a stance of carefully assessing market trends while maintaining its current monetary easing policy.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0100"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1103
+  },
+  {
+    "category": "sentence",
+    "front": "現代社会において、ワークライフバランスの実現は個人の幸福だけでなく、企業の生産性向上にも不可欠だ。",
+    "back": "In modern society, realizing a work-life balance is essential not only for personal happiness but also for improving corporate productivity.",
+    "exampleJp": "現代社会において、ワークライフバランスの実現は個人の幸福だけでなく、企業の生産性向上にも不可欠だ。",
+    "exampleTranslation": "In modern society, realizing a work-life balance is essential not only for personal happiness but also for improving corporate productivity.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0101"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1104
+  },
+  {
+    "category": "sentence",
+    "front": "待機児童の問題を解消するため、自治体は保育所の増設や保育士の待遇改善に力を入れている。",
+    "back": "To resolve the issue of children waiting for daycare, municipalities are putting effort into expanding daycare centers and improving the treatment of childcare workers.",
+    "exampleJp": "待機児童の問題を解消するため、自治体は保育所の増設や保育士の待遇改善に力を入れている。",
+    "exampleTranslation": "To resolve the issue of children waiting for daycare, municipalities are putting effort into expanding daycare centers and improving the treatment of childcare workers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0102"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1105
+  },
+  {
+    "category": "sentence",
+    "front": "高齢者の孤立を防ぐために、地域住民が互いに支え合うコミュニティづくりが求められている。",
+    "back": "In order to prevent the isolation of the elderly, there is a demand for building communities where local residents support one another.",
+    "exampleJp": "高齢者の孤立を防ぐために、地域住民が互いに支え合うコミュニティづくりが求められている。",
+    "exampleTranslation": "In order to prevent the isolation of the elderly, there is a demand for building communities where local residents support one another.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0103"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1106
+  },
+  {
+    "category": "sentence",
+    "front": "インターネット上の匿名性を悪用した誹謗中傷が社会問題化しており、法整備の必要性が議論されている。",
+    "back": "Slander and libel abusing anonymity on the internet have become a social problem, and the need for legal frameworks is being debated.",
+    "exampleJp": "インターネット上の匿名性を悪用した誹謗中傷が社会問題化しており、法整備の必要性が議論されている。",
+    "exampleTranslation": "Slander and libel abusing anonymity on the internet have become a social problem, and the need for legal frameworks is being debated.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0104"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1107
+  },
+  {
+    "category": "sentence",
+    "front": "男女雇用機会均等法が施行されて久しいが、管理職における女性の割合は依然として低い水準にとどまっている。",
+    "back": "It has been a long time since the Equal Employment Opportunity Law was enacted, but the percentage of women in managerial positions still remains at a low level.",
+    "exampleJp": "男女雇用機会均等法が施行されて久しいが、管理職における女性の割合は依然として低い水準にとどまっている。",
+    "exampleTranslation": "It has been a long time since the Equal Employment Opportunity Law was enacted, but the percentage of women in managerial positions still remains at a low level.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0105"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1108
+  },
+  {
+    "category": "sentence",
+    "front": "地方から都市部への若者の流出に歯止めをかけるため、魅力的な雇用を創出する取り組みが不可欠である。",
+    "back": "Initiatives to create attractive employment are essential to put a stop to the outflow of youth from rural areas to urban centers.",
+    "exampleJp": "地方から都市部への若者の流出に歯止めをかけるため、魅力的な雇用を創出する取り組みが不可欠である。",
+    "exampleTranslation": "Initiatives to create attractive employment are essential to put a stop to the outflow of youth from rural areas to urban centers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0106"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1109
+  },
+  {
+    "category": "sentence",
+    "front": "多様性を尊重し、誰もが働きやすい職場環境を整備することが、企業の社会的責任として問われている。",
+    "back": "Respecting diversity and establishing a workplace environment where anyone can easily work is being questioned as a corporate social responsibility.",
+    "exampleJp": "多様性を尊重し、誰もが働きやすい職場環境を整備することが、企業の社会的責任として問われている。",
+    "exampleTranslation": "Respecting diversity and establishing a workplace environment where anyone can easily work is being questioned as a corporate social responsibility.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0107"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1110
+  },
+  {
+    "category": "sentence",
+    "front": "障害を持つ人々が社会に積極的に参加できるよう、バリアフリー化の推進が急務となっている。",
+    "back": "Promoting barrier-free access has become an urgent task so that people with disabilities can actively participate in society.",
+    "exampleJp": "障害を持つ人々が社会に積極的に参加できるよう、バリアフリー化の推進が急務となっている。",
+    "exampleTranslation": "Promoting barrier-free access has become an urgent task so that people with disabilities can actively participate in society.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0108"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1111
+  },
+  {
+    "category": "sentence",
+    "front": "貧困の連鎖を断ち切るために、家庭環境に恵まれない子供たちへの教育支援を強化すべきだ。",
+    "back": "In order to break the chain of poverty, educational support for children who are not blessed with a good home environment should be strengthened.",
+    "exampleJp": "貧困の連鎖を断ち切るために、家庭環境に恵まれない子供たちへの教育支援を強化すべきだ。",
+    "exampleTranslation": "In order to break the chain of poverty, educational support for children who are not blessed with a good home environment should be strengthened.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0109"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1112
+  },
+  {
+    "category": "sentence",
+    "front": "フェイクニュースの拡散を防ぐには、情報の真偽を冷静に見極めるメディアリテラシーの向上が欠かせない。",
+    "back": "To prevent the spread of fake news, improving media literacy to calmly determine the truth or falsehood of information is indispensable.",
+    "exampleJp": "フェイクニュースの拡散を防ぐには、情報の真偽を冷静に見極めるメディアリテラシーの向上が欠かせない。",
+    "exampleTranslation": "To prevent the spread of fake news, improving media literacy to calmly determine the truth or falsehood of information is indispensable.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0110"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1113
+  },
+  {
+    "category": "sentence",
+    "front": "質の高い睡眠をとることは、日中の集中力を維持し、ストレスを軽減する上で非常に重要である。",
+    "back": "Getting high-quality sleep is extremely important for maintaining concentration during the day and reducing stress.",
+    "exampleJp": "質の高い睡眠をとることは、日中の集中力を維持し、ストレスを軽減する上で非常に重要である。",
+    "exampleTranslation": "Getting high-quality sleep is extremely important for maintaining concentration during the day and reducing stress.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0111"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1114
+  },
+  {
+    "category": "sentence",
+    "front": "栄養バランスの取れた食事と適度な運動を心がけることが、生活習慣病の予防に繋がる。",
+    "back": "Keeping in mind a nutritionally balanced diet and moderate exercise leads to the prevention of lifestyle-related diseases.",
+    "exampleJp": "栄養バランスの取れた食事と適度な運動を心がけることが、生活習慣病の予防に繋がる。",
+    "exampleTranslation": "Keeping in mind a nutritionally balanced diet and moderate exercise leads to the prevention of lifestyle-related diseases.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0112"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1115
+  },
+  {
+    "category": "sentence",
+    "front": "定期的な健康診断を受診することで、病気の早期発見と早期治療が可能になり、生存率が大きく向上する。",
+    "back": "By undergoing regular health check-ups, early detection and treatment of diseases become possible, greatly improving survival rates.",
+    "exampleJp": "定期的な健康診断を受診することで、病気の早期発見と早期治療が可能になり、生存率が大きく向上する。",
+    "exampleTranslation": "By undergoing regular health check-ups, early detection and treatment of diseases become possible, greatly improving survival rates.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0113"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1116
+  },
+  {
+    "category": "sentence",
+    "front": "デスクワーク中心の生活は運動不足を招きやすいため、意識的に歩く習慣を身につけることが推奨される。",
+    "back": "Because a lifestyle centered around desk work easily leads to a lack of exercise, making it a habit to consciously walk is recommended.",
+    "exampleJp": "デスクワーク中心の生活は運動不足を招きやすいため、意識的に歩く習慣を身につけることが推奨される。",
+    "exampleTranslation": "Because a lifestyle centered around desk work easily leads to a lack of exercise, making it a habit to consciously walk is recommended.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0114"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1117
+  },
+  {
+    "category": "sentence",
+    "front": "過度なダイエットはリバウンドの原因になるだけでなく、摂食障害などの深刻な健康被害を引き起こしかねない。",
+    "back": "Excessive dieting not only causes weight rebound but could also trigger serious health damages such as eating disorders.",
+    "exampleJp": "過度なダイエットはリバウンドの原因になるだけでなく、摂食障害などの深刻な健康被害を引き起こしかねない。",
+    "exampleTranslation": "Excessive dieting not only causes weight rebound but could also trigger serious health damages such as eating disorders.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0115"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1118
+  },
+  {
+    "category": "sentence",
+    "front": "高齢化の進行に伴い、認知症の患者数は増加の一途をたどっており、介護者の負担軽減が急務だ。",
+    "back": "With the progression of aging, the number of dementia patients continues to steadily increase, making reducing the burden on caregivers an urgent task.",
+    "exampleJp": "高齢化の進行に伴い、認知症の患者数は増加の一途をたどっており、介護者の負担軽減が急務だ。",
+    "exampleTranslation": "With the progression of aging, the number of dementia patients continues to steadily increase, making reducing the burden on caregivers an urgent task.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0116"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1119
+  },
+  {
+    "category": "sentence",
+    "front": "スマートフォンの画面から発せられるブルーライトは、睡眠の質を低下させる要因の一つと言われている。",
+    "back": "The blue light emitted from smartphone screens is said to be one of the factors that lower the quality of sleep.",
+    "exampleJp": "スマートフォンの画面から発せられるブルーライトは、睡眠の質を低下させる要因の一つと言われている。",
+    "exampleTranslation": "The blue light emitted from smartphone screens is said to be one of the factors that lower the quality of sleep.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0117"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1120
+  },
+  {
+    "category": "sentence",
+    "front": "花粉症の季節には、外出時にマスクを着用し、帰宅後はうがいと手洗いを徹底することが基本的な対策となる。",
+    "back": "During hay fever season, wearing a mask when going out and strictly gargling and washing hands after returning home are basic countermeasures.",
+    "exampleJp": "花粉症の季節には、外出時にマスクを着用し、帰宅後はうがいと手洗いを徹底することが基本的な対策となる。",
+    "exampleTranslation": "During hay fever season, wearing a mask when going out and strictly gargling and washing hands after returning home are basic countermeasures.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0118"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1121
+  },
+  {
+    "category": "sentence",
+    "front": "ストレス社会と呼ばれる現代において、メンタルヘルスケアの重要性はかつてないほど高まっている。",
+    "back": "In modern times, which is called a stress society, the importance of mental healthcare has grown higher than ever before.",
+    "exampleJp": "ストレス社会と呼ばれる現代において、メンタルヘルスケアの重要性はかつてないほど高まっている。",
+    "exampleTranslation": "In modern times, which is called a stress society, the importance of mental healthcare has grown higher than ever before.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0119"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1122
+  },
+  {
+    "category": "sentence",
+    "front": "医療費の増大を抑制するためには、国民一人ひとりが予防医療に対する意識を高めることが求められる。",
+    "back": "In order to curb the increase in medical expenses, each citizen is required to raise their awareness of preventive medicine.",
+    "exampleJp": "医療費の増大を抑制するためには、国民一人ひとりが予防医療に対する意識を高めることが求められる。",
+    "exampleTranslation": "In order to curb the increase in medical expenses, each citizen is required to raise their awareness of preventive medicine.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0120"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1123
+  },
+  {
+    "category": "sentence",
+    "front": "地球温暖化の影響とみられる異常気象が世界各地で頻発しており、甚大な被害をもたらしている。",
+    "back": "Abnormal weather conditions, seemingly caused by global warming, are occurring frequently around the world, causing immense damage.",
+    "exampleJp": "地球温暖化の影響とみられる異常気象が世界各地で頻発しており、甚大な被害をもたらしている。",
+    "exampleTranslation": "Abnormal weather conditions, seemingly caused by global warming, are occurring frequently around the world, causing immense damage.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0121"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1124
+  },
+  {
+    "category": "sentence",
+    "front": "プラスチックごみによる海洋汚染を防ぐため、多くの国が使い捨てプラスチック製品の削減に取り組んでいる。",
+    "back": "To prevent marine pollution caused by plastic waste, many countries are working on reducing single-use plastic products.",
+    "exampleJp": "プラスチックごみによる海洋汚染を防ぐため、多くの国が使い捨てプラスチック製品の削減に取り組んでいる。",
+    "exampleTranslation": "To prevent marine pollution caused by plastic waste, many countries are working on reducing single-use plastic products.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0122"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1125
+  },
+  {
+    "category": "sentence",
+    "front": "再生可能エネルギーの導入を促進することは、温室効果ガスの排出量を削減するための鍵となる。",
+    "back": "Promoting the introduction of renewable energy is key to reducing greenhouse gas emissions.",
+    "exampleJp": "再生可能エネルギーの導入を促進することは、温室効果ガスの排出量を削減するための鍵となる。",
+    "exampleTranslation": "Promoting the introduction of renewable energy is key to reducing greenhouse gas emissions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0123"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1126
+  },
+  {
+    "category": "sentence",
+    "front": "森林伐採は生態系を破壊するだけでなく、地球の二酸化炭素吸収能力を低下させる深刻な問題である。",
+    "back": "Deforestation is a serious problem that not only destroys ecosystems but also reduces the Earth's ability to absorb carbon dioxide.",
+    "exampleJp": "森林伐採は生態系を破壊するだけでなく、地球の二酸化炭素吸収能力を低下させる深刻な問題である。",
+    "exampleTranslation": "Deforestation is a serious problem that not only destroys ecosystems but also reduces the Earth's ability to absorb carbon dioxide.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0124"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1127
+  },
+  {
+    "category": "sentence",
+    "front": "食品ロスを減らすために、消費期限が近い商品を積極的に購入するなど、身近なところから行動を変える必要がある。",
+    "back": "To reduce food loss, we need to change our behavior from our immediate surroundings, such as actively purchasing products nearing their expiration dates.",
+    "exampleJp": "食品ロスを減らすために、消費期限が近い商品を積極的に購入するなど、身近なところから行動を変える必要がある。",
+    "exampleTranslation": "To reduce food loss, we need to change our behavior from our immediate surroundings, such as actively purchasing products nearing their expiration dates.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0125"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1128
+  },
+  {
+    "category": "sentence",
+    "front": "持続可能な社会の実現に向けて、企業は利益の追求だけでなく、環境保全への配慮を経営に組み込むべきだ。",
+    "back": "Towards the realization of a sustainable society, companies should incorporate consideration for environmental conservation into their management, not just the pursuit of profit.",
+    "exampleJp": "持続可能な社会の実現に向けて、企業は利益の追求だけでなく、環境保全への配慮を経営に組み込むべきだ。",
+    "exampleTranslation": "Towards the realization of a sustainable society, companies should incorporate consideration for environmental conservation into their management, not just the pursuit of profit.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0126"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1129
+  },
+  {
+    "category": "sentence",
+    "front": "絶滅危惧種の保護活動は、生物多様性を維持し、豊かな自然環境を次世代に引き継ぐために不可欠である。",
+    "back": "Conservation activities for endangered species are essential to maintain biodiversity and pass on a rich natural environment to the next generation.",
+    "exampleJp": "絶滅危惧種の保護活動は、生物多様性を維持し、豊かな自然環境を次世代に引き継ぐために不可欠である。",
+    "exampleTranslation": "Conservation activities for endangered species are essential to maintain biodiversity and pass on a rich natural environment to the next generation.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0127"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1130
+  },
+  {
+    "category": "sentence",
+    "front": "ハイブリッド車や電気自動車の普及は、自動車による二酸化炭素排出量を抑える有効な手段として期待されている。",
+    "back": "The spread of hybrid and electric vehicles is expected to be an effective means of suppressing carbon dioxide emissions from automobiles.",
+    "exampleJp": "ハイブリッド車や電気自動車の普及は、自動車による二酸化炭素排出量を抑える有効な手段として期待されている。",
+    "exampleTranslation": "The spread of hybrid and electric vehicles is expected to be an effective means of suppressing carbon dioxide emissions from automobiles.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0128"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1131
+  },
+  {
+    "category": "sentence",
+    "front": "ゴミの分別とリサイクルを徹底することは、限られた資源を有効に活用するための第一歩である。",
+    "back": "Thoroughly sorting and recycling garbage is the first step towards effectively utilizing limited resources.",
+    "exampleJp": "ゴミの分別とリサイクルを徹底することは、限られた資源を有効に活用するための第一歩である。",
+    "exampleTranslation": "Thoroughly sorting and recycling garbage is the first step towards effectively utilizing limited resources.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0129"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1132
+  },
+  {
+    "category": "sentence",
+    "front": "各国の利害が対立する中で、気候変動対策に関する国際的な枠組みを実効性のあるものにすることが課題となっている。",
+    "back": "While the interests of various countries conflict, making the international framework for climate change countermeasures effective has become a challenge.",
+    "exampleJp": "各国の利害が対立する中で、気候変動対策に関する国際的な枠組みを実効性のあるものにすることが課題となっている。",
+    "exampleTranslation": "While the interests of various countries conflict, making the international framework for climate change countermeasures effective has become a challenge.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0130"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1133
+  },
+  {
+    "category": "sentence",
+    "front": "人工知能の進化により、自動翻訳の精度は飛躍的に向上し、言葉の壁を越えたコミュニケーションが容易になった。",
+    "back": "Due to the evolution of artificial intelligence, the accuracy of automatic translation has dramatically improved, making communication across language barriers easier.",
+    "exampleJp": "人工知能の進化により、自動翻訳の精度は飛躍的に向上し、言葉の壁を越えたコミュニケーションが容易になった。",
+    "exampleTranslation": "Due to the evolution of artificial intelligence, the accuracy of automatic translation has dramatically improved, making communication across language barriers easier.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0131"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1134
+  },
+  {
+    "category": "sentence",
+    "front": "キャッシュレス決済の普及に伴い、財布を持ち歩かずにスマートフォン一つで買い物をする人が増えている。",
+    "back": "With the spread of cashless payments, the number of people who shop with just a smartphone without carrying a wallet is increasing.",
+    "exampleJp": "キャッシュレス決済の普及に伴い、財布を持ち歩かずにスマートフォン一つで買い物をする人が増えている。",
+    "exampleTranslation": "With the spread of cashless payments, the number of people who shop with just a smartphone without carrying a wallet is increasing.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0132"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1135
+  },
+  {
+    "category": "sentence",
+    "front": "自動運転技術が実用化されれば、交通事故の減少だけでなく、高齢者の移動手段の確保にも大きく貢献するだろう。",
+    "back": "If autonomous driving technology is commercialized, it will greatly contribute not only to reducing traffic accidents but also to securing a means of transportation for the elderly.",
+    "exampleJp": "自動運転技術が実用化されれば、交通事故の減少だけでなく、高齢者の移動手段の確保にも大きく貢献するだろう。",
+    "exampleTranslation": "If autonomous driving technology is commercialized, it will greatly contribute not only to reducing traffic accidents but also to securing a means of transportation for the elderly.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0133"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1136
+  },
+  {
+    "category": "sentence",
+    "front": "インターネット通販の利用拡大は、消費者に利便性をもたらした一方で、宅配業者の過酷な労働環境という問題を生んだ。",
+    "back": "The expanded use of online shopping brought convenience to consumers, but on the other hand, it created the problem of harsh working environments for delivery drivers.",
+    "exampleJp": "インターネット通販の利用拡大は、消費者に利便性をもたらした一方で、宅配業者の過酷な労働環境という問題を生んだ。",
+    "exampleTranslation": "The expanded use of online shopping brought convenience to consumers, but on the other hand, it created the problem of harsh working environments for delivery drivers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0134"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1137
+  },
+  {
+    "category": "sentence",
+    "front": "サイバー攻撃の手口は年々巧妙化しており、企業は情報セキュリティ対策に多額の投資を行わざるを得ない。",
+    "back": "The methods of cyberattacks are becoming more sophisticated year by year, forcing companies to make large investments in information security measures.",
+    "exampleJp": "サイバー攻撃の手口は年々巧妙化しており、企業は情報セキュリティ対策に多額の投資を行わざるを得ない。",
+    "exampleTranslation": "The methods of cyberattacks are becoming more sophisticated year by year, forcing companies to make large investments in information security measures.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0135"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1138
+  },
+  {
+    "category": "sentence",
+    "front": "テレワークの普及により、居住地にとらわれずに地方に移住して働くという新しいライフスタイルが注目されている。",
+    "back": "With the spread of telework, a new lifestyle of relocating to and working in rural areas without being bound by residence is drawing attention.",
+    "exampleJp": "テレワークの普及により、居住地にとらわれずに地方に移住して働くという新しいライフスタイルが注目されている。",
+    "exampleTranslation": "With the spread of telework, a new lifestyle of relocating to and working in rural areas without being bound by residence is drawing attention.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0136"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1139
+  },
+  {
+    "category": "sentence",
+    "front": "ドローンを活用した荷物の配送システムは、人手不足の解消や過疎地への物流網の維持に役立つと期待されている。",
+    "back": "A package delivery system utilizing drones is expected to be helpful in resolving labor shortages and maintaining logistics networks to depopulated areas.",
+    "exampleJp": "ドローンを活用した荷物の配送システムは、人手不足の解消や過疎地への物流網の維持に役立つと期待されている。",
+    "exampleTranslation": "A package delivery system utilizing drones is expected to be helpful in resolving labor shortages and maintaining logistics networks to depopulated areas.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0137"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1140
+  },
+  {
+    "category": "sentence",
+    "front": "SNSを通じて誰もが手軽に情報を発信できるようになった反面、デマや不適切な投稿が社会に混乱を招くリスクもある。",
+    "back": "While anyone has become able to easily broadcast information through SNS, there is also the risk that rumors and inappropriate posts will cause confusion in society.",
+    "exampleJp": "SNSを通じて誰もが手軽に情報を発信できるようになった反面、デマや不適切な投稿が社会に混乱を招くリスクもある。",
+    "exampleTranslation": "While anyone has become able to easily broadcast information through SNS, there is also the risk that rumors and inappropriate posts will cause confusion in society.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0138"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1141
+  },
+  {
+    "category": "sentence",
+    "front": "ビッグデータを活用することで、個人の嗜好に合わせた精度の高いおすすめ商品を表示することが可能になった。",
+    "back": "By utilizing big data, it has become possible to display highly accurate recommended products tailored to individual preferences.",
+    "exampleJp": "ビッグデータを活用することで、個人の嗜好に合わせた精度の高いおすすめ商品を表示することが可能になった。",
+    "exampleTranslation": "By utilizing big data, it has become possible to display highly accurate recommended products tailored to individual preferences.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0139"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1142
+  },
+  {
+    "category": "sentence",
+    "front": "IoT技術の発展により、家中の家電製品をインターネットに接続し、外出先からスマートフォンで操作できるようになった。",
+    "back": "Due to the development of IoT technology, it has become possible to connect home appliances throughout the house to the internet and operate them via smartphone from outside.",
+    "exampleJp": "IoT技術の発展により、家中の家電製品をインターネットに接続し、外出先からスマートフォンで操作できるようになった。",
+    "exampleTranslation": "Due to the development of IoT technology, it has become possible to connect home appliances throughout the house to the internet and operate them via smartphone from outside.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0140"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1143
+  },
+  {
+    "category": "sentence",
+    "front": "グローバル化が進む社会において、異なる文化を理解し、多様な価値観を受け入れる教育の重要性が増している。",
+    "back": "In a society where globalization is advancing, the importance of education that understands different cultures and accepts diverse values is increasing.",
+    "exampleJp": "グローバル化が進む社会において、異なる文化を理解し、多様な価値観を受け入れる教育の重要性が増している。",
+    "exampleTranslation": "In a society where globalization is advancing, the importance of education that understands different cultures and accepts diverse values is increasing.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0141"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1144
+  },
+  {
+    "category": "sentence",
+    "front": "単に知識を暗記するだけでなく、自ら課題を見つけ、解決策を探求する論理的思考力を養うことが求められる。",
+    "back": "It is required to cultivate logical thinking skills to not just memorize knowledge, but to find problems oneself and explore solutions.",
+    "exampleJp": "単に知識を暗記するだけでなく、自ら課題を見つけ、解決策を探求する論理的思考力を養うことが求められる。",
+    "exampleTranslation": "It is required to cultivate logical thinking skills to not just memorize knowledge, but to find problems oneself and explore solutions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0142"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1145
+  },
+  {
+    "category": "sentence",
+    "front": "デジタル端末を活用したICT教育は、児童一人ひとりの理解度に応じた個別最適な学びを提供する可能性を秘めている。",
+    "back": "ICT education utilizing digital devices holds the potential to provide individually optimized learning according to the comprehension level of each child.",
+    "exampleJp": "デジタル端末を活用したICT教育は、児童一人ひとりの理解度に応じた個別最適な学びを提供する可能性を秘めている。",
+    "exampleTranslation": "ICT education utilizing digital devices holds the potential to provide individually optimized learning according to the comprehension level of each child.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0143"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1146
+  },
+  {
+    "category": "sentence",
+    "front": "少子化の影響で大学間の学生獲得競争が激化しており、各大学は特色あるカリキュラムの構築を迫られている。",
+    "back": "Due to the declining birthrate, the competition among universities to acquire students has intensified, and each university is being pressed to construct a distinctive curriculum.",
+    "exampleJp": "少子化の影響で大学間の学生獲得競争が激化しており、各大学は特色あるカリキュラムの構築を迫られている。",
+    "exampleTranslation": "Due to the declining birthrate, the competition among universities to acquire students has intensified, and each university is being pressed to construct a distinctive curriculum.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0144"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1147
+  },
+  {
+    "category": "sentence",
+    "front": "社会の急激な変化に対応するため、学校を卒業した後も生涯にわたって学び続ける「リカレント教育」が注目されている。",
+    "back": "In order to respond to rapid changes in society, \"recurrent education,\" where one continues to learn throughout life even after graduating from school, is attracting attention.",
+    "exampleJp": "社会の急激な変化に対応するため、学校を卒業した後も生涯にわたって学び続ける「リカレント教育」が注目されている。",
+    "exampleTranslation": "In order to respond to rapid changes in society, \"recurrent education,\" where one continues to learn throughout life even after graduating from school, is attracting attention.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0145"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1148
+  },
+  {
+    "category": "sentence",
+    "front": "奨学金の返済義務が若者の将来に重い負担をのしかからせており、給付型奨学金の拡充を求める声が根強い。",
+    "back": "The obligation to repay scholarships is imposing a heavy burden on the future of young people, and calls demanding the expansion of grant-type scholarships remain persistent.",
+    "exampleJp": "奨学金の返済義務が若者の将来に重い負担をのしかからせており、給付型奨学金の拡充を求める声が根強い。",
+    "exampleTranslation": "The obligation to repay scholarships is imposing a heavy burden on the future of young people, and calls demanding the expansion of grant-type scholarships remain persistent.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0146"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1149
+  },
+  {
+    "category": "sentence",
+    "front": "いじめ問題の解決には、学校や教師だけでなく、家庭や地域社会が一体となって子供たちを見守る体制が必要だ。",
+    "back": "Solving the bullying problem requires a system where not only schools and teachers, but also families and local communities unite to watch over the children.",
+    "exampleJp": "いじめ問題の解決には、学校や教師だけでなく、家庭や地域社会が一体となって子供たちを見守る体制が必要だ。",
+    "exampleTranslation": "Solving the bullying problem requires a system where not only schools and teachers, but also families and local communities unite to watch over the children.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0147"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1150
+  },
+  {
+    "category": "sentence",
+    "front": "早期からの英語教育は有効であるという意見がある一方で、まずは母語である日本語の基礎を固めるべきだという指摘もある。",
+    "back": "While there is an opinion that English education from an early age is effective, there is also the point that the foundation of the mother tongue, Japanese, should be solidified first.",
+    "exampleJp": "早期からの英語教育は有効であるという意見がある一方で、まずは母語である日本語の基礎を固めるべきだという指摘もある。",
+    "exampleTranslation": "While there is an opinion that English education from an early age is effective, there is also the point that the foundation of the mother tongue, Japanese, should be solidified first.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0148"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1151
+  },
+  {
+    "category": "sentence",
+    "front": "教員の長時間労働が常態化しており、業務の負担を軽減し、子供たちと向き合う時間を確保することが喫緊の課題だ。",
+    "back": "Long working hours for teachers have become the norm, and it is an urgent task to reduce their workload and secure time to face the children.",
+    "exampleJp": "教員の長時間労働が常態化しており、業務の負担を軽減し、子供たちと向き合う時間を確保することが喫緊の課題だ。",
+    "exampleTranslation": "Long working hours for teachers have become the norm, and it is an urgent task to reduce their workload and secure time to face the children.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0149"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1152
+  },
+  {
+    "category": "sentence",
+    "front": "偏差値だけで学校を評価する風潮を見直し、子供たちの多様な個性や才能を伸ばす教育のあり方が模索されている。",
+    "back": "The trend of evaluating schools based solely on deviation values is being reconsidered, and educational approaches that develop children's diverse individualities and talents are being explored.",
+    "exampleJp": "偏差値だけで学校を評価する風潮を見直し、子供たちの多様な個性や才能を伸ばす教育のあり方が模索されている。",
+    "exampleTranslation": "The trend of evaluating schools based solely on deviation values is being reconsidered, and educational approaches that develop children's diverse individualities and talents are being explored.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0150"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1153
+  },
+  {
+    "category": "sentence",
+    "front": "施設内での写真撮影は許可されておりますが、フラッシュの使用や他のお客様の迷惑となる行為は固くお断りいたします。",
+    "back": "Photography inside the facility is permitted, but the use of flash and actions that cause a nuisance to other guests are strictly prohibited.",
+    "exampleJp": "施設内での写真撮影は許可されておりますが、フラッシュの使用や他のお客様の迷惑となる行為は固くお断りいたします。",
+    "exampleTranslation": "Photography inside the facility is permitted, but the use of flash and actions that cause a nuisance to other guests are strictly prohibited.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0151"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1154
+  },
+  {
+    "category": "sentence",
+    "front": "悪天候や交通機関の乱れにより、やむを得ずイベントの開始時刻を遅らせる場合がございますので、あらかじめご了承ください。",
+    "back": "Please understand in advance that we may unavoidably delay the start time of the event due to bad weather or disruptions in public transportation.",
+    "exampleJp": "悪天候や交通機関の乱れにより、やむを得ずイベントの開始時刻を遅らせる場合がございますので、あらかじめご了承ください。",
+    "exampleTranslation": "Please understand in advance that we may unavoidably delay the start time of the event due to bad weather or disruptions in public transportation.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0152"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1155
+  },
+  {
+    "category": "sentence",
+    "front": "貴重品は各自で責任を持って管理していただき、万が一盗難や紛失が発生した場合、主催者側は一切の責任を負いかねます。",
+    "back": "We ask that everyone manage their valuables on their own responsibility; in the unlikely event of theft or loss, the organizers cannot assume any responsibility whatsoever.",
+    "exampleJp": "貴重品は各自で責任を持って管理していただき、万が一盗難や紛失が発生した場合、主催者側は一切の責任を負いかねます。",
+    "exampleTranslation": "We ask that everyone manage their valuables on their own responsibility; in the unlikely event of theft or loss, the organizers cannot assume any responsibility whatsoever.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0153"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1156
+  },
+  {
+    "category": "sentence",
+    "front": "指定された喫煙スペース以外での歩きタバコやポイ捨ては、条例により罰則の対象となる場合があります。",
+    "back": "Smoking while walking or littering outside of designated smoking areas may be subject to penalties according to local ordinances.",
+    "exampleJp": "指定された喫煙スペース以外での歩きタバコやポイ捨ては、条例により罰則の対象となる場合があります。",
+    "exampleTranslation": "Smoking while walking or littering outside of designated smoking areas may be subject to penalties according to local ordinances.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0154"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1157
+  },
+  {
+    "category": "sentence",
+    "front": "非常ベルが鳴った際は、エレベーターは絶対に使用せず、係員の指示に従って落ち着いて非常階段から避難してください。",
+    "back": "When the emergency bell rings, absolutely do not use the elevators, and calmly evacuate via the emergency stairs following the staff's instructions.",
+    "exampleJp": "非常ベルが鳴った際は、エレベーターは絶対に使用せず、係員の指示に従って落ち着いて非常階段から避難してください。",
+    "exampleTranslation": "When the emergency bell rings, absolutely do not use the elevators, and calmly evacuate via the emergency stairs following the staff's instructions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0155"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1158
+  },
+  {
+    "category": "sentence",
+    "front": "定期券の払い戻しをご希望のお客様は、本人確認ができる公的な身分証明書を持参の上、窓口までお越しください。",
+    "back": "Customers wishing to receive a refund for a commuter pass should come to the counter bringing an official identification document that can verify their identity.",
+    "exampleJp": "定期券の払い戻しをご希望のお客様は、本人確認ができる公的な身分証明書を持参の上、窓口までお越しください。",
+    "exampleTranslation": "Customers wishing to receive a refund for a commuter pass should come to the counter bringing an official identification document that can verify their identity.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0156"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1159
+  },
+  {
+    "category": "sentence",
+    "front": "本製品を本来の用途以外の目的で使用したことによって生じた損害について、メーカーは保証の対象外とさせていただきます。",
+    "back": "Damages caused by using this product for purposes other than its intended use will be considered outside the scope of the manufacturer's warranty.",
+    "exampleJp": "本製品を本来の用途以外の目的で使用したことによって生じた損害について、メーカーは保証の対象外とさせていただきます。",
+    "exampleTranslation": "Damages caused by using this product for purposes other than its intended use will be considered outside the scope of the manufacturer's warranty.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0157"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1160
+  },
+  {
+    "category": "sentence",
+    "front": "道路工事に伴い、明日午前9時から午後5時までの間、この区間は全面通行止めとなりますので迂回にご協力ください。",
+    "back": "Due to road construction, this section will be completely closed to traffic from 9 a.m. to 5 p.m. tomorrow, so please cooperate by taking a detour.",
+    "exampleJp": "道路工事に伴い、明日午前9時から午後5時までの間、この区間は全面通行止めとなりますので迂回にご協力ください。",
+    "exampleTranslation": "Due to road construction, this section will be completely closed to traffic from 9 a.m. to 5 p.m. tomorrow, so please cooperate by taking a detour.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0158"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1161
+  },
+  {
+    "category": "sentence",
+    "front": "ゴミを出す際は、自治体の指定する分別ルールに沿って、決められた曜日と時間を厳守して集積所に出してください。",
+    "back": "When putting out garbage, please follow the sorting rules designated by the municipality and strictly observe the decided day of the week and time to put it at the collection point.",
+    "exampleJp": "ゴミを出す際は、自治体の指定する分別ルールに沿って、決められた曜日と時間を厳守して集積所に出してください。",
+    "exampleTranslation": "When putting out garbage, please follow the sorting rules designated by the municipality and strictly observe the decided day of the week and time to put it at the collection point.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0159"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1162
+  },
+  {
+    "category": "sentence",
+    "front": "個人情報の取り扱いについては、プライバシーポリシーに基づいて厳重に管理し、第三者に漏洩することはありません。",
+    "back": "Regarding the handling of personal information, it is strictly managed based on our privacy policy and will never be leaked to a third party.",
+    "exampleJp": "個人情報の取り扱いについては、プライバシーポリシーに基づいて厳重に管理し、第三者に漏洩することはありません。",
+    "exampleTranslation": "Regarding the handling of personal information, it is strictly managed based on our privacy policy and will never be leaked to a third party.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0160"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1163
+  },
+  {
+    "category": "sentence",
+    "front": "今の給料では、都会で一人暮らしをするのは厳しいと言わざるを得ない。",
+    "back": "I must admit that living alone in the city is tough on my current salary.",
+    "exampleJp": "今の給料では、都会で一人暮らしをするのは厳しいと言わざるを得ない。",
+    "exampleTranslation": "I must admit that living alone in the city is tough on my current salary.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0161"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1164
+  },
+  {
+    "category": "sentence",
+    "front": "彼の不用意な発言が、国際的な問題に発展しかねない。",
+    "back": "His careless remarks could potentially escalate into an international issue.",
+    "exampleJp": "彼の不用意な発言が、国際的な問題に発展しかねない。",
+    "exampleTranslation": "His careless remarks could potentially escalate into an international issue.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0162"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1165
+  },
+  {
+    "category": "sentence",
+    "front": "こんなに練習したのだから、明日の試合は勝てるに決まっている。",
+    "back": "Since we practiced this much, we are bound to win tomorrow's match.",
+    "exampleJp": "こんなに練習したのだから、明日の試合は勝てるに決まっている。",
+    "exampleTranslation": "Since we practiced this much, we are bound to win tomorrow's match.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0163"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1166
+  },
+  {
+    "category": "sentence",
+    "front": "あの人は謝るどころか、逆に私を責め始めた。",
+    "back": "Far from apologizing, that person actually started blaming me.",
+    "exampleJp": "あの人は謝るどころか、逆に私を責め始めた。",
+    "exampleTranslation": "Far from apologizing, that person actually started blaming me.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0164"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1167
+  },
+  {
+    "category": "sentence",
+    "front": "地球温暖化の影響で、多くの動物の生息地が失われつつある。",
+    "back": "Due to the impact of global warming, the habitats of many animals are gradually being lost.",
+    "exampleJp": "地球温暖化の影響で、多くの動物の生息地が失われつつある。",
+    "exampleTranslation": "Due to the impact of global warming, the habitats of many animals are gradually being lost.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0165"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1168
+  },
+  {
+    "category": "sentence",
+    "front": "この映画は、実際にあった事件をもとに制作された。",
+    "back": "This movie was produced based on a real incident.",
+    "exampleJp": "この映画は、実際にあった事件をもとに制作された。",
+    "exampleTranslation": "This movie was produced based on a real incident.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0166"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1169
+  },
+  {
+    "category": "sentence",
+    "front": "お客様のご予算に応じて、最適なプランをご提案いたします。",
+    "back": "We will propose the best plan in accordance with your budget.",
+    "exampleJp": "お客様のご予算に応じて、最適なプランをご提案いたします。",
+    "exampleTranslation": "We will propose the best plan in accordance with your budget.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0167"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1170
+  },
+  {
+    "category": "sentence",
+    "front": "新商品の発売に先立って、無料のサンプルを配布する予定だ。",
+    "back": "Prior to the launch of the new product, we plan to distribute free samples.",
+    "exampleJp": "新商品の発売に先立って、無料のサンプルを配布する予定だ。",
+    "exampleTranslation": "Prior to the launch of the new product, we plan to distribute free samples.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0168"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1171
+  },
+  {
+    "category": "sentence",
+    "front": "新しい駐車場の建設をめぐって、住民同士で意見が対立している。",
+    "back": "Opinions are divided among the residents concerning the construction of the new parking lot.",
+    "exampleJp": "新しい駐車場の建設をめぐって、住民同士で意見が対立している。",
+    "exampleTranslation": "Opinions are divided among the residents concerning the construction of the new parking lot.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0169"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1172
+  },
+  {
+    "category": "sentence",
+    "front": "経験の有無にかかわらず、やる気のある人を採用したい。",
+    "back": "Regardless of their level of experience, we want to hire people who are highly motivated.",
+    "exampleJp": "経験の有無にかかわらず、やる気のある人を採用したい。",
+    "exampleTranslation": "Regardless of their level of experience, we want to hire people who are highly motivated.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0170"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1173
+  },
+  {
+    "category": "sentence",
+    "front": "現場に残された指紋から判断して、彼が犯人に相違ない。",
+    "back": "Judging from the fingerprints left at the scene, there is no doubt that he is the culprit.",
+    "exampleJp": "現場に残された指紋から判断して、彼が犯人に相違ない。",
+    "exampleTranslation": "Judging from the fingerprints left at the scene, there is no doubt that he is the culprit.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0171"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1174
+  },
+  {
+    "category": "sentence",
+    "front": "このような重大な事故は、どの工場でも起こり得る問題だ。",
+    "back": "Such a serious accident is a problem that could occur at any factory.",
+    "exampleJp": "このような重大な事故は、どの工場でも起こり得る問題だ。",
+    "exampleTranslation": "Such a serious accident is a problem that could occur at any factory.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0172"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1175
+  },
+  {
+    "category": "sentence",
+    "front": "彼が会社の資金を横領したなんて、到底信じがたい。",
+    "back": "It is absolutely hard to believe that he embezzled company funds.",
+    "exampleJp": "彼が会社の資金を横領したなんて、到底信じがたい。",
+    "exampleTranslation": "It is absolutely hard to believe that he embezzled company funds.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0173"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1176
+  },
+  {
+    "category": "sentence",
+    "front": "こんな難しい問題、小学生の子供に解けっこないよ。",
+    "back": "There's no way an elementary school child could solve such a difficult problem.",
+    "exampleJp": "こんな難しい問題、小学生の子供に解けっこないよ。",
+    "exampleTranslation": "There's no way an elementary school child could solve such a difficult problem.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0174"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1177
+  },
+  {
+    "category": "sentence",
+    "front": "申し訳ありませんが、私個人の判断ではお答えしかねます。",
+    "back": "I apologize, but I am unable to give an answer based on my personal judgment.",
+    "exampleJp": "申し訳ありませんが、私個人の判断ではお答えしかねます。",
+    "exampleTranslation": "I apologize, but I am unable to give an answer based on my personal judgment.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0175"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1178
+  },
+  {
+    "category": "sentence",
+    "front": "会社の現在の業績からいうと、今年のボーナスは期待できないだろう。",
+    "back": "Judging from the company's current performance, we probably can't expect a bonus this year.",
+    "exampleJp": "会社の現在の業績からいうと、今年のボーナスは期待できないだろう。",
+    "exampleTranslation": "Judging from the company's current performance, we probably can't expect a bonus this year.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0176"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1179
+  },
+  {
+    "category": "sentence",
+    "front": "彼のあの態度からして、最初から協力する気などなかったのだろう。",
+    "back": "Judging by his attitude, he probably had no intention of cooperating from the very beginning.",
+    "exampleJp": "彼のあの態度からして、最初から協力する気などなかったのだろう。",
+    "exampleTranslation": "Judging by his attitude, he probably had no intention of cooperating from the very beginning.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0177"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1180
+  },
+  {
+    "category": "sentence",
+    "front": "私にしたら些細なことでも、彼にとっては重大な問題だったようだ。",
+    "back": "Even if it was a trivial matter from my perspective, it seems to have been a serious issue for him.",
+    "exampleJp": "私にしたら些細なことでも、彼にとっては重大な問題だったようだ。",
+    "exampleTranslation": "Even if it was a trivial matter from my perspective, it seems to have been a serious issue for him.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0178"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1181
+  },
+  {
+    "category": "sentence",
+    "front": "いくら忙しいにしても、連絡一つ寄こさないのは失礼だ。",
+    "back": "No matter how busy you are, it's rude not to send even a single message.",
+    "exampleJp": "いくら忙しいにしても、連絡一つ寄こさないのは失礼だ。",
+    "exampleTranslation": "No matter how busy you are, it's rude not to send even a single message.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0179"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1182
+  },
+  {
+    "category": "sentence",
+    "front": "仮にあの時彼を助けていたとしたら、今の状況は違っていたかもしれない。",
+    "back": "If I had hypothetically helped him at that time, the current situation might have been different.",
+    "exampleJp": "仮にあの時彼を助けていたとしたら、今の状況は違っていたかもしれない。",
+    "exampleTranslation": "If I had hypothetically helped him at that time, the current situation might have been different.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0180"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1183
+  },
+  {
+    "category": "sentence",
+    "front": "いざ自分が責任者になるとなると、不安で夜も眠れない。",
+    "back": "When it comes down to actually becoming the person in charge, I get so anxious I can't sleep at night.",
+    "exampleJp": "いざ自分が責任者になるとなると、不安で夜も眠れない。",
+    "exampleTranslation": "When it comes down to actually becoming the person in charge, I get so anxious I can't sleep at night.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0181"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1184
+  },
+  {
+    "category": "sentence",
+    "front": "外国語は、勉強すればするほど奥が深いと感じる。",
+    "back": "The more I study foreign languages, the more profound I realize they are.",
+    "exampleJp": "外国語は、勉強すればするほど奥が深いと感じる。",
+    "exampleTranslation": "The more I study foreign languages, the more profound I realize they are.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0182"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1185
+  },
+  {
+    "category": "sentence",
+    "front": "何かにつけ、彼は昔の自慢話ばかりして周囲を困らせている。",
+    "back": "Every time something comes up, he annoys everyone by constantly bragging about his past.",
+    "exampleJp": "何かにつけ、彼は昔の自慢話ばかりして周囲を困らせている。",
+    "exampleTranslation": "Every time something comes up, he annoys everyone by constantly bragging about his past.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0183"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1186
+  },
+  {
+    "category": "sentence",
+    "front": "厳しいコーチの指導のもとで、チームは全国大会出場を果たした。",
+    "back": "Under the strict coach's guidance, the team managed to qualify for the national tournament.",
+    "exampleJp": "厳しいコーチの指導のもとで、チームは全国大会出場を果たした。",
+    "exampleTranslation": "Under the strict coach's guidance, the team managed to qualify for the national tournament.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0184"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1187
+  },
+  {
+    "category": "sentence",
+    "front": "以上の理由により、今回の提案は見送らせていただく次第です。",
+    "back": "For the above reasons, it is our decision to pass on this proposal for now.",
+    "exampleJp": "以上の理由により、今回の提案は見送らせていただく次第です。",
+    "exampleTranslation": "For the above reasons, it is our decision to pass on this proposal for now.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0185"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1188
+  },
+  {
+    "category": "sentence",
+    "front": "大学を卒業して以来、彼とは一度も連絡を取っていない。",
+    "back": "Since graduating from university, I haven't contacted him even once.",
+    "exampleJp": "大学を卒業して以来、彼とは一度も連絡を取っていない。",
+    "exampleTranslation": "Since graduating from university, I haven't contacted him even once.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0186"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1189
+  },
+  {
+    "category": "sentence",
+    "front": "上司の許可を得てからでないと、このシステムを変更することはできません。",
+    "back": "You cannot change this system unless you get the boss's permission first.",
+    "exampleJp": "上司の許可を得てからでないと、このシステムを変更することはできません。",
+    "exampleTranslation": "You cannot change this system unless you get the boss's permission first.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0187"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1190
+  },
+  {
+    "category": "sentence",
+    "front": "彼は英語のみならず、フランス語や中国語も流暢に話せる。",
+    "back": "He can speak not only English but also French and Chinese fluently.",
+    "exampleJp": "彼は英語のみならず、フランス語や中国語も流暢に話せる。",
+    "exampleTranslation": "He can speak not only English but also French and Chinese fluently.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0188"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1191
+  },
+  {
+    "category": "sentence",
+    "front": "あのレストランは料理が美味しいばかりか、店員のサービスも素晴らしい。",
+    "back": "Not only is the food at that restaurant delicious, but the staff's service is also excellent.",
+    "exampleJp": "あのレストランは料理が美味しいばかりか、店員のサービスも素晴らしい。",
+    "exampleTranslation": "Not only is the food at that restaurant delicious, but the staff's service is also excellent.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0189"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1192
+  },
+  {
+    "category": "sentence",
+    "front": "休日はもとより、平日の夜でさえ彼は仕事に追われている。",
+    "back": "He is overwhelmed with work even on weekday nights, not to mention on weekends.",
+    "exampleJp": "休日はもとより、平日の夜でさえ彼は仕事に追われている。",
+    "exampleTranslation": "He is overwhelmed with work even on weekday nights, not to mention on weekends.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0190"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1193
+  },
+  {
+    "category": "sentence",
+    "front": "社長を引き受けた上は、会社の業績回復に全力を尽くす覚悟だ。",
+    "back": "Now that I have accepted the position of president, I am prepared to do my utmost to turn the company's performance around.",
+    "exampleJp": "社長を引き受けた上は、会社の業績回復に全力を尽くす覚悟だ。",
+    "exampleTranslation": "Now that I have accepted the position of president, I am prepared to do my utmost to turn the company's performance around.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0191"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1194
+  },
+  {
+    "category": "sentence",
+    "front": "自分でやると言ったからには、最後まで責任を持ってやり遂げなさい。",
+    "back": "Since you said you would do it yourself, you must take responsibility and see it through to the end.",
+    "exampleJp": "自分でやると言ったからには、最後まで責任を持ってやり遂げなさい。",
+    "exampleTranslation": "Since you said you would do it yourself, you must take responsibility and see it through to the end.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0192"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1195
+  },
+  {
+    "category": "sentence",
+    "front": "この契約書に署名する以上は、すべての条件に同意したことになります。",
+    "back": "Now that you are signing this contract, it means you have agreed to all the conditions.",
+    "exampleJp": "この契約書に署名する以上は、すべての条件に同意したことになります。",
+    "exampleTranslation": "Now that you are signing this contract, it means you have agreed to all the conditions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0193"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1196
+  },
+  {
+    "category": "sentence",
+    "front": "東京にお越しの折には、ぜひ弊社にお立ち寄りください。",
+    "back": "When you have the opportunity to visit Tokyo, please be sure to drop by our company.",
+    "exampleJp": "東京にお越しの折には、ぜひ弊社にお立ち寄りください。",
+    "exampleTranslation": "When you have the opportunity to visit Tokyo, please be sure to drop by our company.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0194"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1197
+  },
+  {
+    "category": "sentence",
+    "front": "新しいプロジェクトを始めるに際して、いくつか確認しておきたいことがあります。",
+    "back": "On the occasion of starting the new project, there are a few things I'd like to confirm.",
+    "exampleJp": "新しいプロジェクトを始めるに際して、いくつか確認しておきたいことがあります。",
+    "exampleTranslation": "On the occasion of starting the new project, there are a few things I'd like to confirm.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0195"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1198
+  },
+  {
+    "category": "sentence",
+    "front": "何時間も迷った末に、結局何も買わずに店を出た。",
+    "back": "After hesitating for hours, I ended up leaving the store without buying anything.",
+    "exampleJp": "何時間も迷った末に、結局何も買わずに店を出た。",
+    "exampleTranslation": "After hesitating for hours, I ended up leaving the store without buying anything.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0196"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1199
+  },
+  {
+    "category": "sentence",
+    "front": "散々文句を言ったあげく、彼は自分勝手な理由でチームを辞めてしまった。",
+    "back": "After complaining endlessly, he ended up quitting the team for selfish reasons.",
+    "exampleJp": "散々文句を言ったあげく、彼は自分勝手な理由でチームを辞めてしまった。",
+    "exampleTranslation": "After complaining endlessly, he ended up quitting the team for selfish reasons.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0197"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1200
+  },
+  {
+    "category": "sentence",
+    "front": "新しいソフトウェアを試してみたところ、以前よりも作業効率が大幅に向上した。",
+    "back": "When I tried the new software, my work efficiency improved significantly compared to before.",
+    "exampleJp": "新しいソフトウェアを試してみたところ、以前よりも作業効率が大幅に向上した。",
+    "exampleTranslation": "When I tried the new software, my work efficiency improved significantly compared to before.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0198"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1201
+  },
+  {
+    "category": "sentence",
+    "front": "息子は今朝「行ってきます」と言って出かけたきり、まだ帰ってこない。",
+    "back": "My son left this morning saying 'I'm heading out,' and he hasn't returned since.",
+    "exampleJp": "息子は今朝「行ってきます」と言って出かけたきり、まだ帰ってこない。",
+    "exampleTranslation": "My son left this morning saying 'I'm heading out,' and he hasn't returned since.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0199"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1202
+  },
+  {
+    "category": "sentence",
+    "front": "どんなに困難な状況でも、最後まで希望を捨てずに戦い抜くつもりだ。",
+    "back": "No matter how difficult the situation is, I plan to keep fighting to the end without losing hope.",
+    "exampleJp": "どんなに困難な状況でも、最後まで希望を捨てずに戦い抜くつもりだ。",
+    "exampleTranslation": "No matter how difficult the situation is, I plan to keep fighting to the end without losing hope.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0200"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1203
+  },
+  {
+    "category": "sentence",
+    "front": "彼は仕事が早い反面、ミスも多いので注意が必要だ。",
+    "back": "While he is fast at his work, he also makes many mistakes, so caution is necessary.",
+    "exampleJp": "彼は仕事が早い反面、ミスも多いので注意が必要だ。",
+    "exampleTranslation": "While he is fast at his work, he also makes many mistakes, so caution is necessary.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0201"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1204
+  },
+  {
+    "category": "sentence",
+    "front": "この薬は効果が高いが、使い方によっては副作用が出る恐れがある。",
+    "back": "This medicine is highly effective, but depending on how it is used, there is a fear of side effects.",
+    "exampleJp": "この薬は効果が高いが、使い方によっては副作用が出る恐れがある。",
+    "exampleTranslation": "This medicine is highly effective, but depending on how it is used, there is a fear of side effects.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0202"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1205
+  },
+  {
+    "category": "sentence",
+    "front": "インターネットの普及に伴い、私たちの生活は劇的に変化した。",
+    "back": "Along with the spread of the internet, our lives have changed dramatically.",
+    "exampleJp": "インターネットの普及に伴い、私たちの生活は劇的に変化した。",
+    "exampleTranslation": "Along with the spread of the internet, our lives have changed dramatically.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0203"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1206
+  },
+  {
+    "category": "sentence",
+    "front": "たとえ親の反対を押し切ってでも、私は自分の夢を叶えたい。",
+    "back": "Even if it means going against my parents' objections, I want to make my dream come true.",
+    "exampleJp": "たとえ親の反対を押し切ってでも、私は自分の夢を叶えたい。",
+    "exampleTranslation": "Even if it means going against my parents' objections, I want to make my dream come true.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0204"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1207
+  },
+  {
+    "category": "sentence",
+    "front": "あのレストランの料理は美味しい。それに加えて、店内の雰囲気も最高だ。",
+    "back": "The food at that restaurant is delicious. In addition to that, the atmosphere inside is fantastic.",
+    "exampleJp": "あのレストランの料理は美味しい。それに加えて、店内の雰囲気も最高だ。",
+    "exampleTranslation": "The food at that restaurant is delicious. In addition to that, the atmosphere inside is fantastic.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0205"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1208
+  },
+  {
+    "category": "sentence",
+    "front": "彼は会議の途中で、何か思い出したかのように突然部屋を出て行った。",
+    "back": "In the middle of the meeting, he suddenly left the room as if he had remembered something.",
+    "exampleJp": "彼は会議の途中で、何か思い出したかのように突然部屋を出て行った。",
+    "exampleTranslation": "In the middle of the meeting, he suddenly left the room as if he had remembered something.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0206"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1209
+  },
+  {
+    "category": "sentence",
+    "front": "新しいビジネスモデルが成功するかどうかは、今後の市場調査にかかっている。",
+    "back": "Whether the new business model succeeds or not depends on future market research.",
+    "exampleJp": "新しいビジネスモデルが成功するかどうかは、今後の市場調査にかかっている。",
+    "exampleTranslation": "Whether the new business model succeeds or not depends on future market research.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0207"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1210
+  },
+  {
+    "category": "sentence",
+    "front": "彼女のピアノの腕前は、プロの演奏家にも劣らないほどだ。",
+    "back": "Her piano skills are so good that they are no less than those of a professional performer.",
+    "exampleJp": "彼女のピアノの腕前は、プロの演奏家にも劣らないほどだ。",
+    "exampleTranslation": "Her piano skills are so good that they are no less than those of a professional performer.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0208"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1211
+  },
+  {
+    "category": "sentence",
+    "front": "今回の失敗を教訓として、今後はさらに安全管理を徹底していく所存です。",
+    "back": "Taking this failure as a lesson, it is our intention to be even more thorough with safety management moving forward.",
+    "exampleJp": "今回の失敗を教訓として、今後はさらに安全管理を徹底していく所存です。",
+    "exampleTranslation": "Taking this failure as a lesson, it is our intention to be even more thorough with safety management moving forward.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0209"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1212
+  },
+  {
+    "category": "sentence",
+    "front": "どれほど技術が進歩しようとも、人間の温かい心のふれあいは失われてはならない。",
+    "back": "No matter how much technology advances, warm human connection must not be lost.",
+    "exampleJp": "どれほど技術が進歩しようとも、人間の温かい心のふれあいは失われてはならない。",
+    "exampleTranslation": "No matter how much technology advances, warm human connection must not be lost.",
+    "tags": [
+      "n2",
+      "sentence",
+      "grammar",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0210"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1213
+  },
+  {
+    "category": "sentence",
+    "front": "このプロジェクトの成功は、チーム全員の協力にかかっていると言っても過言ではない。",
+    "back": "It is no exaggeration to say that the success of this project depends on the cooperation of the entire team.",
+    "exampleJp": "このプロジェクトの成功は、チーム全員の協力にかかっていると言っても過言ではない。",
+    "exampleTranslation": "It is no exaggeration to say that the success of this project depends on the cooperation of the entire team.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0211"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1214
+  },
+  {
+    "category": "sentence",
+    "front": "現代の若者は活字離れが進んでいると指摘されているが、一概にそうとは言い切れない。",
+    "back": "It is pointed out that modern youth are moving away from print media, but one cannot unconditionally say that is the case.",
+    "exampleJp": "現代の若者は活字離れが進んでいると指摘されているが、一概にそうとは言い切れない。",
+    "exampleTranslation": "It is pointed out that modern youth are moving away from print media, but one cannot unconditionally say that is the case.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "reading"
+    ],
+    "sourceIds": [
+      "n2-sentence-0212"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1215
+  },
+  {
+    "category": "sentence",
+    "front": "彼の提案は理想的ではあるものの、実現性という点において疑問が残る。",
+    "back": "While his proposal is ideal, doubts remain regarding its feasibility.",
+    "exampleJp": "彼の提案は理想的ではあるものの、実現性という点において疑問が残る。",
+    "exampleTranslation": "While his proposal is ideal, doubts remain regarding its feasibility.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0213"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1216
+  },
+  {
+    "category": "sentence",
+    "front": "顧客のニーズが多様化する中、従来の画一的なサービスでは生き残れないだろう。",
+    "back": "With customer needs diversifying, we will probably not be able to survive with our conventional, uniform services.",
+    "exampleJp": "顧客のニーズが多様化する中、従来の画一的なサービスでは生き残れないだろう。",
+    "exampleTranslation": "With customer needs diversifying, we will probably not be able to survive with our conventional, uniform services.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-sentence-0214"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1217
+  },
+  {
+    "category": "sentence",
+    "front": "失敗を恐れるあまり、新しいことに挑戦しないのは、成長の機会を自ら放棄しているに等しい。",
+    "back": "Fearing failure so much that you don't try new things is tantamount to voluntarily abandoning opportunities for growth.",
+    "exampleJp": "失敗を恐れるあまり、新しいことに挑戦しないのは、成長の機会を自ら放棄しているに等しい。",
+    "exampleTranslation": "Fearing failure so much that you don't try new things is tantamount to voluntarily abandoning opportunities for growth.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "personal"
+    ],
+    "sourceIds": [
+      "n2-sentence-0215"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1218
+  },
+  {
+    "category": "sentence",
+    "front": "その政策は一時的な景気刺激策にはなり得るが、根本的な解決策とは呼べない。",
+    "back": "That policy may serve as a temporary economic stimulus, but it cannot be called a fundamental solution.",
+    "exampleJp": "その政策は一時的な景気刺激策にはなり得るが、根本的な解決策とは呼べない。",
+    "exampleTranslation": "That policy may serve as a temporary economic stimulus, but it cannot be called a fundamental solution.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "public-issues"
+    ],
+    "sourceIds": [
+      "n2-sentence-0216"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1219
+  },
+  {
+    "category": "sentence",
+    "front": "便利な社会になった反面、人と人との直接的なコミュニケーションが希薄になっているように感じる。",
+    "back": "As society becomes more convenient, I feel that direct communication between people is becoming weaker.",
+    "exampleJp": "便利な社会になった反面、人と人との直接的なコミュニケーションが希薄になっているように感じる。",
+    "exampleTranslation": "As society becomes more convenient, I feel that direct communication between people is becoming weaker.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "social"
+    ],
+    "sourceIds": [
+      "n2-sentence-0217"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1220
+  },
+  {
+    "category": "sentence",
+    "front": "専門家の意見を鵜呑みにするのではなく、自ら情報を吟味する姿勢が求められている。",
+    "back": "Rather than swallowing the opinions of experts whole, we are required to have an attitude of scrutinizing information ourselves.",
+    "exampleJp": "専門家の意見を鵜呑みにするのではなく、自ら情報を吟味する姿勢が求められている。",
+    "exampleTranslation": "Rather than swallowing the opinions of experts whole, we are required to have an attitude of scrutinizing information ourselves.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "media"
+    ],
+    "sourceIds": [
+      "n2-sentence-0218"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1221
+  },
+  {
+    "category": "sentence",
+    "front": "今回のシステム障害は、事前の確認不足が招いた必然的な結果と言わざるを得ない。",
+    "back": "I have no choice but to say that the system failure this time was an inevitable result brought about by a lack of prior confirmation.",
+    "exampleJp": "今回のシステム障害は、事前の確認不足が招いた必然的な結果と言わざるを得ない。",
+    "exampleTranslation": "I have no choice but to say that the system failure this time was an inevitable result brought about by a lack of prior confirmation.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0219"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1222
+  },
+  {
+    "category": "sentence",
+    "front": "環境保護と経済発展をいかに両立させるかが、今後の最大の課題となるであろう。",
+    "back": "How to balance environmental protection and economic development will likely be the greatest challenge going forward.",
+    "exampleJp": "環境保護と経済発展をいかに両立させるかが、今後の最大の課題となるであろう。",
+    "exampleTranslation": "How to balance environmental protection and economic development will likely be the greatest challenge going forward.",
+    "tags": [
+      "n2",
+      "sentence",
+      "opinion",
+      "public-issues"
+    ],
+    "sourceIds": [
+      "n2-sentence-0220"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1223
+  },
+  {
+    "category": "sentence",
+    "front": "悪天候により交通機関が麻痺した結果、多くの社員が定時に出社できない事態となった。",
+    "back": "As a result of the transportation system being paralyzed by bad weather, a situation arose where many employees could not arrive at work on time.",
+    "exampleJp": "悪天候により交通機関が麻痺した結果、多くの社員が定時に出社できない事態となった。",
+    "exampleTranslation": "As a result of the transportation system being paralyzed by bad weather, a situation arose where many employees could not arrive at work on time.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0221"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1224
+  },
+  {
+    "category": "sentence",
+    "front": "彼の軽率な発言がきっかけで、両国間の関係は急速に悪化していった。",
+    "back": "Triggered by his careless remarks, the relationship between the two countries rapidly deteriorated.",
+    "exampleJp": "彼の軽率な発言がきっかけで、両国間の関係は急速に悪化していった。",
+    "exampleTranslation": "Triggered by his careless remarks, the relationship between the two countries rapidly deteriorated.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-sentence-0222"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1225
+  },
+  {
+    "category": "sentence",
+    "front": "長期的な人材育成を怠ったツケが、ここに来て人手不足という形で表れている。",
+    "back": "The price of neglecting long-term human resource development is now appearing in the form of a labor shortage.",
+    "exampleJp": "長期的な人材育成を怠ったツケが、ここに来て人手不足という形で表れている。",
+    "exampleTranslation": "The price of neglecting long-term human resource development is now appearing in the form of a labor shortage.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-sentence-0223"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1226
+  },
+  {
+    "category": "sentence",
+    "front": "予算を大幅に削減したことで、品質の維持すら困難な状況に陥ってしまった。",
+    "back": "Because the budget was drastically cut, we have fallen into a situation where even maintaining quality is difficult.",
+    "exampleJp": "予算を大幅に削減したことで、品質の維持すら困難な状況に陥ってしまった。",
+    "exampleTranslation": "Because the budget was drastically cut, we have fallen into a situation where even maintaining quality is difficult.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0224"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1227
+  },
+  {
+    "category": "sentence",
+    "front": "徹底した市場調査を行ったからこそ、この新商品は消費者の心に響いたのだ。",
+    "back": "It is precisely because we conducted thorough market research that this new product resonated with consumers.",
+    "exampleJp": "徹底した市場調査を行ったからこそ、この新商品は消費者の心に響いたのだ。",
+    "exampleTranslation": "It is precisely because we conducted thorough market research that this new product resonated with consumers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-sentence-0225"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1228
+  },
+  {
+    "category": "sentence",
+    "front": "彼がリーダーに就任して以来、チームのモチベーションは目に見えて向上している。",
+    "back": "Ever since he took over as leader, the team's motivation has visibly improved.",
+    "exampleJp": "彼がリーダーに就任して以来、チームのモチベーションは目に見えて向上している。",
+    "exampleTranslation": "Ever since he took over as leader, the team's motivation has visibly improved.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0226"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1229
+  },
+  {
+    "category": "sentence",
+    "front": "不規則な生活を続けたせいで、とうとう体調を崩して入院する羽目になった。",
+    "back": "Because I continued to lead an irregular lifestyle, I eventually ruined my health and ended up having to be hospitalized.",
+    "exampleJp": "不規則な生活を続けたせいで、とうとう体調を崩して入院する羽目になった。",
+    "exampleTranslation": "Because I continued to lead an irregular lifestyle, I eventually ruined my health and ended up having to be hospitalized.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "personal"
+    ],
+    "sourceIds": [
+      "n2-sentence-0227"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1230
+  },
+  {
+    "category": "sentence",
+    "front": "住民の強い反対運動により、その建設計画は白紙撤回されることとなった。",
+    "back": "Due to a strong opposition movement by residents, the construction plan was scrapped and sent back to the drawing board.",
+    "exampleJp": "住民の強い反対運動により、その建設計画は白紙撤回されることとなった。",
+    "exampleTranslation": "Due to a strong opposition movement by residents, the construction plan was scrapped and sent back to the drawing board.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "news"
+    ],
+    "sourceIds": [
+      "n2-sentence-0228"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1231
+  },
+  {
+    "category": "sentence",
+    "front": "ネット上の根拠のない噂が拡散したことで、企業のブランドイメージが大きく損なわれた。",
+    "back": "Because baseless rumors on the internet spread, the company's brand image was significantly damaged.",
+    "exampleJp": "ネット上の根拠のない噂が拡散したことで、企業のブランドイメージが大きく損なわれた。",
+    "exampleTranslation": "Because baseless rumors on the internet spread, the company's brand image was significantly damaged.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "media"
+    ],
+    "sourceIds": [
+      "n2-sentence-0229"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1232
+  },
+  {
+    "category": "sentence",
+    "front": "度重なる仕様変更が原因で、開発スケジュールに大幅な遅れが生じている。",
+    "back": "Due to repeated specification changes, a significant delay has occurred in the development schedule.",
+    "exampleJp": "度重なる仕様変更が原因で、開発スケジュールに大幅な遅れが生じている。",
+    "exampleTranslation": "Due to repeated specification changes, a significant delay has occurred in the development schedule.",
+    "tags": [
+      "n2",
+      "sentence",
+      "cause-result",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0230"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1233
+  },
+  {
+    "category": "sentence",
+    "front": "兄が外交的で誰とでもすぐ打ち解けるのに対し、弟は内向的で人見知りが激しい。",
+    "back": "In contrast to the older brother who is extroverted and easily opens up to anyone, the younger brother is introverted and extremely shy.",
+    "exampleJp": "兄が外交的で誰とでもすぐ打ち解けるのに対し、弟は内向的で人見知りが激しい。",
+    "exampleTranslation": "In contrast to the older brother who is extroverted and easily opens up to anyone, the younger brother is introverted and extremely shy.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "social"
+    ],
+    "sourceIds": [
+      "n2-sentence-0231"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1234
+  },
+  {
+    "category": "sentence",
+    "front": "この薬は即効性がある一方で、胃への負担が大きいという副作用も報告されている。",
+    "back": "While this medicine has an immediate effect, side effects such as a heavy burden on the stomach have also been reported.",
+    "exampleJp": "この薬は即効性がある一方で、胃への負担が大きいという副作用も報告されている。",
+    "exampleTranslation": "While this medicine has an immediate effect, side effects such as a heavy burden on the stomach have also been reported.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "science"
+    ],
+    "sourceIds": [
+      "n2-sentence-0232"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1235
+  },
+  {
+    "category": "sentence",
+    "front": "理想を語るのは簡単だが、それを現実のものとするのは至難の業だ。",
+    "back": "It is easy to talk about ideals, but making them a reality is an extremely difficult task.",
+    "exampleJp": "理想を語るのは簡単だが、それを現実のものとするのは至難の業だ。",
+    "exampleTranslation": "It is easy to talk about ideals, but making them a reality is an extremely difficult task.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "opinion"
+    ],
+    "sourceIds": [
+      "n2-sentence-0233"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1236
+  },
+  {
+    "category": "sentence",
+    "front": "都会の生活は刺激的で楽しい反面、常に時間に追われているような息苦しさもある。",
+    "back": "While city life is stimulating and fun, on the other hand, there is also a suffocating feeling of constantly being pressed for time.",
+    "exampleJp": "都会の生活は刺激的で楽しい反面、常に時間に追われているような息苦しさもある。",
+    "exampleTranslation": "While city life is stimulating and fun, on the other hand, there is also a suffocating feeling of constantly being pressed for time.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "personal"
+    ],
+    "sourceIds": [
+      "n2-sentence-0234"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1237
+  },
+  {
+    "category": "sentence",
+    "front": "会社の業績は順調に回復しているものの、従業員の給与にはまだ反映されていない。",
+    "back": "Although the company's performance is recovering smoothly, it has not yet been reflected in the employees' salaries.",
+    "exampleJp": "会社の業績は順調に回復しているものの、従業員の給与にはまだ反映されていない。",
+    "exampleTranslation": "Although the company's performance is recovering smoothly, it has not yet been reflected in the employees' salaries.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0235"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1238
+  },
+  {
+    "category": "sentence",
+    "front": "表面上は賛成しているように見えても、心の中では不満を抱えている社員も少なくない。",
+    "back": "Even if they appear to agree on the surface, there are quite a few employees who harbor dissatisfaction in their hearts.",
+    "exampleJp": "表面上は賛成しているように見えても、心の中では不満を抱えている社員も少なくない。",
+    "exampleTranslation": "Even if they appear to agree on the surface, there are quite a few employees who harbor dissatisfaction in their hearts.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0236"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1239
+  },
+  {
+    "category": "sentence",
+    "front": "以前は外食ばかりだった彼が、結婚してからは毎日自炊するようになったというから驚きだ。",
+    "back": "It is surprising to hear that he, who used to always eat out, has started cooking for himself every day since getting married.",
+    "exampleJp": "以前は外食ばかりだった彼が、結婚してからは毎日自炊するようになったというから驚きだ。",
+    "exampleTranslation": "It is surprising to hear that he, who used to always eat out, has started cooking for himself every day since getting married.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "personal"
+    ],
+    "sourceIds": [
+      "n2-sentence-0237"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1240
+  },
+  {
+    "category": "sentence",
+    "front": "新しいシステムは機能が豊富である反面、操作が複雑すぎて初心者には扱いづらい。",
+    "back": "While the new system is rich in features, its operation is too complex, making it difficult for beginners to handle.",
+    "exampleJp": "新しいシステムは機能が豊富である反面、操作が複雑すぎて初心者には扱いづらい。",
+    "exampleTranslation": "While the new system is rich in features, its operation is too complex, making it difficult for beginners to handle.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "workplace"
+    ],
+    "sourceIds": [
+      "n2-sentence-0238"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1241
+  },
+  {
+    "category": "sentence",
+    "front": "厳しい寒さが続く一方で、梅のつぼみが少しずつほころび始め、春の訪れを感じさせる。",
+    "back": "While the severe cold continues, plum buds are gradually beginning to open, making one feel the approach of spring.",
+    "exampleJp": "厳しい寒さが続く一方で、梅のつぼみが少しずつほころび始め、春の訪れを感じさせる。",
+    "exampleTranslation": "While the severe cold continues, plum buds are gradually beginning to open, making one feel the approach of spring.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "nature"
+    ],
+    "sourceIds": [
+      "n2-sentence-0239"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1242
+  },
+  {
+    "category": "sentence",
+    "front": "多くの企業が人手不足に悩む一方で、希望する職に就けない若者も依然として存在している。",
+    "back": "While many companies are suffering from a labor shortage, there are still young people who cannot get the jobs they desire.",
+    "exampleJp": "多くの企業が人手不足に悩む一方で、希望する職に就けない若者も依然として存在している。",
+    "exampleTranslation": "While many companies are suffering from a labor shortage, there are still young people who cannot get the jobs they desire.",
+    "tags": [
+      "n2",
+      "sentence",
+      "contrast",
+      "public-issues"
+    ],
+    "sourceIds": [
+      "n2-sentence-0240"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1243
+  },
+  {
+    "category": "sentence",
+    "front": "本日の会議は、全員の意見が出尽くしたところで終了とさせていただきます。",
+    "back": "We will conclude today's meeting now that everyone's opinions have been fully expressed.",
+    "exampleJp": "本日の会議は、全員の意見が出尽くしたところで終了とさせていただきます。",
+    "exampleTranslation": "We will conclude today's meeting now that everyone's opinions have been fully expressed.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "meetings"
+    ],
+    "sourceIds": [
+      "n2-sentence-0241"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1244
+  },
+  {
+    "category": "sentence",
+    "front": "先方の担当者とは、契約の条件をめぐって何度か折り合いがつかずに難航した。",
+    "back": "We faced difficulties with the other party's representative, as we could not reach a compromise on the contract terms several times.",
+    "exampleJp": "先方の担当者とは、契約の条件をめぐって何度か折り合いがつかずに難航した。",
+    "exampleTranslation": "We faced difficulties with the other party's representative, as we could not reach a compromise on the contract terms several times.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "negotiation"
+    ],
+    "sourceIds": [
+      "n2-sentence-0242"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1245
+  },
+  {
+    "category": "sentence",
+    "front": "重要な決定事項については、口頭だけでなく必ず書面でも報告するようにしてください。",
+    "back": "Regarding important decisions, please make sure to report them not only verbally but also in writing.",
+    "exampleJp": "重要な決定事項については、口頭だけでなく必ず書面でも報告するようにしてください。",
+    "exampleTranslation": "Regarding important decisions, please make sure to report them not only verbally but also in writing.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-sentence-0243"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1246
+  },
+  {
+    "category": "sentence",
+    "front": "今回のトラブルに関しては、直属の上司を通じて社長に報告が上がっているはずだ。",
+    "back": "Regarding the trouble this time, a report should have gone up to the president through your direct supervisor.",
+    "exampleJp": "今回のトラブルに関しては、直属の上司を通じて社長に報告が上がっているはずだ。",
+    "exampleTranslation": "Regarding the trouble this time, a report should have gone up to the president through your direct supervisor.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "management"
+    ],
+    "sourceIds": [
+      "n2-sentence-0244"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1247
+  },
+  {
+    "category": "sentence",
+    "front": "繁忙期には、各部署の垣根を越えて全社一丸となって業務にあたる必要がある。",
+    "back": "During the busy season, it is necessary to cross departmental boundaries and work together as a whole company.",
+    "exampleJp": "繁忙期には、各部署の垣根を越えて全社一丸となって業務にあたる必要がある。",
+    "exampleTranslation": "During the busy season, it is necessary to cross departmental boundaries and work together as a whole company.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "collaboration"
+    ],
+    "sourceIds": [
+      "n2-sentence-0245"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1248
+  },
+  {
+    "category": "sentence",
+    "front": "明日のプレゼンに向けて、資料の最終チェックを抜かりなく行っておいてくれ。",
+    "back": "Please make sure to conduct the final check of the materials without any omissions in preparation for tomorrow's presentation.",
+    "exampleJp": "明日のプレゼンに向けて、資料の最終チェックを抜かりなく行っておいてくれ。",
+    "exampleTranslation": "Please make sure to conduct the final check of the materials without any omissions in preparation for tomorrow's presentation.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "tasks"
+    ],
+    "sourceIds": [
+      "n2-sentence-0246"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1249
+  },
+  {
+    "category": "sentence",
+    "front": "急な仕様変更の要請があったため、開発チームは急遽対応に追われることになった。",
+    "back": "Because there was a sudden request for a specification change, the development team was forced to hurriedly deal with it.",
+    "exampleJp": "急な仕様変更の要請があったため、開発チームは急遽対応に追われることになった。",
+    "exampleTranslation": "Because there was a sudden request for a specification change, the development team was forced to hurriedly deal with it.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "challenges"
+    ],
+    "sourceIds": [
+      "n2-sentence-0247"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1250
+  },
+  {
+    "category": "sentence",
+    "front": "顧客からのクレームに対しては、迅速かつ誠実な対応が求められます。",
+    "back": "Prompt and sincere responses are required for complaints from customers.",
+    "exampleJp": "顧客からのクレームに対しては、迅速かつ誠実な対応が求められます。",
+    "exampleTranslation": "Prompt and sincere responses are required for complaints from customers.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "customer-service"
+    ],
+    "sourceIds": [
+      "n2-sentence-0248"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1251
+  },
+  {
+    "category": "sentence",
+    "front": "今期の売上目標を達成するには、これまでのやり方を抜本的に見直す必要がある。",
+    "back": "In order to achieve this term's sales target, we need to fundamentally review our previous methods.",
+    "exampleJp": "今期の売上目標を達成するには、これまでのやり方を抜本的に見直す必要がある。",
+    "exampleTranslation": "In order to achieve this term's sales target, we need to fundamentally review our previous methods.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "strategy"
+    ],
+    "sourceIds": [
+      "n2-sentence-0249"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1252
+  },
+  {
+    "category": "sentence",
+    "front": "彼は入社三年目にして、すでにいくつかの重要なプロジェクトを任されるほどの成長を遂げた。",
+    "back": "In his third year since joining the company, he has already achieved such growth that he is entrusted with several important projects.",
+    "exampleJp": "彼は入社三年目にして、すでにいくつかの重要なプロジェクトを任されるほどの成長を遂げた。",
+    "exampleTranslation": "In his third year since joining the company, he has already achieved such growth that he is entrusted with several important projects.",
+    "tags": [
+      "n2",
+      "sentence",
+      "workplace",
+      "career"
+    ],
+    "sourceIds": [
+      "n2-sentence-0250"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1253
+  },
+  {
+    "category": "sentence",
+    "front": "久しぶりの同窓会では、お互いの近況報告に花が咲き、あっという間に時間が過ぎた。",
+    "back": "At the class reunion after a long time, we had a lively exchange of updates on each other's recent lives, and time flew by in a flash.",
+    "exampleJp": "久しぶりの同窓会では、お互いの近況報告に花が咲き、あっという間に時間が過ぎた。",
+    "exampleTranslation": "At the class reunion after a long time, we had a lively exchange of updates on each other's recent lives, and time flew by in a flash.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "events"
+    ],
+    "sourceIds": [
+      "n2-sentence-0251"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1254
+  },
+  {
+    "category": "sentence",
+    "front": "彼の態度は、周囲の空気を読まない自己中心的なものとして非難の的となった。",
+    "back": "His attitude became the target of criticism as being egocentric and failing to read the room.",
+    "exampleJp": "彼の態度は、周囲の空気を読まない自己中心的なものとして非難の的となった。",
+    "exampleTranslation": "His attitude became the target of criticism as being egocentric and failing to read the room.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "relationships"
+    ],
+    "sourceIds": [
+      "n2-sentence-0252"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1255
+  },
+  {
+    "category": "sentence",
+    "front": "友人からの急な誘いを断りきれず、結局予定していた勉強の時間が削られてしまった。",
+    "back": "Unable to refuse a sudden invitation from a friend, the time I had planned to study ended up being cut short.",
+    "exampleJp": "友人からの急な誘いを断りきれず、結局予定していた勉強の時間が削られてしまった。",
+    "exampleTranslation": "Unable to refuse a sudden invitation from a friend, the time I had planned to study ended up being cut short.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "personal"
+    ],
+    "sourceIds": [
+      "n2-sentence-0253"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1256
+  },
+  {
+    "category": "sentence",
+    "front": "初対面の人と話すときは、相手のプライベートに踏み込みすぎないよう配慮が必要だ。",
+    "back": "When talking to someone for the first time, consideration is needed so as not to step too far into their private life.",
+    "exampleJp": "初対面の人と話すときは、相手のプライベートに踏み込みすぎないよう配慮が必要だ。",
+    "exampleTranslation": "When talking to someone for the first time, consideration is needed so as not to step too far into their private life.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "manners"
+    ],
+    "sourceIds": [
+      "n2-sentence-0254"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1257
+  },
+  {
+    "category": "sentence",
+    "front": "彼女は常に周りの状況に気を配り、困っている人がいればさりげなく手を差し伸べる。",
+    "back": "She always pays attention to the surrounding situation and casually lends a hand if someone is in trouble.",
+    "exampleJp": "彼女は常に周りの状況に気を配り、困っている人がいればさりげなく手を差し伸べる。",
+    "exampleTranslation": "She always pays attention to the surrounding situation and casually lends a hand if someone is in trouble.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "personality"
+    ],
+    "sourceIds": [
+      "n2-sentence-0255"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1258
+  },
+  {
+    "category": "sentence",
+    "front": "意見の食い違いから口論になったものの、一晩寝たらお互いに冷静さを取り戻した。",
+    "back": "Although we got into an argument due to a difference of opinion, after sleeping on it for a night, we both regained our composure.",
+    "exampleJp": "意見の食い違いから口論になったものの、一晩寝たらお互いに冷静さを取り戻した。",
+    "exampleTranslation": "Although we got into an argument due to a difference of opinion, after sleeping on it for a night, we both regained our composure.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "conflict"
+    ],
+    "sourceIds": [
+      "n2-sentence-0256"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1259
+  },
+  {
+    "category": "sentence",
+    "front": "冠婚葬祭の際のマナーは、社会人として身につけておくべき必須の知識である。",
+    "back": "Etiquette for ceremonial occasions is essential knowledge that one should acquire as a working adult.",
+    "exampleJp": "冠婚葬祭の際のマナーは、社会人として身につけておくべき必須の知識である。",
+    "exampleTranslation": "Etiquette for ceremonial occasions is essential knowledge that one should acquire as a working adult.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "customs"
+    ],
+    "sourceIds": [
+      "n2-sentence-0257"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1260
+  },
+  {
+    "category": "sentence",
+    "front": "相手の言葉の裏にある真意を汲み取るのは、そう簡単なことではない。",
+    "back": "Grasping the true intention behind someone's words is not that simple a task.",
+    "exampleJp": "相手の言葉の裏にある真意を汲み取るのは、そう簡単なことではない。",
+    "exampleTranslation": "Grasping the true intention behind someone's words is not that simple a task.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "communication"
+    ],
+    "sourceIds": [
+      "n2-sentence-0258"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1261
+  },
+  {
+    "category": "sentence",
+    "front": "近所付き合いが減った現代では、地域社会での孤立が深刻な問題となっている。",
+    "back": "In modern times where neighborhood interactions have decreased, isolation within the local community has become a serious problem.",
+    "exampleJp": "近所付き合いが減った現代では、地域社会での孤立が深刻な問題となっている。",
+    "exampleTranslation": "In modern times where neighborhood interactions have decreased, isolation within the local community has become a serious problem.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "community"
+    ],
+    "sourceIds": [
+      "n2-sentence-0259"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1262
+  },
+  {
+    "category": "sentence",
+    "front": "ちょっとした誤解が雪だるま式に膨らみ、取り返しのつかない関係の悪化を招くこともある。",
+    "back": "A slight misunderstanding can sometimes snowball and lead to an irreversible deterioration of a relationship.",
+    "exampleJp": "ちょっとした誤解が雪だるま式に膨らみ、取り返しのつかない関係の悪化を招くこともある。",
+    "exampleTranslation": "A slight misunderstanding can sometimes snowball and lead to an irreversible deterioration of a relationship.",
+    "tags": [
+      "n2",
+      "sentence",
+      "social",
+      "conflict"
+    ],
+    "sourceIds": [
+      "n2-sentence-0260"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1263
+  },
+  {
+    "category": "sentence",
+    "front": "政府は、増え続ける社会保障費の抑制に向けた具体的な対策を早急に打ち出すべきだ。",
+    "back": "The government should urgently put forth concrete measures aimed at curbing the ever-increasing social security costs.",
+    "exampleJp": "政府は、増え続ける社会保障費の抑制に向けた具体的な対策を早急に打ち出すべきだ。",
+    "exampleTranslation": "The government should urgently put forth concrete measures aimed at curbing the ever-increasing social security costs.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-sentence-0261"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1264
+  },
+  {
+    "category": "sentence",
+    "front": "当該企業は、不正会計疑惑について第三者委員会を設置し、徹底的な調査を行うと発表した。",
+    "back": "The company in question announced that it will set up a third-party committee regarding the accounting fraud allegations and conduct a thorough investigation.",
+    "exampleJp": "当該企業は、不正会計疑惑について第三者委員会を設置し、徹底的な調査を行うと発表した。",
+    "exampleTranslation": "The company in question announced that it will set up a third-party committee regarding the accounting fraud allegations and conduct a thorough investigation.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-sentence-0262"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1265
+  },
+  {
+    "category": "sentence",
+    "front": "この法案が成立すれば、国民の生活に多大な影響を及ぼすことは必至である。",
+    "back": "If this bill is passed, it is inevitable that it will exert a massive impact on the lives of the citizens.",
+    "exampleJp": "この法案が成立すれば、国民の生活に多大な影響を及ぼすことは必至である。",
+    "exampleTranslation": "If this bill is passed, it is inevitable that it will exert a massive impact on the lives of the citizens.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-sentence-0263"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1266
+  },
+  {
+    "category": "sentence",
+    "front": "記録的な豪雨により、各地で土砂崩れや河川の氾濫などの甚大な被害が発生している。",
+    "back": "Due to record-breaking heavy rain, tremendous damage such as landslides and river flooding is occurring in various regions.",
+    "exampleJp": "記録的な豪雨により、各地で土砂崩れや河川の氾濫などの甚大な被害が発生している。",
+    "exampleTranslation": "Due to record-breaking heavy rain, tremendous damage such as landslides and river flooding is occurring in various regions.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-sentence-0264"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1267
+  },
+  {
+    "category": "sentence",
+    "front": "専門家は、今後の感染拡大の波に備え、医療体制の拡充が急務であると警鐘を鳴らしている。",
+    "back": "Experts are sounding the alarm that the expansion of the medical system is an urgent task in preparation for future waves of infection spread.",
+    "exampleJp": "専門家は、今後の感染拡大の波に備え、医療体制の拡充が急務であると警鐘を鳴らしている。",
+    "exampleTranslation": "Experts are sounding the alarm that the expansion of the medical system is an urgent task in preparation for future waves of infection spread.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "health"
+    ],
+    "sourceIds": [
+      "n2-sentence-0265"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1268
+  },
+  {
+    "category": "sentence",
+    "front": "少子高齢化という構造的な課題に対し、短期的な視点での政策立案は限界にきている。",
+    "back": "Regarding the structural issue of a declining birthrate and aging population, policy-making from a short-term perspective is reaching its limits.",
+    "exampleJp": "少子高齢化という構造的な課題に対し、短期的な視点での政策立案は限界にきている。",
+    "exampleTranslation": "Regarding the structural issue of a declining birthrate and aging population, policy-making from a short-term perspective is reaching its limits.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "society"
+    ],
+    "sourceIds": [
+      "n2-sentence-0266"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1269
+  },
+  {
+    "category": "sentence",
+    "front": "消費税の引き上げが、冷え込んでいる個人消費にさらに水を差す懸念が広がっている。",
+    "back": "Concerns are spreading that the consumption tax hike will further dampen already sluggish personal consumption.",
+    "exampleJp": "消費税の引き上げが、冷え込んでいる個人消費にさらに水を差す懸念が広がっている。",
+    "exampleTranslation": "Concerns are spreading that the consumption tax hike will further dampen already sluggish personal consumption.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-sentence-0267"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1270
+  },
+  {
+    "category": "sentence",
+    "front": "記者会見での社長の曖昧な答弁は、かえって消費者の不信感を増幅させる結果となった。",
+    "back": "The president's ambiguous responses at the press conference ended up amplifying consumers' distrust instead.",
+    "exampleJp": "記者会見での社長の曖昧な答弁は、かえって消費者の不信感を増幅させる結果となった。",
+    "exampleTranslation": "The president's ambiguous responses at the press conference ended up amplifying consumers' distrust instead.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "business"
+    ],
+    "sourceIds": [
+      "n2-sentence-0268"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1271
+  },
+  {
+    "category": "sentence",
+    "front": "統計データの改ざん問題は、政府に対する国民の信頼を根底から揺るがす事態に発展した。",
+    "back": "The issue of falsified statistical data has developed into a situation that fundamentally shakes the public's trust in the government.",
+    "exampleJp": "統計データの改ざん問題は、政府に対する国民の信頼を根底から揺るがす事態に発展した。",
+    "exampleTranslation": "The issue of falsified statistical data has developed into a situation that fundamentally shakes the public's trust in the government.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "politics"
+    ],
+    "sourceIds": [
+      "n2-sentence-0269"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1272
+  },
+  {
+    "category": "sentence",
+    "front": "急速な円安の進行が、輸入に頼る多くの中小企業にとって死活問題となりつつある。",
+    "back": "The rapid progression of the yen's depreciation is becoming a matter of life and death for many small and medium-sized enterprises that rely on imports.",
+    "exampleJp": "急速な円安の進行が、輸入に頼る多くの中小企業にとって死活問題となりつつある。",
+    "exampleTranslation": "The rapid progression of the yen's depreciation is becoming a matter of life and death for many small and medium-sized enterprises that rely on imports.",
+    "tags": [
+      "n2",
+      "sentence",
+      "news",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-sentence-0270"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1273
+  },
+  {
+    "category": "sentence",
+    "front": "匿名性を盾にしたSNSでの誹謗中傷は、決して許されるべき行為ではない。",
+    "back": "Slander and defamation on SNS using anonymity as a shield is an act that should never be permitted.",
+    "exampleJp": "匿名性を盾にしたSNSでの誹謗中傷は、決して許されるべき行為ではない。",
+    "exampleTranslation": "Slander and defamation on SNS using anonymity as a shield is an act that should never be permitted.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "technology"
+    ],
+    "sourceIds": [
+      "n2-sentence-0271"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1274
+  },
+  {
+    "category": "sentence",
+    "front": "プラスチックごみの削減は、国境を越えて地球規模で取り組むべき喫緊の課題である。",
+    "back": "The reduction of plastic waste is an urgent issue that should be tackled on a global scale across borders.",
+    "exampleJp": "プラスチックごみの削減は、国境を越えて地球規模で取り組むべき喫緊の課題である。",
+    "exampleTranslation": "The reduction of plastic waste is an urgent issue that should be tackled on a global scale across borders.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "environment"
+    ],
+    "sourceIds": [
+      "n2-sentence-0272"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1275
+  },
+  {
+    "category": "sentence",
+    "front": "働き方改革が提唱されて久しいが、長時間労働の是正は依然として道半ばと言わざるを得ない。",
+    "back": "It has been a long time since work-style reform was advocated, but one must say that correcting long working hours is still only halfway there.",
+    "exampleJp": "働き方改革が提唱されて久しいが、長時間労働の是正は依然として道半ばと言わざるを得ない。",
+    "exampleTranslation": "It has been a long time since work-style reform was advocated, but one must say that correcting long working hours is still only halfway there.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "work"
+    ],
+    "sourceIds": [
+      "n2-sentence-0273"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1276
+  },
+  {
+    "category": "sentence",
+    "front": "教育格差の拡大は、将来的に深刻な貧困の連鎖を生み出す危険性をはらんでいる。",
+    "back": "The widening of the educational gap carries the danger of creating a serious cycle of poverty in the future.",
+    "exampleJp": "教育格差の拡大は、将来的に深刻な貧困の連鎖を生み出す危険性をはらんでいる。",
+    "exampleTranslation": "The widening of the educational gap carries the danger of creating a serious cycle of poverty in the future.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "education"
+    ],
+    "sourceIds": [
+      "n2-sentence-0274"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1277
+  },
+  {
+    "category": "sentence",
+    "front": "災害時に適切な情報をいかに迅速に住民に届けるかが、自治体の危機管理能力を問う試金石となる。",
+    "back": "How to rapidly deliver appropriate information to residents during a disaster will be the touchstone that tests the crisis management capability of a municipality.",
+    "exampleJp": "災害時に適切な情報をいかに迅速に住民に届けるかが、自治体の危機管理能力を問う試金石となる。",
+    "exampleTranslation": "How to rapidly deliver appropriate information to residents during a disaster will be the touchstone that tests the crisis management capability of a municipality.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "disaster"
+    ],
+    "sourceIds": [
+      "n2-sentence-0275"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1278
+  },
+  {
+    "category": "sentence",
+    "front": "再生可能エネルギーへの移行には莫大なコストがかかるため、段階的な導入が現実的だろう。",
+    "back": "Because transitioning to renewable energy incurs massive costs, a phased introduction would be realistic.",
+    "exampleJp": "再生可能エネルギーへの移行には莫大なコストがかかるため、段階的な導入が現実的だろう。",
+    "exampleTranslation": "Because transitioning to renewable energy incurs massive costs, a phased introduction would be realistic.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "energy"
+    ],
+    "sourceIds": [
+      "n2-sentence-0276"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1279
+  },
+  {
+    "category": "sentence",
+    "front": "地域経済の活性化には、大企業誘致だけでなく、地元密着型の中小企業への支援も欠かせない。",
+    "back": "For the revitalization of the regional economy, not only attracting large corporations but also supporting community-based small and medium enterprises is indispensable.",
+    "exampleJp": "地域経済の活性化には、大企業誘致だけでなく、地元密着型の中小企業への支援も欠かせない。",
+    "exampleTranslation": "For the revitalization of the regional economy, not only attracting large corporations but also supporting community-based small and medium enterprises is indispensable.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "economy"
+    ],
+    "sourceIds": [
+      "n2-sentence-0277"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1280
+  },
+  {
+    "category": "sentence",
+    "front": "高齢者の運転による交通事故が多発しており、免許の自主返納を促す制度の見直しが求められている。",
+    "back": "Traffic accidents caused by elderly drivers are occurring frequently, and a review of the system to encourage the voluntary return of licenses is being demanded.",
+    "exampleJp": "高齢者の運転による交通事故が多発しており、免許の自主返納を促す制度の見直しが求められている。",
+    "exampleTranslation": "Traffic accidents caused by elderly drivers are occurring frequently, and a review of the system to encourage the voluntary return of licenses is being demanded.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "safety"
+    ],
+    "sourceIds": [
+      "n2-sentence-0278"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1281
+  },
+  {
+    "category": "sentence",
+    "front": "都市部への人口一極集中を緩和し、地方創生を推進するための画期的なアイデアが必要だ。",
+    "back": "Epoch-making ideas are needed to alleviate the overconcentration of population in urban areas and promote regional revitalization.",
+    "exampleJp": "都市部への人口一極集中を緩和し、地方創生を推進するための画期的なアイデアが必要だ。",
+    "exampleTranslation": "Epoch-making ideas are needed to alleviate the overconcentration of population in urban areas and promote regional revitalization.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "demographics"
+    ],
+    "sourceIds": [
+      "n2-sentence-0279"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1282
+  },
+  {
+    "category": "sentence",
+    "front": "AI技術の急速な進歩が、人間の雇用を奪うのではないかという懸念を抱く人も少なくない。",
+    "back": "There are not a few people who harbor concerns that the rapid advancement of AI technology might take away human jobs.",
+    "exampleJp": "AI技術の急速な進歩が、人間の雇用を奪うのではないかという懸念を抱く人も少なくない。",
+    "exampleTranslation": "There are not a few people who harbor concerns that the rapid advancement of AI technology might take away human jobs.",
+    "tags": [
+      "n2",
+      "sentence",
+      "public-issues",
+      "technology"
+    ],
+    "sourceIds": [
+      "n2-sentence-0280"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1283
+  },
+  {
+    "category": "sentence",
+    "front": "安定した大企業を辞めて起業するという彼の決断に、周囲は一様に驚きを隠せなかった。",
+    "back": "The people around him were uniformly unable to hide their surprise at his decision to quit a stable large corporation and start his own business.",
+    "exampleJp": "安定した大企業を辞めて起業するという彼の決断に、周囲は一様に驚きを隠せなかった。",
+    "exampleTranslation": "The people around him were uniformly unable to hide their surprise at his decision to quit a stable large corporation and start his own business.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "career"
+    ],
+    "sourceIds": [
+      "n2-sentence-0281"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1284
+  },
+  {
+    "category": "sentence",
+    "front": "迷った末にこの道を選んだのだから、結果がどうあれ後悔だけはしたくない。",
+    "back": "Since I chose this path after much hesitation, I just do not want to have any regrets, regardless of the outcome.",
+    "exampleJp": "迷った末にこの道を選んだのだから、結果がどうあれ後悔だけはしたくない。",
+    "exampleTranslation": "Since I chose this path after much hesitation, I just do not want to have any regrets, regardless of the outcome.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "decisions"
+    ],
+    "sourceIds": [
+      "n2-sentence-0282"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1285
+  },
+  {
+    "category": "sentence",
+    "front": "目先の利益にとらわれて安易な選択をした結果、後になって大きな代償を払うことになった。",
+    "back": "As a result of making an easy choice caught up in short-term profits, I ended up paying a huge price later on.",
+    "exampleJp": "目先の利益にとらわれて安易な選択をした結果、後になって大きな代償を払うことになった。",
+    "exampleTranslation": "As a result of making an easy choice caught up in short-term profits, I ended up paying a huge price later on.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "consequences"
+    ],
+    "sourceIds": [
+      "n2-sentence-0283"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1286
+  },
+  {
+    "category": "sentence",
+    "front": "彼女は周囲の反対を押し切って留学を決意し、見事に目標を達成して帰国した。",
+    "back": "She decided to study abroad, overcoming the opposition of those around her, and returned home having splendidly achieved her goals.",
+    "exampleJp": "彼女は周囲の反対を押し切って留学を決意し、見事に目標を達成して帰国した。",
+    "exampleTranslation": "She decided to study abroad, overcoming the opposition of those around her, and returned home having splendidly achieved her goals.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "success"
+    ],
+    "sourceIds": [
+      "n2-sentence-0284"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1287
+  },
+  {
+    "category": "sentence",
+    "front": "あの時の私の不用意な一言が、親友との関係に深い亀裂を生じさせてしまったのだ。",
+    "back": "My careless single remark at that time ended up creating a deep rift in my relationship with my best friend.",
+    "exampleJp": "あの時の私の不用意な一言が、親友との関係に深い亀裂を生じさせてしまったのだ。",
+    "exampleTranslation": "My careless single remark at that time ended up creating a deep rift in my relationship with my best friend.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "regret"
+    ],
+    "sourceIds": [
+      "n2-sentence-0285"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1288
+  },
+  {
+    "category": "sentence",
+    "front": "キャリアアップのために転職を考え始めたが、自分の市場価値がどの程度なのか不安もある。",
+    "back": "I started thinking about changing jobs for career advancement, but I also have anxiety about what my market value actually is.",
+    "exampleJp": "キャリアアップのために転職を考え始めたが、自分の市場価値がどの程度なのか不安もある。",
+    "exampleTranslation": "I started thinking about changing jobs for career advancement, but I also have anxiety about what my market value actually is.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "career"
+    ],
+    "sourceIds": [
+      "n2-sentence-0286"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1289
+  },
+  {
+    "category": "sentence",
+    "front": "現状維持を選ぶのは安全だが、それではいつまで経っても大きな飛躍は望めないだろう。",
+    "back": "Choosing to maintain the status quo is safe, but with that, one probably cannot hope for a major leap forward no matter how much time passes.",
+    "exampleJp": "現状維持を選ぶのは安全だが、それではいつまで経っても大きな飛躍は望めないだろう。",
+    "exampleTranslation": "Choosing to maintain the status quo is safe, but with that, one probably cannot hope for a major leap forward no matter how much time passes.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "growth"
+    ],
+    "sourceIds": [
+      "n2-sentence-0287"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1290
+  },
+  {
+    "category": "sentence",
+    "front": "何度も失敗を重ねた経験が、かえって彼の精神力を鍛え上げ、今の成功へと繋がっている。",
+    "back": "The experience of repeatedly failing actually tempered his mental strength and is connected to his current success.",
+    "exampleJp": "何度も失敗を重ねた経験が、かえって彼の精神力を鍛え上げ、今の成功へと繋がっている。",
+    "exampleTranslation": "The experience of repeatedly failing actually tempered his mental strength and is connected to his current success.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "resilience"
+    ],
+    "sourceIds": [
+      "n2-sentence-0288"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1291
+  },
+  {
+    "category": "sentence",
+    "front": "妥協して自分を納得させるくらいなら、最後までとことん自分の信念を貫き通したい。",
+    "back": "Rather than compromising and convincing myself, I want to stick to my beliefs thoroughly until the very end.",
+    "exampleJp": "妥協して自分を納得させるくらいなら、最後までとことん自分の信念を貫き通したい。",
+    "exampleTranslation": "Rather than compromising and convincing myself, I want to stick to my beliefs thoroughly until the very end.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "values"
+    ],
+    "sourceIds": [
+      "n2-sentence-0289"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1292
+  },
+  {
+    "category": "sentence",
+    "front": "時間はお金で買えないという事実を、病気になって初めて痛感させられた。",
+    "back": "I was made to keenly realize the fact that time cannot be bought with money only after I got sick.",
+    "exampleJp": "時間はお金で買えないという事実を、病気になって初めて痛感させられた。",
+    "exampleTranslation": "I was made to keenly realize the fact that time cannot be bought with money only after I got sick.",
+    "tags": [
+      "n2",
+      "sentence",
+      "personal",
+      "realization"
+    ],
+    "sourceIds": [
+      "n2-sentence-0290"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1293
+  },
+  {
+    "category": "sentence",
+    "front": "筆者がここで最も言いたいのは、個人の努力だけでなく、社会構造の問題にも目を向けるべきだということだ。",
+    "back": "What the author wants to say the most here is that we should look not only at individual effort but also at the problems of social structure.",
+    "exampleJp": "筆者がここで最も言いたいのは、個人の努力だけでなく、社会構造の問題にも目を向けるべきだということだ。",
+    "exampleTranslation": "What the author wants to say the most here is that we should look not only at individual effort but also at the problems of social structure.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "analysis"
+    ],
+    "sourceIds": [
+      "n2-sentence-0291"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1294
+  },
+  {
+    "category": "sentence",
+    "front": "本文中の「それ」が指している内容は、直前の段落で述べられている環境破壊の現状であると推測できる。",
+    "back": "The content pointed to by \"それ\" (that) in the text can be inferred to be the current state of environmental destruction described in the immediately preceding paragraph.",
+    "exampleJp": "本文中の「それ」が指している内容は、直前の段落で述べられている環境破壊の現状であると推測できる。",
+    "exampleTranslation": "The content pointed to by \"それ\" (that) in the text can be inferred to be the current state of environmental destruction described in the immediately preceding paragraph.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "reference"
+    ],
+    "sourceIds": [
+      "n2-sentence-0292"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1295
+  },
+  {
+    "category": "sentence",
+    "front": "一般論としてはそうかもしれないが、このケースにおいてはその理屈は必ずしも当てはまらない。",
+    "back": "As a general theory that might be true, but in this case, that logic does not necessarily apply.",
+    "exampleJp": "一般論としてはそうかもしれないが、このケースにおいてはその理屈は必ずしも当てはまらない。",
+    "exampleTranslation": "As a general theory that might be true, but in this case, that logic does not necessarily apply.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "logic"
+    ],
+    "sourceIds": [
+      "n2-sentence-0293"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1296
+  },
+  {
+    "category": "sentence",
+    "front": "この文章の結論に至るまでの論理展開は非常に明快で、説得力に富んでいると言える。",
+    "back": "The logical progression up to the conclusion of this text is extremely clear and can be said to be highly persuasive.",
+    "exampleJp": "この文章の結論に至るまでの論理展開は非常に明快で、説得力に富んでいると言える。",
+    "exampleTranslation": "The logical progression up to the conclusion of this text is extremely clear and can be said to be highly persuasive.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "structure"
+    ],
+    "sourceIds": [
+      "n2-sentence-0294"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1297
+  },
+  {
+    "category": "sentence",
+    "front": "作者は、主人公の心の葛藤を、変わりゆく季節の風景に重ね合わせることで巧みに表現している。",
+    "back": "The author skillfully expresses the protagonist's emotional conflict by superimposing it on the scenery of the changing seasons.",
+    "exampleJp": "作者は、主人公の心の葛藤を、変わりゆく季節の風景に重ね合わせることで巧みに表現している。",
+    "exampleTranslation": "The author skillfully expresses the protagonist's emotional conflict by superimposing it on the scenery of the changing seasons.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "literature"
+    ],
+    "sourceIds": [
+      "n2-sentence-0295"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1298
+  },
+  {
+    "category": "sentence",
+    "front": "前半部分で提起された疑問が、後半のエピソードを通じて鮮やかに回収されていく構成が見事だ。",
+    "back": "The structure in which the questions raised in the first half are vividly resolved through the episodes in the second half is brilliant.",
+    "exampleJp": "前半部分で提起された疑問が、後半のエピソードを通じて鮮やかに回収されていく構成が見事だ。",
+    "exampleTranslation": "The structure in which the questions raised in the first half are vividly resolved through the episodes in the second half is brilliant.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "structure"
+    ],
+    "sourceIds": [
+      "n2-sentence-0296"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1299
+  },
+  {
+    "category": "sentence",
+    "front": "一見すると矛盾しているように思える二つの意見だが、視点を変えれば本質は同じであることがわかる。",
+    "back": "They are two opinions that seem contradictory at first glance, but if you change your perspective, you will understand that their essence is the same.",
+    "exampleJp": "一見すると矛盾しているように思える二つの意見だが、視点を変えれば本質は同じであることがわかる。",
+    "exampleTranslation": "They are two opinions that seem contradictory at first glance, but if you change your perspective, you will understand that their essence is the same.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "perspective"
+    ],
+    "sourceIds": [
+      "n2-sentence-0297"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1300
+  },
+  {
+    "category": "sentence",
+    "front": "データが示す客観的な事実と、人々の主観的な感覚との間には、しばしば大きなズレが生じるものだ。",
+    "back": "A large gap often occurs between the objective facts shown by data and people's subjective senses.",
+    "exampleJp": "データが示す客観的な事実と、人々の主観的な感覚との間には、しばしば大きなズレが生じるものだ。",
+    "exampleTranslation": "A large gap often occurs between the objective facts shown by data and people's subjective senses.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "contrast"
+    ],
+    "sourceIds": [
+      "n2-sentence-0298"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1301
+  },
+  {
+    "category": "sentence",
+    "front": "この本を読んで、これまで当たり前だと思っていた自分の価値観が大きく揺さぶられるのを感じた。",
+    "back": "Reading this book, I felt my sense of values, which I had thought of as a given until now, being greatly shaken.",
+    "exampleJp": "この本を読んで、これまで当たり前だと思っていた自分の価値観が大きく揺さぶられるのを感じた。",
+    "exampleTranslation": "Reading this book, I felt my sense of values, which I had thought of as a given until now, being greatly shaken.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "impact"
+    ],
+    "sourceIds": [
+      "n2-sentence-0299"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1302
+  },
+  {
+    "category": "sentence",
+    "front": "問題の表面的な解決を急ぐあまり、根本的な原因を見落としてしまう危険性を筆者は指摘しているのだ。",
+    "back": "The author is pointing out the danger of overlooking the fundamental causes because of being too hasty in superficially resolving the problem.",
+    "exampleJp": "問題の表面的な解決を急ぐあまり、根本的な原因を見落としてしまう危険性を筆者は指摘しているのだ。",
+    "exampleTranslation": "The author is pointing out the danger of overlooking the fundamental causes because of being too hasty in superficially resolving the problem.",
+    "tags": [
+      "n2",
+      "sentence",
+      "reading-comprehension",
+      "main-point"
+    ],
+    "sourceIds": [
+      "n2-sentence-0300"
+    ],
+    "sourceFiles": [
+      "sources/cards.js"
+    ],
+    "originalOrder": 1303
+  }
+];
+
+const SOURCE_COUNTS = {
+  "vocabulary": 635,
+  "kanji": 219,
+  "grammar": 149,
+  "sentence": 300
+};
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function getCleanedCardSources() {
+  return clone(CARD_SOURCES);
+}
+
+function getCleanupReport() {
+  return {
+    inputCounts: { 'sources/cards.js': clone(SOURCE_COUNTS) },
+    inputTotals: clone(SOURCE_COUNTS),
+    fixedCards: [],
+    removedCards: [],
+    finalCounts: clone(SOURCE_COUNTS),
+    removedCounts: {},
+    fixedCount: 0
+  };
+}
+
+module.exports = {
+  ALLOWED_CATEGORIES,
+  CATEGORY_ORDER,
+  FORBIDDEN_FIELDS,
+  getCleanedCardSources,
+  getCleanupReport,
+};

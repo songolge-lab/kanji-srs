@@ -3,6 +3,7 @@ import { previewSRS, applySRS } from '../core/srsEngine.js';
 import { wrapKanji, wrapWord, isJapaneseCard } from '../utils/kanjiUtils.js';
 import { startSessionTimer, stopSessionTimer } from './Analytics.js';
 import { fireConfetti } from '../utils/confetti.js';
+import { getStudyDirection } from '../store/appState.js';
 
 let app;
 
@@ -58,7 +59,56 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizerSync, kataToHira } from '../utils/furiganaParser.js';
+import { getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap } from '../utils/furiganaParser.js';
+
+const lazyFuriganaJobs = new WeakSet();
+
+function hasKanjiText(text) {
+  return KANJI_RUN.test(text || '');
+}
+
+function needsMainFurigana(card) {
+  return card && hasKanjiText(card.kanji) && (!card.furigana || card.furiganaStatus === 'pending');
+}
+
+function needsExampleFurigana(card) {
+  const map = card && card.exampleFuriganaMap;
+  return card && hasKanjiText(card.exampleJp) && (!map || !Object.keys(map).length || card.exampleFuriganaStatus === 'pending');
+}
+
+export function ensureCardFurigana(card, onReady) {
+  if (!card || lazyFuriganaJobs.has(card)) return;
+  const needMain = needsMainFurigana(card);
+  const needExample = needsExampleFurigana(card);
+  if (!needMain && !needExample) return;
+
+  lazyFuriganaJobs.add(card);
+  Promise.all([
+    needMain ? generateFurigana(card.kanji).catch(() => '') : Promise.resolve(card.furigana || ''),
+    needExample ? generateFuriganaMap(card.exampleJp).catch(() => ({})) : Promise.resolve(card.exampleFuriganaMap || {}),
+  ]).then(([furigana, exampleMap]) => {
+    let changed = false;
+    if (needMain) {
+      if (furigana && card.furigana !== furigana) { card.furigana = furigana; changed = true; }
+      if (card.furiganaStatus === 'pending') { card.furiganaStatus = card.furigana ? 'ready' : 'empty'; changed = true; }
+    }
+    if (needExample) {
+      const nextMap = exampleMap || {};
+      if (JSON.stringify(card.exampleFuriganaMap || {}) !== JSON.stringify(nextMap)) {
+        card.exampleFuriganaMap = nextMap;
+        changed = true;
+      }
+      if (card.exampleFuriganaStatus === 'pending') {
+        card.exampleFuriganaStatus = Object.keys(card.exampleFuriganaMap || {}).length ? 'ready' : 'empty';
+        changed = true;
+      }
+    }
+    if (changed) {
+      app.save();
+      if (typeof onReady === 'function') onReady();
+    }
+  }).finally(() => lazyFuriganaJobs.delete(card));
+}
 
 function buildRubyInnerRaw(surface, reading) {
   if (!reading || surface === reading) {
@@ -116,13 +166,22 @@ export function smartRuby(surface, reading, sentence) {
   reading = (reading || '').toString();
   sentence = (sentence || surface).toString();
 
+  const tokenizer = isJapaneseCard() && KANJI_RUN.test(surface) ? getTokenizerSync() : null;
+  if (!reading && tokenizer) {
+    try {
+      reading = tokenizer.tokenize(surface)
+        .map((tok) => KANJI_RUN.test(tok.surface_form) && tok.reading && tok.reading !== '*' ? kataToHira(tok.reading) : tok.surface_form)
+        .join('');
+    } catch {
+      reading = '';
+    }
+  }
+
   const rawSegs = buildRubyInnerRaw(surface, reading);
 
   if (!isJapaneseCard() || !KANJI_RUN.test(surface)) {
     return rawSegs.map(s => s.html).join('');
   }
-
-  const tokenizer = getTokenizerSync();
 
   // Tokenizer hazır değil → tüm yüzeyi tek blok olarak sar. Bu yolda `rawSegs`
   // çağıranın verdiği okumayı (kart furiganası) bütün hâlde taşır → furigana
@@ -180,6 +239,11 @@ let celebrated = false;
 // bitince veya (b) çalışma ekranındaki "Geri/Çık" tuşuna basılınca temizlenir;
 // alt nav ile gezinme oturumu ASLA bozmaz.
 let activeSession = null;
+// Aktif oturumun kart yönü ('normal' | 'reverse') — renderStudy'nin ön yüzü
+// hangi alanı (card.kanji vs card.meaningTr) soru olarak basacağını bilmesi
+// için modül-seviyesinde tutulur. startStudy'de her (yeniden) kurulumda/
+// resume'da güncellenir.
+let studyDirection = 'normal';
 
 // Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
 // sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
@@ -200,28 +264,49 @@ function stateLabel(srs) {
   return {new:app.t('state_new'), learning:app.t('state_learning'), review:app.t('state_review')}[srs.state] || '';
 }
 
+// Yön bağımsız ön yüz (soru) render'ı. Normal modda card.kanji büyük gösterilir
+// (mevcut davranış, değişmedi). Reverse modda soru card.meaningTr'dir ("back
+// prompt", generic — dile/desteye özel etiket YOK); boşsa card.kanji'ye, o da
+// yoksa güvenli bir yer tutucuya düşer (asla boş/çökme). `.fc-prompt` (index.html)
+// `.fc-kanji`'nin CJK serif yazı tipini generic sans-serif ile geçersiz kılar —
+// meaningTr çoğunlukla UI dilinde düzyazıdır, kanji fontuyla basılmamalı.
+function frontFaceHTML(card) {
+  if (studyDirection === 'reverse') {
+    const prompt = (card.meaningTr && String(card.meaningTr).trim()) || card.kanji || '—';
+    return `<div class="fc-kanji fc-prompt${kanjiSizeClass(prompt)}">${esc(prompt)}</div>`;
+  }
+  return `<div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>`;
+}
+
 // ─── STUDY ───────────────────────────────────────────────────────────
 export function startStudy(deckId, masteredOnly) {
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
-  // RESUME: aynı deste + kapsam için yarım bir oturum varsa kuyruğu/konumu koru
-  // (sekme değiştirip dönmek ilerlemeyi sıfırlamasın). Aksi halde taze kur.
+  // Yön, çalışılan destenin (üst deste dahil çocuklarıyla çalışılıyorsa üst
+  // destenin) `studyDirection` alanından gelir — basit ve güvenli varsayım.
+  const direction = getStudyDirection(app.findDeck(deckId));
+  // RESUME: aynı deste + kapsam + YÖN için yarım bir oturum varsa kuyruğu/konumu
+  // koru (sekme değiştirip dönmek ilerlemeyi sıfırlamasın). Yön değiştiyse eski
+  // kuyruk yanlış SRS deposuna işaret eder → taze kur (aşağıdaki koşul bunu
+  // otomatik sağlar, activeSession.direction eşleşmez).
   const resume = activeSession
     && activeSession.deckId === deckId
     && activeSession.masteredOnly === masteredOnly
+    && activeSession.direction === direction
     && studyQueue.length && studyCardIndex < studyQueue.length;
+  studyDirection = direction;
   if (!resume) {
     const hasChildren = app.getChildDecks(deckId).length > 0;
     if (hasChildren) {
-      studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly));
+      studyQueue = shuffle(app._buildQueue(app.getAllCardsForDeck(deckId), masteredOnly, direction));
     } else {
-      studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly);
+      studyQueue = app.buildQueue(app.findDeck(deckId), masteredOnly, direction);
     }
     studyCardIndex = 0;
     studyDoneToday = 0;
     studyShowingBack = false;
     celebrated = false;
-    activeSession = { deckId, masteredOnly };
+    activeSession = { deckId, masteredOnly, direction };
   }
   startSessionTimer();
   app.showView('study');
@@ -235,6 +320,17 @@ export function renderStudy() {
     activeSession = null; // kuyruk bitti → bir sonraki giriş taze oturum kursun
     const studied = studyDoneToday;
     const streak = app.state.stats.streak || 0;
+    // Nothing was actually studied (entered with an empty/finished queue) →
+    // quiet caught-up state instead of an unearned celebration.
+    if (studied === 0) {
+      screen.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">${app.icon('done', 'ic-lg')}</div>
+        <p>${app.t('study_all_caught_up')}</p>
+        <button class="btn btn-primary tap" onclick="showView('deck')">${app.t('back_to_deck')}</button>
+      </div>`;
+      return;
+    }
     screen.innerHTML = `
       <div class="study-done">
         <div class="done-burst">🎉</div>
@@ -260,6 +356,9 @@ export function renderStudy() {
   }
 
   const card = studyQueue[studyCardIndex];
+  ensureCardFurigana(card, () => {
+    if (app.currentView === 'study' && studyQueue[studyCardIndex] === card) renderStudy();
+  });
   const done = studyCardIndex;
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
@@ -276,7 +375,7 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            <div class="fc-kanji${kanjiSizeClass(card.kanji)}">${kanjiText(card.kanji)}</div>
+            ${frontFaceHTML(card)}
           </div>
           <div class="fc-flip-back">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
@@ -285,8 +384,10 @@ export function renderStudy() {
               <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
               ${card.exampleJp ? `
               <hr class="fc-divider">
-              <div class="fc-example">${exHighlight}</div>
-              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+              <div class="fc-example-wrap">
+                <div class="fc-example">${exHighlight}</div>
+                ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+              </div>` : ''}
             </div>
           </div>
         </div>
@@ -315,8 +416,10 @@ export function renderStudy() {
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
             ${card.exampleJp ? `
             <hr class="fc-divider">
-            <div class="fc-example">${exHighlight}</div>
-            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+            <div class="fc-example-wrap">
+              <div class="fc-example">${exHighlight}</div>
+              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+            </div>` : ''}
           </div>
         </div>
       </div>
@@ -341,6 +444,8 @@ function animateCountUp(elId, target, dur = 900) {
   // rAF is paused on hidden tabs — keep the pre-rendered final value so the
   // count is never stuck at 0 if a session ends in the background.
   if (typeof document !== 'undefined' && document.hidden) { el.textContent = String(target); return; }
+  // Reduced motion: show the final value immediately (no count-up).
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = String(target); return; }
   el.textContent = '0'; // start from zero (before first paint) → clean count-up
   const start = performance.now();
   function step(now) {
@@ -528,6 +633,9 @@ export function renderReview() {
     return;
   }
   const card = reviewQueue[reviewIndex];
+  ensureCardFurigana(card, () => {
+    if (app.currentView === 'review' && reviewQueue[reviewIndex] === card) renderReview();
+  });
   const pct = ((reviewIndex + 1) / reviewQueue.length) * 100;
   const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
   screen.innerHTML = `
@@ -548,8 +656,10 @@ export function renderReview() {
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
             ${card.exampleJp ? `
             <hr class="fc-divider">
-            <div class="fc-example">${exHighlight}</div>
-            ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}` : ''}
+            <div class="fc-example-wrap">
+              <div class="fc-example">${exHighlight}</div>
+              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+            </div>` : ''}
           </div>
         </div>
       </div>

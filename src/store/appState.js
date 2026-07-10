@@ -1,3 +1,5 @@
+import { createSrsData } from '../core/srsEngine.js';
+
 export const CONFIG = {
   learnSteps: [1, 10],
   graduateInterval: 1,
@@ -96,21 +98,142 @@ export function createInitialState() {
     },
     decks: [],
     customTests: [],
+    importedPacks: [],
   };
 }
 
 // ─── CUSTOM TEST ACTIONS ─────────────────────────────────────────────
+// Tests share one flat collection (`state.customTests`). `parentId` (null =
+// root) links items into a tree and — like Decks — ANY item may have children,
+// so a runnable test can act as a parent of other tests. `kind === 'folder'` is
+// a legacy container-only item (backward compat with the earlier folder model);
+// it holds no `questions` of its own but is still a valid, startable parent via
+// its descendants. Named `kind`/`parentId` (not `type`/`parent`) so it never
+// collides with question.type ('MULTIPLE_CHOICE'/'TRUE_FALSE'/'FILL_BLANK').
 export function addCustomTest(state, testObj) {
   state.customTests.push(testObj);
 }
 
 export function updateCustomTest(state, id, data) {
   const idx = state.customTests.findIndex(ct => ct.id === id);
-  if (idx !== -1) Object.assign(state.customTests[idx], data);
+  if (idx !== -1) Object.assign(state.customTests[idx], data, { updatedAt: Date.now() });
 }
 
+// Deletes an item; if it's a folder, cascades to every descendant folder/test
+// beneath it. For a leaf test (no children reference it as parentId) this is
+// equivalent to a plain filter, so the same function safely covers both.
 export function deleteCustomTest(state, id) {
-  state.customTests = state.customTests.filter(ct => ct.id !== id);
+  const all = state.customTests || [];
+  const toDelete = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const item of all) {
+      if (item.parentId && toDelete.has(item.parentId) && !toDelete.has(item.id)) {
+        toDelete.add(item.id);
+        grew = true;
+      }
+    }
+  }
+  state.customTests = all.filter(ct => !toDelete.has(ct.id));
+}
+
+// Direct children (folders + tests) of a given folder id (null/undefined = root).
+export function getTestChildren(state, parentId) {
+  return (state.customTests || []).filter(ct => (ct.parentId || null) === (parentId || null));
+}
+
+// Flattened depth-first tree order, each entry `{ item, depth }` — mirrors
+// getDecksInTreeOrder. Any item (runnable test OR legacy folder) may have
+// children, so we recurse unconditionally.
+export function getTestsInTreeOrder(state) {
+  const all = state.customTests || [];
+  const result = [];
+  const visited = new Set();
+  function walk(parentId, depth) {
+    for (const item of all) {
+      if (!item || !item.id || visited.has(item.id)) continue;
+      if ((item.parentId || null) === parentId) {
+        visited.add(item.id);
+        result.push({ item, depth });
+        walk(item.id, depth + 1);
+      }
+    }
+  }
+  walk(null, 0);
+  return result;
+}
+
+// Depth-first descendants of `id` in tree order (children, then grandchildren…).
+export function getTestDescendants(state, id) {
+  const all = state.customTests || [];
+  const out = [];
+  const visited = new Set([id]);
+  (function walk(pid) {
+    for (const item of all) {
+      if (!item || !item.id || visited.has(item.id)) continue;
+      if ((item.parentId || null) === pid) {
+        visited.add(item.id);
+        out.push(item);
+        walk(item.id);
+      }
+    }
+  })(id);
+  return out;
+}
+
+function ownTestQuestions(item) {
+  return item && item.kind !== 'folder' && Array.isArray(item.questions) ? item.questions : [];
+}
+
+// Total runnable question count for a subtree: the item's own questions plus
+// every descendant's. Legacy folders contribute 0 own questions.
+export function countTreeQuestions(state, id) {
+  const root = (state.customTests || []).find(ct => ct.id === id);
+  if (!root) return 0;
+  let n = ownTestQuestions(root).length;
+  for (const d of getTestDescendants(state, id)) n += ownTestQuestions(d).length;
+  return n;
+}
+
+// Builds a runnable test-like object from a subtree WITHOUT mutating state:
+// the item's own questions first, then each descendant's in tree order (no
+// duplication — every item is visited once). Question objects are referenced
+// (not cloned) into a fresh array; TestView only reads them, so sharing refs is
+// safe and avoids copying large image data URLs. Returns null for a bad id.
+export function buildRunnableTestFromTree(state, id) {
+  const root = (state.customTests || []).find(ct => ct.id === id);
+  if (!root) return null;
+  const questions = [...ownTestQuestions(root)];
+  for (const d of getTestDescendants(state, id)) {
+    questions.push(...ownTestQuestions(d));
+  }
+  return { id: root.id, title: root.title, questions };
+}
+
+// Moves a customTests item under a new parent (null = root). Any item can be a
+// parent, so the descendant-cycle guard applies universally: an item cannot be
+// moved into itself or into any of its own descendants. Returns true on success.
+export function moveCustomTest(state, id, newParentId) {
+  const all = state.customTests || [];
+  const item = all.find(ct => ct.id === id);
+  if (!item) return false;
+  const target = newParentId || null;
+  if (target === id) return false;
+  if (target) {
+    let cur = all.find(ct => ct.id === target);
+    if (!cur) return false;
+    const seen = new Set();
+    while (cur) {
+      if (seen.has(cur.id)) return false;
+      seen.add(cur.id);
+      if (cur.id === id) return false; // target is a descendant of id → cycle
+      cur = cur.parentId ? all.find(ct => ct.id === cur.parentId) : null;
+    }
+  }
+  item.parentId = target;
+  item.updatedAt = Date.now();
+  return true;
 }
 
 // ─── MIGRATIONS ──────────────────────────────────────────────────────
@@ -128,7 +251,45 @@ export function migrateSettings(settings) {
 
 export function migrateCustomTests(state) {
   if (!Array.isArray(state.customTests)) state.customTests = [];
-  return state.customTests;
+  const items = state.customTests;
+  const ids = new Set(items.map(ct => ct.id));
+  for (const item of items) {
+    // Pre-folder-organization tests had no `kind` at all — they're runnable
+    // tests. Only an explicit 'folder' stays a folder; anything else normalizes
+    // to 'test'. Idempotent (already-migrated items are left untouched here).
+    if (item.kind !== 'folder' && item.kind !== 'test') item.kind = 'test';
+    // Missing/dangling/self-referential parentId resets to root rather than
+    // dropping the item — it must keep showing up somewhere in the tree.
+    if (!item.parentId || !ids.has(item.parentId) || item.parentId === item.id) item.parentId = null;
+  }
+  // Malformed imported/synced states can contain multi-item cycles. Move one
+  // cycle member to root so the tree stays visible and traversal stays bounded.
+  for (const item of items) {
+    const seen = new Set([item.id]);
+    let pid = item.parentId;
+    while (pid) {
+      if (seen.has(pid) || !ids.has(pid)) { item.parentId = null; break; }
+      seen.add(pid);
+      const parent = items.find(ct => ct.id === pid);
+      pid = parent ? parent.parentId : null;
+    }
+  }
+  return items;
+}
+
+// ─── IMPORTED STUDY PACKS (built-in JLPT packs, see studyPackService.js) ──
+export function migrateImportedPacks(state) {
+  if (!Array.isArray(state.importedPacks)) state.importedPacks = [];
+  return state.importedPacks;
+}
+
+export function isPackImported(state, packId) {
+  return (state.importedPacks || []).some(p => p.packId === packId);
+}
+
+export function addImportedPack(state, entry) {
+  if (!Array.isArray(state.importedPacks)) state.importedPacks = [];
+  state.importedPacks.push(entry);
 }
 
 export function migrateStats(stats) {
@@ -199,8 +360,30 @@ export function migrateDecks(decks, exampleDeckNames) {
   for (const d of decks) {
     if (!('parentId' in d)) d.parentId = null;
     if (!('isExample' in d) && exampleDeckNames.has(d.name)) d.isExample = true;
+    // Card Direction (v2.6): every deck studies front→back unless explicitly
+    // flipped. Any missing/invalid value normalizes to 'normal'.
+    if (d.studyDirection !== 'normal' && d.studyDirection !== 'reverse') d.studyDirection = 'normal';
   }
   return decks;
+}
+
+// ─── CARD DIRECTION (front↔back study) ───────────────────────────────
+// Generic, non-language-specific: "front" = card.kanji, "back" = the rest
+// of the card (furigana/meaningTr/examples). Recognition (front→back) and
+// recall (back→front) are different memories, so reverse study gets its
+// own independent SRS state (card.srsReverse) rather than reusing card.srs.
+export function getStudyDirection(deck) {
+  return deck && deck.studyDirection === 'reverse' ? 'reverse' : 'normal';
+}
+
+export function getCardSrsForDirection(card, direction) {
+  return direction === 'reverse' ? card.srsReverse : card.srs;
+}
+
+export function setCardSrsForDirection(card, direction, nextSrs) {
+  if (direction === 'reverse') card.srsReverse = nextSrs;
+  else card.srs = nextSrs;
+  return card;
 }
 
 // ─── SM-2 → FSRS MIGRATION ───────────────────────────────────────────
@@ -255,10 +438,15 @@ export function migrateToFSRS(cardSrs) {
 // always normalizes whatever it loads, local or remote.
 export function migrateCardsToFSRS(state) {
   if (!state || !Array.isArray(state.decks)) return state;
+  const defaultEase = (state.settings && state.settings.defaultEase) || 2.5;
   for (const d of state.decks) {
     if (!d || !Array.isArray(d.cards)) continue;
     for (const c of d.cards) {
       if (c && c.srs) c.srs = migrateToFSRS(c.srs);
+      // Card Direction (v2.6): reverse (back→front) study needs its own
+      // independent SRS progress — recognition and recall are different
+      // memories. Additive + idempotent, mirrors createSrsData's shape.
+      if (c && !c.srsReverse) c.srsReverse = createSrsData(defaultEase);
     }
   }
   if (!(state.version >= 2)) state.version = 2; // FSRS schema marker

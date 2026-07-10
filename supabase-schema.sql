@@ -110,3 +110,65 @@ AS $$
   SET downloads = downloads + 1
   WHERE id = deck_id;
 $$;
+
+-- ─── CURATED STUDY PACKS (remote pack catalog) ────────────────────────
+-- Metadata catalog for pre-authored JLPT study packs (N5-N1, multilingual)
+-- distributed via Supabase Storage instead of being bundled into the app.
+-- This table holds ONLY catalog metadata — the actual pack JSON (decks,
+-- cards, tests; see docs/jlpt_pack_schema.md) lives in Storage at
+-- `storage_path`, fetched on-demand by the client only when a user chooses
+-- to import that specific pack (see src/services/studyPackService.js).
+--
+-- Admin upload is intentionally NOT exposed through the client: there is no
+-- INSERT/UPDATE/DELETE policy below, so the anon key can only ever SELECT.
+-- Rows are written exclusively via the Supabase SQL console or the
+-- service-role script at scripts/upload_curated_pack.js, which authenticates
+-- with SUPABASE_SERVICE_ROLE_KEY (never shipped to the client) and therefore
+-- bypasses RLS entirely — it does not rely on any policy below.
+CREATE TABLE IF NOT EXISTS curated_packs (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pack_id      TEXT NOT NULL UNIQUE,
+  level        TEXT NOT NULL,
+  language     TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  description  TEXT,
+  version      TEXT NOT NULL,
+  card_count   INTEGER NOT NULL DEFAULT 0,
+  test_count   INTEGER NOT NULL DEFAULT 0,
+  storage_path TEXT NOT NULL,
+  checksum     TEXT,
+  size_bytes   BIGINT,
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_curated_packs_active
+  ON curated_packs (is_active);
+
+CREATE INDEX IF NOT EXISTS idx_curated_packs_level_lang
+  ON curated_packs (level, language);
+
+CREATE TRIGGER trg_curated_packs_updated_at
+  BEFORE UPDATE ON curated_packs
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+ALTER TABLE curated_packs ENABLE ROW LEVEL SECURITY;
+
+-- Public SELECT limited to active packs only; no write policy exists for
+-- any client-facing role, so INSERT/UPDATE/DELETE are denied by default.
+CREATE POLICY curated_packs_select
+  ON curated_packs FOR SELECT
+  USING (is_active = true);
+
+-- ─── CURATED STUDY PACKS — STORAGE BUCKET ─────────────────────────────
+-- Pack JSON files (e.g. study-packs/en/jlpt-n5-en-pilot-v1.json) are stored
+-- in a PUBLIC bucket. Public buckets serve objects directly via the
+-- `/storage/v1/object/public/<bucket>/<path>` URL without any RLS/policy
+-- check, so no storage.objects SELECT policy is required for read access.
+-- Writes are still service-role only (uploads happen via
+-- scripts/upload_curated_pack.js, which authenticates with the service-role
+-- key and bypasses storage RLS the same way it bypasses table RLS above).
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('study-packs', 'study-packs', true)
+ON CONFLICT (id) DO NOTHING;
