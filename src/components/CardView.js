@@ -59,7 +59,7 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap } from '../utils/furiganaParser.js';
+import { getTokenizer, getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 
 const lazyFuriganaJobs = new WeakSet();
 
@@ -110,9 +110,9 @@ export function ensureCardFurigana(card, onReady) {
   }).finally(() => lazyFuriganaJobs.delete(card));
 }
 
-function buildRubyInnerRaw(surface, reading) {
+function buildRubyInnerRaw(surface, reading, clickableKanji = false) {
   if (!reading || surface === reading) {
-    return [{ text: surface, html: esc(surface) }];
+    return [{ text: surface, html: clickableKanji ? wrapKanji(esc(surface)) : esc(surface) }];
   }
 
   const segs = [];
@@ -150,7 +150,8 @@ function buildRubyInnerRaw(surface, reading) {
     }
     out.push({
       text: seg.text,
-      html: rd ? `<ruby>${esc(seg.text)}<rt>${esc(rd)}</rt></ruby>` : esc(seg.text)
+      html: rd ? `<ruby>${clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text)}<rt>${esc(rd)}</rt></ruby>`
+        : (clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text))
     });
   }
   return out;
@@ -183,19 +184,18 @@ export function smartRuby(surface, reading, sentence) {
     return rawSegs.map(s => s.html).join('');
   }
 
-  // Tokenizer hazır değil → tüm yüzeyi tek blok olarak sar. Bu yolda `rawSegs`
-  // çağıranın verdiği okumayı (kart furiganası) bütün hâlde taşır → furigana
-  // doğru kalır (güvenli/eski davranış).
+  // Tokenizer unavailable: keep ruby, but expose only individual kanji details.
+  // A mixed-script phrase must never become one red word target.
   if (!tokenizer) {
-    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+    return buildRubyInnerRaw(surface, reading, true).map(s => s.html).join('');
   }
 
-  // Beklenmedik girdide tokenize patlarsa render'ı çökertme: tek bloğa düş.
+  // Tokenization failure uses the same safe per-kanji fallback.
   let tokens;
   try {
     tokens = tokenizer.tokenize(surface);
   } catch {
-    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+    return buildRubyInnerRaw(surface, reading, true).map(s => s.html).join('');
   }
 
   // Tek token → tüm yüzeyi tek tıklanabilir kelime yap; okumayı çağıranın
@@ -280,6 +280,7 @@ function frontFaceHTML(card) {
 
 // ─── STUDY ───────────────────────────────────────────────────────────
 export function startStudy(deckId, masteredOnly) {
+  warmupFurigana();
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
   // Yön, çalışılan destenin (üst deste dahil çocuklarıyla çalışılıyorsa üst
@@ -356,9 +357,11 @@ export function renderStudy() {
   }
 
   const card = studyQueue[studyCardIndex];
-  ensureCardFurigana(card, () => {
-    if (app.currentView === 'study' && studyQueue[studyCardIndex] === card) renderStudy();
-  });
+  const session = activeSession;
+  const cardIndex = studyCardIndex;
+  const refreshNeeded = !getTokenizerSync() || needsMainFurigana(card) || needsExampleFurigana(card);
+  let refreshRuby = () => {};
+  ensureCardFurigana(card, () => refreshRuby());
   const done = studyCardIndex;
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
@@ -432,6 +435,23 @@ export function renderStudy() {
       </div>
     `;
     initSwipeGrade();
+  }
+  if (studyShowingBack && refreshNeeded) {
+    const rubyNode = screen.querySelector('#grade-card .fc-ruby');
+    const exampleNode = screen.querySelector('#grade-card .fc-example');
+    refreshRuby = () => {
+      const gradeCardNode = screen.querySelector('#grade-card');
+      if (app.currentView !== 'study' || activeSession !== session
+        || studyCardIndex !== cardIndex || studyQueue[cardIndex] !== card
+        || !studyShowingBack || !rubyNode?.isConnected
+        || screen.querySelector('#grade-card .fc-ruby') !== rubyNode
+        || document.getElementById('modal-bg')?.classList.contains('show')
+        || screen.querySelector('.swipe-stage.is-dragging')
+        || gradeCardNode?.matches(':active, .snapping, .flying')) return;
+      rubyNode.innerHTML = smartRuby(card.kanji, card.furigana, card.exampleJp);
+      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+    };
+    if (!getTokenizerSync()) getTokenizer().then(refreshRuby).catch(() => {});
   }
 }
 
