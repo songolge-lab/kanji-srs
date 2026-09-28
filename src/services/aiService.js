@@ -67,6 +67,31 @@ Return only the concise ${langName} translation of the selected word (language c
     .trim();
 }
 
+// An explicit study-card request. Keep it separate from the lexical word lookup:
+// the word and optional example are translated into distinct fields.
+export async function translateCardContent(word, exampleJp, targetLang, apiKey, model) {
+  if (!apiKey) throw new Error('API key is required');
+  if (!word) throw new Error('Japanese card text is required');
+  const langName = LANG_NAMES[targetLang] || 'English';
+  const example = (exampleJp || '').trim();
+  const body = {
+    system_instruction: { parts: [{ text: `Translate Japanese flashcard source text into ${langName}. Return only a JSON object with string fields "word" and "example". Translate the word/phrase and the example sentence separately. If there is no example, return an empty example string. No explanation or markdown.` }] },
+    contents: [{ role: 'user', parts: [{ text: JSON.stringify({ word, example }) }] }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 500, responseMimeType: 'application/json' },
+  };
+  const data = await geminiRequest(model || 'gemini-2.5-pro', apiKey, body);
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw || !raw.trim()) throw new Error('Generation failed, try again');
+  let result;
+  try { result = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')); }
+  catch { throw new Error('AI returned malformed translation'); }
+  if (typeof result?.word !== 'string' || !result.word.trim()
+    || (example && (typeof result.example !== 'string' || !result.example.trim()))) {
+    throw new Error('AI returned incomplete translation');
+  }
+  return { word: result.word.trim(), example: example ? result.example.trim() : '' };
+}
+
 // ─── AI THEMATIC DECK GENERATOR ──────────────────────────────────────
 const DECK_SYSTEM_PROMPT = `You are a Japanese language curriculum designer. You build focused study decks of Japanese vocabulary/kanji for learners. You ALWAYS reply with ONLY a raw JSON array — never markdown, never code fences, never commentary.
 

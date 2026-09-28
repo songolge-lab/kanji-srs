@@ -1098,6 +1098,26 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   opacity: .7;
 }
 .fc-state-badge { position: absolute; top: .9rem; right: .9rem; }
+.study-translate-btn {
+  position: absolute;
+  top: .65rem;
+  left: .65rem;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.study-translate-btn:hover { background: var(--paper-2); }
+.study-translate-btn:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.card-translation-section + .card-translation-section { margin-top: 1.2rem; }
+.card-translation-source { color: var(--ink-soft); margin: .35rem 0; overflow-wrap: anywhere; }
+.card-translation-text { font-size: 1.1rem; font-weight: 600; overflow-wrap: anywhere; }
 .fc-kanji {
   font-size: clamp(4.5rem, 24vw, 8rem);
   line-height: 1.6;

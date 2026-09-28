@@ -5,6 +5,7 @@ import { startSessionTimer, stopSessionTimer } from './Analytics.js';
 import { fireConfetti } from '../utils/confetti.js';
 import { getStudyDirection } from '../store/appState.js';
 import { groupLexicalTokens } from '../utils/lexicalGroups.js';
+import { translateCardContent } from '../services/aiService.js';
 
 let app;
 
@@ -246,10 +247,11 @@ let activeSession = null;
 // için modül-seviyesinde tutulur. startStudy'de her (yeniden) kurulumda/
 // resume'da güncellenir.
 let studyDirection = 'normal';
+let translationRequestId = 0;
 
 // Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
 // sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
-export function clearStudySession() { activeSession = null; }
+export function clearStudySession() { activeSession = null; translationRequestId++; }
 
 // ─── REVIEW STATE ────────────────────────────────────────────────────
 let reviewQueue = [];
@@ -282,6 +284,7 @@ function frontFaceHTML(card) {
 
 // ─── STUDY ───────────────────────────────────────────────────────────
 export function startStudy(deckId, masteredOnly) {
+  translationRequestId++;
   warmupFurigana();
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
@@ -380,6 +383,7 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+            ${translationButtonHTML()}
             ${frontFaceHTML(card)}
           </div>
           <div class="fc-flip-back">
@@ -416,6 +420,7 @@ export function renderStudy() {
         </div>
         <div class="flashcard swipe-card" id="grade-card">
           <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+          ${translationButtonHTML()}
           <div class="fc-back">
             <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
@@ -455,6 +460,57 @@ export function renderStudy() {
     };
     if (!getTokenizerSync()) getTokenizer().then(refreshRuby).catch(() => {});
   }
+  wireTranslationControls(screen, card);
+}
+
+function translationButtonHTML() {
+  return `<button type="button" class="study-translate-btn tap" aria-label="${esc(app.t('card_translate_action'))}" title="${esc(app.t('card_translate_action'))}">🌐</button>`;
+}
+
+function wireTranslationControls(screen, card) {
+  for (const button of screen.querySelectorAll('.study-translate-btn')) {
+    // Keep a button press out of the card's flip and grading drag listeners.
+    for (const type of ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'mouseup']) {
+      button.addEventListener(type, event => event.stopPropagation());
+    }
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      openCardTranslation(card);
+    });
+  }
+}
+
+async function openCardTranslation(card) {
+  const requestId = ++translationRequestId;
+  const session = activeSession;
+  const index = studyCardIndex;
+  const settings = app.state.settings || {};
+  const apiKey = settings.geminiApiKey;
+  const example = (card.exampleJp || '').trim();
+  app.openModal(app.t('card_translation_title'), `
+    <div id="card-translation-output">${app.t('msg_ai_loading')}</div>
+    <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
+  `);
+  const out = document.getElementById('card-translation-output');
+  if (!apiKey) { out.textContent = app.t('msg_ai_key_missing'); return; }
+  const stillCurrent = () => requestId === translationRequestId
+    && app.currentView === 'study' && activeSession === session
+    && studyCardIndex === index && studyQueue[index] === card
+    && document.getElementById('modal-bg')?.classList.contains('show')
+    && out.isConnected && document.getElementById('card-translation-output') === out;
+  try {
+    const translated = await translateCardContent(card.kanji, example, app.currentLang, apiKey, settings.geminiModel);
+    if (!stillCurrent()) return;
+    out.innerHTML = `
+      <div class="card-translation-section"><div class="word-section-label">${app.t('card_translation_word')}</div>
+        <div class="card-translation-source">${esc(card.kanji)}</div><div class="card-translation-text" data-translation="word"></div></div>
+      ${example ? `<div class="card-translation-section"><div class="word-section-label">${app.t('card_translation_example')}</div>
+        <div class="card-translation-source">${esc(example)}</div><div class="card-translation-text" data-translation="example"></div></div>` : ''}`;
+    out.querySelector('[data-translation="word"]').textContent = translated.word;
+    if (example) out.querySelector('[data-translation="example"]').textContent = translated.example;
+  } catch (error) {
+    if (stillCurrent()) out.textContent = app.t('warn_error', { msg: error?.message || 'Unknown error' });
+  }
 }
 
 // Count-up animation for the completion stats (cards studied, streak). Cubic
@@ -482,6 +538,7 @@ function animateCountUp(elId, target, dur = 900) {
 export function showBack() { haptic([10]); studyShowingBack = true; renderStudy(); }
 
 export function gradeCard(grade) {
+  translationRequestId++;
   haptic(HAPTIC_BY_GRADE[grade]);
   const card = studyQueue[studyCardIndex];
   const wasNew = card.srs.state === 'new';
