@@ -978,6 +978,8 @@ label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: .35r
   display: inline-block;
   margin-top: .25rem;
 }
+.search-deck-badge:hover { text-decoration: underline; }
+.search-deck-badge:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
 /* Search result rows reuse the card-list row, but swap the emphasis:
    ruby reading shrinks into the glyph slot, meaning is promoted to the
    lead line and the example sentence is demoted to the meta line. */

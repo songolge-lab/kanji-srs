@@ -50,6 +50,14 @@ export function renderInto(containerId, opts = {}) {
   const input = document.getElementById(`search-input-${uid}`);
   const clearBtn = document.getElementById(`search-clear-${uid}`);
   const filter = document.getElementById(`search-filter-${uid}`);
+  const results = document.getElementById(`search-results-${uid}`);
+
+  results.addEventListener('click', (e) => {
+    const badge = e.target.closest('.search-deck-badge');
+    if (!badge || !results.contains(badge)) return;
+    e.stopPropagation();
+    window.openDeck(badge.dataset.deckId);
+  });
 
   input.value = st.query;
   filter.value = st.filter;
@@ -179,7 +187,7 @@ function searchResultHTML(c, deckId, deckName, rootDeckId) {
     <div class="cli-info">
       <div class="cli-meaning">${esc(c.meaningTr)}</div>
       ${c.exampleJp ? `<div class="cli-furi">${esc(c.exampleJp)}</div>` : ''}
-      ${showBadge ? `<div class="search-deck-badge">📁 ${esc(deckName)}</div>` : ''}
+      ${showBadge ? `<button type="button" class="search-deck-badge tap" data-deck-id="${esc(deckId)}" aria-label="${esc(`${app.t('detail')}: ${deckName}`)}">📁 ${esc(deckName)}</button>` : ''}
     </div>
     <div class="cli-actions">
       <button class="icon-btn tap" onclick="event.stopPropagation();showEditModal('${deckId}','${c.id}')" aria-label="${app.t('edit_label')}">${app.icon('edit')}</button>
