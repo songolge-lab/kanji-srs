@@ -38,6 +38,7 @@ export function renderInto(containerId, opts = {}) {
       </div>
       <select id="search-filter-${uid}" class="search-filter">
         <option value="all">${app.t('search_filter_all')}</option>
+        <option value="deck">${app.t('search_filter_deck')}</option>
         <option value="kanji">${app.t('search_filter_kanji')}</option>
         <option value="meaning">${app.t('search_filter_meaning')}</option>
         <option value="example">${app.t('search_filter_example')}</option>
@@ -57,6 +58,11 @@ export function renderInto(containerId, opts = {}) {
     if (!badge || !results.contains(badge)) return;
     e.stopPropagation();
     window.openDeck(badge.dataset.deckId);
+  });
+  results.addEventListener('click', (e) => {
+    const deckResult = e.target.closest('.search-deck-result');
+    if (!deckResult || !results.contains(deckResult)) return;
+    window.openDeck(deckResult.dataset.deckId);
   });
 
   input.value = st.query;
@@ -123,6 +129,18 @@ function collectCards(scope, deckId) {
   return list;
 }
 
+function collectDecks(scope, deckId) {
+  const decks = scope === 'deck' && deckId
+    ? (() => { const root = app.findDeck(deckId); return root ? [root, ...app.getDescendantDecks(deckId)] : []; })()
+    : app.getDecksInTreeOrder().map(({ deck }) => deck);
+  const seen = new Set();
+  return decks.filter(deck => {
+    if (seen.has(deck.id)) return false;
+    seen.add(deck.id);
+    return true;
+  }).map(deck => ({ kind: 'deck', deckId: deck.id, deckName: deck.name, parentId: deck.parentId }));
+}
+
 function executeSearch(uid, scope, deckId) {
   const resultsContainer = document.getElementById(`search-results-${uid}`);
   const counter = document.getElementById(`search-counter-${uid}`);
@@ -144,9 +162,10 @@ function executeSearch(uid, scope, deckId) {
 
   const q = query.toLowerCase();
   const filter = st.filter;
-  const allCards = collectCards(scope, deckId);
-
-  const results = allCards.filter(item => {
+  const deckResults = filter === 'all' || filter === 'deck'
+    ? collectDecks(scope, deckId).filter(item => item.deckName.toLowerCase().includes(q))
+    : [];
+  const cardResults = filter === 'deck' ? [] : collectCards(scope, deckId).filter(item => {
     const c = item.card;
     const kanjiMatch = c.kanji?.toLowerCase().includes(q) || c.furigana?.toLowerCase().includes(q);
     const meaningMatch = c.meaningTr?.toLowerCase().includes(q);
@@ -158,7 +177,8 @@ function executeSearch(uid, scope, deckId) {
 
     // 'all'
     return kanjiMatch || meaningMatch || exampleMatch;
-  });
+  }).map(item => ({ kind: 'card', ...item }));
+  const results = [...deckResults, ...cardResults];
 
   if (results.length === 0) {
     resultsContainer.innerHTML = `
@@ -172,9 +192,15 @@ function executeSearch(uid, scope, deckId) {
     // Deste-kapsamlı aramada, sonucun kök desteden mi yoksa bir alt desteden mi
     // geldiğini ancak alt desteyse göster (kök zaten bağlamdan belli).
     const rootDeckId = scope === 'deck' ? deckId : null;
-    resultsContainer.innerHTML = results.map(item => searchResultHTML(item.card, item.deckId, item.deckName, rootDeckId)).join('');
+    resultsContainer.innerHTML = results.map(item => item.kind === 'deck'
+      ? deckResultHTML(item)
+      : searchResultHTML(item.card, item.deckId, item.deckName, rootDeckId)).join('');
     counter.textContent = app.t('search_found', { count: results.length });
   }
+}
+
+function deckResultHTML({ deckId, deckName }) {
+  return `<button type="button" class="search-deck-result tap" data-deck-id="${esc(deckId)}">📁 ${esc(deckName)}</button>`;
 }
 
 function searchResultHTML(c, deckId, deckName, rootDeckId) {
