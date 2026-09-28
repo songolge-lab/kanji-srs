@@ -4,6 +4,7 @@ import { wrapKanji, wrapWord, isJapaneseCard } from '../utils/kanjiUtils.js';
 import { startSessionTimer, stopSessionTimer } from './Analytics.js';
 import { fireConfetti } from '../utils/confetti.js';
 import { getStudyDirection } from '../store/appState.js';
+import { groupLexicalTokens } from '../utils/lexicalGroups.js';
 
 let app;
 
@@ -205,21 +206,22 @@ export function smartRuby(surface, reading, sentence) {
     return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
-  // Çok token → her kelimeyi AYRI bir `.word-clickable` yap ki Word Modal
+  // Çok token → her lexical grubu AYRI bir `.word-clickable` yap ki Word Modal
   // gerçek bileşen kelimeleri (毎日 / 漢字) arasın, tüm öbeği değil. KRİTİK:
   // her kanji token'ı KENDİ okumasını doğrudan kuromoji'den (tok.reading,
   // katakana → hiragana) alır → eski rawSegs-dilimleme yolunun çok-token'lı
   // kanji koşularında furigana'yı düşürmesi (v2.3.1 regresyonu) giderilir.
   // Bilinmeyen kelime (reading '*') → okumasız düz metin (yine de tıklanabilir).
   let html = '';
-  for (const tok of tokens) {
-    const tokText = tok.surface_form;
-    if (KANJI_RUN.test(tokText)) {
-      const tokReading = (tok.reading && tok.reading !== '*') ? kataToHira(tok.reading) : '';
-      const segs = buildRubyInnerRaw(tokText, tokReading);
-      html += wrapWord(segs.map(s => s.html).join(''), tokText, sentence);
+  for (const group of groupLexicalTokens(tokens)) {
+    const groupText = group.map(tok => tok.surface_form).join('');
+    if (KANJI_RUN.test(groupText)) {
+      const groupReading = group.every(tok => tok.reading && tok.reading !== '*')
+        ? group.map(tok => kataToHira(tok.reading)).join('') : '';
+      const segs = buildRubyInnerRaw(groupText, groupReading);
+      html += wrapWord(segs.map(s => s.html).join(''), groupText, sentence);
     } else {
-      html += esc(tokText);
+      html += esc(groupText);
     }
   }
   return html;
