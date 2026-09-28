@@ -27,19 +27,13 @@ async function geminiRequest(model, apiKey, body) {
   return res.json();
 }
 
-// Shared: UI language code → full language name. Used by both the contextual
+// Shared: UI language code → full language name. Used by both the lexical
 // word definer and the thematic deck generator to force output in the learner's
 // language regardless of which word/topic is requested.
 const LANG_NAMES = { en: 'English', tr: 'Turkish', ko: 'Korean', mn: 'Mongolian' };
 
-// ─── CONTEXTUAL WORD DEFINER (Jukugo Smart Word Modal) ───────────────
-// Output MUST be a single line in the exact shape:
-//   **<direct translation>** - <one short contextual sentence>
-// The translation is wrapped in **double asterisks** so the Word Modal can
-// render it bold; everything else (code fences, headings, lists) is forbidden.
-const WORD_SYSTEM_PROMPT = `You are a precise bilingual Japanese dictionary for language learners. Given a Japanese word and the sentence it appears in, you reply on ONE line using EXACTLY this format:
-**<direct translation>** - <one short sentence of context>
-Do NOT just explain the word. You MUST provide the direct, most common translation first, wrapped in double asterisks, followed by a hyphen, then a brief contextual explanation. The text inside ** ** must be a translation (a word or short phrase), never a description. No code fences, no headings, no bullet points, no extra lines.`;
+// ─── LEXICAL WORD TRANSLATION (Jukugo Smart Word Modal) ──────────────
+const WORD_SYSTEM_PROMPT = `You are a precise bilingual Japanese dictionary for language learners. Translate only the selected Japanese lexical item. Use the sentence solely to choose its sense. Reply with one concise word or short phrase in the requested language. No explanation, example, punctuation after the answer, markdown, headings, or lists.`;
 
 // Returns a concise, dictionary-style definition of `word` as it is used in
 // `sentence`, written entirely in the learner's UI language (`targetLang`:
@@ -49,26 +43,16 @@ export async function defineWordContextually(word, sentence, targetLang, apiKey,
   if (!word) throw new Error('Word is required');
 
   const langName = LANG_NAMES[targetLang] || 'English';
-  const userPrompt = `Japanese word: ${word}
-Sentence it appears in: ${sentence || word}
-
-Reply with EXACTLY this format and nothing else, written in ${langName} (language code: ${targetLang || 'en'}):
-**[direct translation]** - [one short sentence explaining how it is used in this context]
-
-Rules:
-- The text inside ** ** must be the direct, most common ${langName} translation of "${word}" (a word or short phrase) — NOT a description of what it does.
-- Follow it with " - " then ONE short sentence of context, also in ${langName}.
-- Output nothing else: no code fences, no markdown headings, no lists, no extra lines.`;
+  const userPrompt = `Selected Japanese word: ${word}
+Context sentence (sense disambiguation only): ${sentence || word}
+Return only the concise ${langName} translation of the selected word (language code: ${targetLang || 'en'}).`;
 
   const body = {
     system_instruction: { parts: [{ text: WORD_SYSTEM_PROMPT }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: {
       temperature: 0.4,
-      // Explicit ceiling so the API never falls back to a tiny default. Raised
-      // to 500 because verbose languages (Turkish, Korean) were truncating the
-      // contextual sentence mid-word at 200.
-      maxOutputTokens: 500,
+      maxOutputTokens: 100,
     },
   };
 
