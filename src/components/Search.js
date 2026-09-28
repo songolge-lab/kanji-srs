@@ -58,11 +58,17 @@ export function renderInto(containerId, opts = {}) {
     if (!badge || !results.contains(badge)) return;
     e.stopPropagation();
     window.openDeck(badge.dataset.deckId);
-  });
+  }, true);
   results.addEventListener('click', (e) => {
     const deckResult = e.target.closest('.search-deck-result');
     if (!deckResult || !results.contains(deckResult)) return;
     window.openDeck(deckResult.dataset.deckId);
+  });
+  results.addEventListener('keydown', (e) => {
+    const row = e.target;
+    if (!row.matches('.search-result') || !['Enter', ' '].includes(e.key)) return;
+    e.preventDefault();
+    window.showCardPreview(row.dataset.deckId, row.dataset.cardId);
   });
 
   input.value = st.query;
@@ -206,7 +212,7 @@ function deckResultHTML({ deckId, deckName }) {
 function searchResultHTML(c, deckId, deckName, rootDeckId) {
   const showBadge = deckId !== rootDeckId;
   return `
-  <div class="card-list-item clickable-row search-result" onclick="showCardPreview('${deckId}','${c.id}')" role="button" tabindex="0">
+  <div class="card-list-item clickable-row search-result" onclick="showCardPreview('${deckId}','${c.id}')" role="group" tabindex="0" data-deck-id="${esc(deckId)}" data-card-id="${esc(c.id)}" aria-label="${esc(`${app.t('card_preview_title')}: ${c.kanji}`)}">
     <div class="cli-kanji">
       <div class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</div>
     </div>
