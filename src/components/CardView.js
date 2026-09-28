@@ -248,6 +248,7 @@ let activeSession = null;
 // resume'da güncellenir.
 let studyDirection = 'normal';
 let translationRequestId = 0;
+let pendingRubyRefreshCleanup = null;
 
 // Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
 // sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
@@ -319,6 +320,7 @@ export function startStudy(deckId, masteredOnly) {
 }
 
 export function renderStudy() {
+  pendingRubyRefreshCleanup?.();
   const screen = document.getElementById('study-screen');
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
@@ -446,18 +448,81 @@ export function renderStudy() {
   if (studyShowingBack && refreshNeeded) {
     const rubyNode = screen.querySelector('#grade-card .fc-ruby');
     const exampleNode = screen.querySelector('#grade-card .fc-example');
+    const gradeCardNode = screen.querySelector('#grade-card');
+    const stage = screen.querySelector('.swipe-stage');
+    const modal = document.getElementById('modal-bg');
+    const studyView = document.getElementById('view-study');
+    let cleanupDeferred = null;
+    let snapSettled = false;
     refreshRuby = () => {
-      const gradeCardNode = screen.querySelector('#grade-card');
       if (app.currentView !== 'study' || activeSession !== session
         || studyCardIndex !== cardIndex || studyQueue[cardIndex] !== card
         || !studyShowingBack || !rubyNode?.isConnected
         || screen.querySelector('#grade-card .fc-ruby') !== rubyNode
-        || document.getElementById('modal-bg')?.classList.contains('show')
-        || screen.querySelector('.swipe-stage.is-dragging')
-        || gradeCardNode?.matches(':active, .snapping, .flying')) return;
+        || screen.querySelector('#grade-card') !== gradeCardNode) {
+        cleanupDeferred?.();
+        return;
+      }
+      if (modal?.classList.contains('show') || stage?.classList.contains('is-dragging')
+        || gradeCardNode.matches(':active, .flying')
+        || (gradeCardNode.classList.contains('snapping') && !snapSettled)) {
+        deferRefresh();
+        return;
+      }
+      cleanupDeferred?.();
       rubyNode.innerHTML = smartRuby(card.kanji, card.furigana, card.exampleJp);
       if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
     };
+    function deferRefresh() {
+      if (cleanupDeferred) return;
+      let snapTimer = null;
+      const retryTimers = new Set();
+      const afterInteraction = () => {
+        const timer = setTimeout(() => { retryTimers.delete(timer); refreshRuby(); }, 0);
+        retryTimers.add(timer);
+      };
+      const watchSnap = () => {
+        if (!gradeCardNode.classList.contains('snapping')) {
+          snapSettled = false;
+          clearTimeout(snapTimer);
+          snapTimer = null;
+        } else if (!snapSettled && snapTimer === null) {
+          // The snap class remains after its 0.5s transform transition.
+          snapTimer = setTimeout(() => { snapSettled = true; refreshRuby(); }, 600);
+        }
+      };
+      const observer = new MutationObserver(() => { watchSnap(); refreshRuby(); });
+      if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(gradeCardNode, { attributes: true, attributeFilter: ['class'] });
+      if (studyView) observer.observe(studyView, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(screen, { childList: true });
+      const onSnapEnd = (event) => {
+        if (event.target !== gradeCardNode || event.propertyName !== 'transform') return;
+        snapSettled = true;
+        refreshRuby();
+      };
+      gradeCardNode.addEventListener('transitionend', onSnapEnd);
+      gradeCardNode.addEventListener('transitioncancel', onSnapEnd);
+      document.addEventListener('pointerup', afterInteraction);
+      document.addEventListener('pointercancel', afterInteraction);
+      document.addEventListener('keyup', afterInteraction);
+      const cleanup = () => {
+        observer.disconnect();
+        clearTimeout(snapTimer);
+        for (const timer of retryTimers) clearTimeout(timer);
+        gradeCardNode.removeEventListener('transitionend', onSnapEnd);
+        gradeCardNode.removeEventListener('transitioncancel', onSnapEnd);
+        document.removeEventListener('pointerup', afterInteraction);
+        document.removeEventListener('pointercancel', afterInteraction);
+        document.removeEventListener('keyup', afterInteraction);
+        if (pendingRubyRefreshCleanup === cleanup) pendingRubyRefreshCleanup = null;
+        cleanupDeferred = null;
+      };
+      cleanupDeferred = cleanup;
+      pendingRubyRefreshCleanup = cleanup;
+      watchSnap();
+    }
     if (!getTokenizerSync()) getTokenizer().then(refreshRuby).catch(() => {});
   }
   wireTranslationControls(screen, card);
