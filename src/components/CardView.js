@@ -4,6 +4,11 @@ import { wrapKanji, wrapWord, isJapaneseCard } from '../utils/kanjiUtils.js';
 import { startSessionTimer, stopSessionTimer } from './Analytics.js';
 import { fireConfetti } from '../utils/confetti.js';
 import { getStudyDirection } from '../store/appState.js';
+import { groupLexicalTokens } from '../utils/lexicalGroups.js';
+import { translateCardContent } from '../services/aiService.js';
+
+// TEMP STUDY TRACE: diagnostic-only hooks; remove after real-device evidence.
+import * as StudyTrace from '../diagnostics/studyTrace.js';
 
 let app;
 
@@ -19,6 +24,10 @@ function haptic(pattern) {
 let kanjiListenerAdded = false;
 export function init(ctx) {
   app = ctx;
+  StudyTrace.init(app, () => ({ // TEMP STUDY TRACE: safe identity only; never serialize card.
+    card: studyQueue[studyCardIndex], index: studyCardIndex, done: studyDoneToday,
+    answerShown: studyShowingBack, direction: studyDirection, tokenizerReady: !!getTokenizerSync(),
+  }));
   if (!kanjiListenerAdded) {
     kanjiListenerAdded = true;
     document.addEventListener('click', (e) => {
@@ -27,12 +36,13 @@ export function init(ctx) {
       const wordEl = e.target.closest('.word-clickable');
       if (wordEl) {
         e.stopPropagation();
+        StudyTrace.mark('delegated-word-click'); // TEMP STUDY TRACE
         app.openWordModal(wordEl.dataset.word, wordEl.dataset.sentence || '');
         return;
       }
       // Single-kanji click (e.g. example sentence) → per-kanji detail modal.
       const el = e.target.closest('.kanji-clickable');
-      if (el) app.openKanjiModal(el.dataset.kanji);
+      if (el) { StudyTrace.mark('delegated-kanji-click'); app.openKanjiModal(el.dataset.kanji); } // TEMP STUDY TRACE
     });
   }
 }
@@ -59,7 +69,7 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap } from '../utils/furiganaParser.js';
+import { getTokenizer, getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
 
 const lazyFuriganaJobs = new WeakSet();
 
@@ -110,9 +120,9 @@ export function ensureCardFurigana(card, onReady) {
   }).finally(() => lazyFuriganaJobs.delete(card));
 }
 
-function buildRubyInnerRaw(surface, reading) {
+function buildRubyInnerRaw(surface, reading, clickableKanji = false) {
   if (!reading || surface === reading) {
-    return [{ text: surface, html: esc(surface) }];
+    return [{ text: surface, html: clickableKanji ? wrapKanji(esc(surface)) : esc(surface) }];
   }
 
   const segs = [];
@@ -150,7 +160,8 @@ function buildRubyInnerRaw(surface, reading) {
     }
     out.push({
       text: seg.text,
-      html: rd ? `<ruby>${esc(seg.text)}<rt>${esc(rd)}</rt></ruby>` : esc(seg.text)
+      html: rd ? `<ruby>${clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text)}<rt>${esc(rd)}</rt></ruby>`
+        : (clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text))
     });
   }
   return out;
@@ -183,19 +194,18 @@ export function smartRuby(surface, reading, sentence) {
     return rawSegs.map(s => s.html).join('');
   }
 
-  // Tokenizer hazır değil → tüm yüzeyi tek blok olarak sar. Bu yolda `rawSegs`
-  // çağıranın verdiği okumayı (kart furiganası) bütün hâlde taşır → furigana
-  // doğru kalır (güvenli/eski davranış).
+  // Tokenizer unavailable: keep ruby, but expose only individual kanji details.
+  // A mixed-script phrase must never become one red word target.
   if (!tokenizer) {
-    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+    return buildRubyInnerRaw(surface, reading, true).map(s => s.html).join('');
   }
 
-  // Beklenmedik girdide tokenize patlarsa render'ı çökertme: tek bloğa düş.
+  // Tokenization failure uses the same safe per-kanji fallback.
   let tokens;
   try {
     tokens = tokenizer.tokenize(surface);
   } catch {
-    return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
+    return buildRubyInnerRaw(surface, reading, true).map(s => s.html).join('');
   }
 
   // Tek token → tüm yüzeyi tek tıklanabilir kelime yap; okumayı çağıranın
@@ -205,21 +215,22 @@ export function smartRuby(surface, reading, sentence) {
     return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
-  // Çok token → her kelimeyi AYRI bir `.word-clickable` yap ki Word Modal
+  // Çok token → her lexical grubu AYRI bir `.word-clickable` yap ki Word Modal
   // gerçek bileşen kelimeleri (毎日 / 漢字) arasın, tüm öbeği değil. KRİTİK:
   // her kanji token'ı KENDİ okumasını doğrudan kuromoji'den (tok.reading,
   // katakana → hiragana) alır → eski rawSegs-dilimleme yolunun çok-token'lı
   // kanji koşularında furigana'yı düşürmesi (v2.3.1 regresyonu) giderilir.
   // Bilinmeyen kelime (reading '*') → okumasız düz metin (yine de tıklanabilir).
   let html = '';
-  for (const tok of tokens) {
-    const tokText = tok.surface_form;
-    if (KANJI_RUN.test(tokText)) {
-      const tokReading = (tok.reading && tok.reading !== '*') ? kataToHira(tok.reading) : '';
-      const segs = buildRubyInnerRaw(tokText, tokReading);
-      html += wrapWord(segs.map(s => s.html).join(''), tokText, sentence);
+  for (const group of groupLexicalTokens(tokens)) {
+    const groupText = group.map(tok => tok.surface_form).join('');
+    if (KANJI_RUN.test(groupText)) {
+      const groupReading = group.every(tok => tok.reading && tok.reading !== '*')
+        ? group.map(tok => kataToHira(tok.reading)).join('') : '';
+      const segs = buildRubyInnerRaw(groupText, groupReading);
+      html += wrapWord(segs.map(s => s.html).join(''), groupText, sentence);
     } else {
-      html += esc(tokText);
+      html += esc(groupText);
     }
   }
   return html;
@@ -244,10 +255,12 @@ let activeSession = null;
 // için modül-seviyesinde tutulur. startStudy'de her (yeniden) kurulumda/
 // resume'da güncellenir.
 let studyDirection = 'normal';
+let translationRequestId = 0;
+let pendingRubyRefreshCleanup = null;
 
 // Çalışma ekranından açıkça çıkıldığında (topbar geri tuşu) çağrılır → bir
 // sonraki startStudy taze kuyruk kurar. Alt nav gezintisinden ÇAĞRILMAZ.
-export function clearStudySession() { activeSession = null; }
+export function clearStudySession() { activeSession = null; translationRequestId++; }
 
 // ─── REVIEW STATE ────────────────────────────────────────────────────
 let reviewQueue = [];
@@ -280,6 +293,8 @@ function frontFaceHTML(card) {
 
 // ─── STUDY ───────────────────────────────────────────────────────────
 export function startStudy(deckId, masteredOnly) {
+  translationRequestId++;
+  warmupFurigana();
   app.currentDeckId = deckId;
   app.studyMastered = masteredOnly;
   // Yön, çalışılan destenin (üst deste dahil çocuklarıyla çalışılıyorsa üst
@@ -313,7 +328,9 @@ export function startStudy(deckId, masteredOnly) {
 }
 
 export function renderStudy() {
+  pendingRubyRefreshCleanup?.();
   const screen = document.getElementById('study-screen');
+  StudyTrace.beforeReplace(screen); // TEMP STUDY TRACE: precedes every full study DOM replacement.
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
     stopSessionTimer();
@@ -356,9 +373,11 @@ export function renderStudy() {
   }
 
   const card = studyQueue[studyCardIndex];
-  ensureCardFurigana(card, () => {
-    if (app.currentView === 'study' && studyQueue[studyCardIndex] === card) renderStudy();
-  });
+  const session = activeSession;
+  const cardIndex = studyCardIndex;
+  const refreshNeeded = !getTokenizerSync() || needsMainFurigana(card) || needsExampleFurigana(card);
+  let refreshRuby = () => {};
+  ensureCardFurigana(card, () => refreshRuby());
   const done = studyCardIndex;
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
@@ -375,6 +394,7 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+            ${translationButtonHTML()}
             ${frontFaceHTML(card)}
           </div>
           <div class="fc-flip-back">
@@ -395,6 +415,7 @@ export function renderStudy() {
       <div class="fc-flip-hint">← ${app.t('flip_hint')} →</div>
       <button id="btn-show" class="tap" onclick="showBack()">${app.icon('eye')}${app.t('show_answer')}</button>
     `;
+    StudyTrace.inserted(screen); // TEMP STUDY TRACE
     initFlipGesture();
   } else {
     screen.innerHTML = `
@@ -411,6 +432,7 @@ export function renderStudy() {
         </div>
         <div class="flashcard swipe-card" id="grade-card">
           <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
+          ${translationButtonHTML()}
           <div class="fc-back">
             <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
             <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
@@ -431,7 +453,141 @@ export function renderStudy() {
         <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${app.t('grade_easy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
+    StudyTrace.inserted(screen); // TEMP STUDY TRACE
     initSwipeGrade();
+  }
+  if (studyShowingBack && refreshNeeded) {
+    const rubyNode = screen.querySelector('#grade-card .fc-ruby');
+    const exampleNode = screen.querySelector('#grade-card .fc-example');
+    const gradeCardNode = screen.querySelector('#grade-card');
+    const stage = screen.querySelector('.swipe-stage');
+    const modal = document.getElementById('modal-bg');
+    const studyView = document.getElementById('view-study');
+    let cleanupDeferred = null;
+    let snapSettled = false;
+    refreshRuby = () => {
+      if (app.currentView !== 'study' || activeSession !== session
+        || studyCardIndex !== cardIndex || studyQueue[cardIndex] !== card
+        || !studyShowingBack || !rubyNode?.isConnected
+        || screen.querySelector('#grade-card .fc-ruby') !== rubyNode
+        || screen.querySelector('#grade-card') !== gradeCardNode) {
+        cleanupDeferred?.();
+        return;
+      }
+      if (modal?.classList.contains('show') || stage?.classList.contains('is-dragging')
+        || gradeCardNode.matches(':active, .flying')
+        || (gradeCardNode.classList.contains('snapping') && !snapSettled)) {
+        deferRefresh();
+        return;
+      }
+      cleanupDeferred?.();
+      StudyTrace.mark('ruby-refresh-about-to-replace'); // TEMP STUDY TRACE
+      rubyNode.innerHTML = smartRuby(card.kanji, card.furigana, card.exampleJp);
+      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+    };
+    function deferRefresh() {
+      if (cleanupDeferred) return;
+      let snapTimer = null;
+      const retryTimers = new Set();
+      const afterInteraction = () => {
+        const timer = setTimeout(() => { retryTimers.delete(timer); refreshRuby(); }, 0);
+        retryTimers.add(timer);
+      };
+      const watchSnap = () => {
+        if (!gradeCardNode.classList.contains('snapping')) {
+          snapSettled = false;
+          clearTimeout(snapTimer);
+          snapTimer = null;
+        } else if (!snapSettled && snapTimer === null) {
+          // The snap class remains after its 0.5s transform transition.
+          snapTimer = setTimeout(() => { snapSettled = true; refreshRuby(); }, 600);
+        }
+      };
+      const observer = new MutationObserver(() => { watchSnap(); refreshRuby(); });
+      if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(gradeCardNode, { attributes: true, attributeFilter: ['class'] });
+      if (studyView) observer.observe(studyView, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(screen, { childList: true });
+      const onSnapEnd = (event) => {
+        if (event.target !== gradeCardNode || event.propertyName !== 'transform') return;
+        snapSettled = true;
+        refreshRuby();
+      };
+      gradeCardNode.addEventListener('transitionend', onSnapEnd);
+      gradeCardNode.addEventListener('transitioncancel', onSnapEnd);
+      document.addEventListener('pointerup', afterInteraction);
+      document.addEventListener('pointercancel', afterInteraction);
+      document.addEventListener('keyup', afterInteraction);
+      const cleanup = () => {
+        observer.disconnect();
+        clearTimeout(snapTimer);
+        for (const timer of retryTimers) clearTimeout(timer);
+        gradeCardNode.removeEventListener('transitionend', onSnapEnd);
+        gradeCardNode.removeEventListener('transitioncancel', onSnapEnd);
+        document.removeEventListener('pointerup', afterInteraction);
+        document.removeEventListener('pointercancel', afterInteraction);
+        document.removeEventListener('keyup', afterInteraction);
+        if (pendingRubyRefreshCleanup === cleanup) pendingRubyRefreshCleanup = null;
+        cleanupDeferred = null;
+      };
+      cleanupDeferred = cleanup;
+      pendingRubyRefreshCleanup = cleanup;
+      watchSnap();
+    }
+    if (!getTokenizerSync()) getTokenizer().then(refreshRuby).catch(() => {});
+  }
+  wireTranslationControls(screen, card);
+  StudyTrace.mark('translation-handlers-installed'); // TEMP STUDY TRACE
+}
+
+function translationButtonHTML() {
+  return `<button type="button" class="study-translate-btn tap" aria-label="${esc(app.t('card_translate_action'))}" title="${esc(app.t('card_translate_action'))}">🌐</button>`;
+}
+
+function wireTranslationControls(screen, card) {
+  for (const button of screen.querySelectorAll('.study-translate-btn')) {
+    // Keep a button press out of the card's flip and grading drag listeners.
+    for (const type of ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'mouseup']) {
+      button.addEventListener(type, event => event.stopPropagation());
+    }
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      openCardTranslation(card);
+    });
+  }
+}
+
+async function openCardTranslation(card) {
+  const requestId = ++translationRequestId;
+  const session = activeSession;
+  const index = studyCardIndex;
+  const settings = app.state.settings || {};
+  const apiKey = settings.geminiApiKey;
+  const example = (card.exampleJp || '').trim();
+  app.openModal(app.t('card_translation_title'), `
+    <div id="card-translation-output">${app.t('msg_ai_loading')}</div>
+    <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
+  `);
+  const out = document.getElementById('card-translation-output');
+  if (!apiKey) { out.textContent = app.t('msg_ai_key_missing'); return; }
+  const stillCurrent = () => requestId === translationRequestId
+    && app.currentView === 'study' && activeSession === session
+    && studyCardIndex === index && studyQueue[index] === card
+    && document.getElementById('modal-bg')?.classList.contains('show')
+    && out.isConnected && document.getElementById('card-translation-output') === out;
+  try {
+    const translated = await translateCardContent(card.kanji, example, app.currentLang, apiKey, settings.geminiModel);
+    if (!stillCurrent()) return;
+    out.innerHTML = `
+      <div class="card-translation-section"><div class="word-section-label">${app.t('card_translation_word')}</div>
+        <div class="card-translation-source">${esc(card.kanji)}</div><div class="card-translation-text" data-translation="word"></div></div>
+      ${example ? `<div class="card-translation-section"><div class="word-section-label">${app.t('card_translation_example')}</div>
+        <div class="card-translation-source">${esc(example)}</div><div class="card-translation-text" data-translation="example"></div></div>` : ''}`;
+    out.querySelector('[data-translation="word"]').textContent = translated.word;
+    if (example) out.querySelector('[data-translation="example"]').textContent = translated.example;
+  } catch (error) {
+    if (stillCurrent()) out.textContent = app.t('warn_error', { msg: error?.message || 'Unknown error' });
   }
 }
 
@@ -457,9 +613,14 @@ function animateCountUp(elId, target, dur = 900) {
   requestAnimationFrame(step);
 }
 
-export function showBack() { haptic([10]); studyShowingBack = true; renderStudy(); }
+export function showBack() {
+  StudyTrace.mark('showBack-entered'); // TEMP STUDY TRACE
+  haptic([10]); studyShowingBack = true; renderStudy();
+}
 
 export function gradeCard(grade) {
+  StudyTrace.mark('grade-invoked', { grade }); // TEMP STUDY TRACE
+  translationRequestId++;
   haptic(HAPTIC_BY_GRADE[grade]);
   const card = studyQueue[studyCardIndex];
   const wasNew = card.srs.state === 'new';
@@ -507,6 +668,8 @@ function initSwipeGrade() {
   const MOVE_START = 8; // px before a press becomes a drag (taps pass through)
   let startX = 0, startY = 0, dx = 0, dy = 0;
   let pointerDown = false, dragging = false, pid = null;
+  let traceSuppressor = false; // TEMP STUDY TRACE: mirrors existing suppressor only.
+  StudyTrace.gesture('answer', () => ({ pointerDown, dragging, pid, dx, dy, clickSuppressor: traceSuppressor }));
 
   function dominantDir() {
     if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
@@ -521,6 +684,7 @@ function initSwipeGrade() {
     pointerDown = true; dragging = false; pid = e.pointerId;
     startX = e.clientX; startY = e.clientY; dx = 0; dy = 0;
     card.classList.remove('snapping', 'flying');
+    StudyTrace.mark('answer-gesture-start', { pointerId: pid }); // TEMP STUDY TRACE
   }
   function onMove(e) {
     if (!pointerDown) return;
@@ -529,7 +693,9 @@ function initSwipeGrade() {
       if (Math.hypot(dx, dy) < MOVE_START) return;
       dragging = true;
       stage.classList.add('is-dragging');
+      StudyTrace.mark('answer-movement-threshold-crossed', { dx, dy, threshold: MOVE_START }); // TEMP STUDY TRACE
       try { card.setPointerCapture(pid); } catch { /* capture optional */ }
+      StudyTrace.mark('answer-pointer-capture-attempt', { pointerId: pid }); // TEMP STUDY TRACE
     }
     e.preventDefault();
     const rot = (dx / (stage.offsetWidth || 320)) * 12;
@@ -549,9 +715,16 @@ function initSwipeGrade() {
 
     // Swallow the click that trails a real drag (prevents opening a word modal
     // on release). Self-cleaning so a lingering listener never eats a real tap.
-    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    const swallow = (ev) => {
+      StudyTrace.mark('existing-answer-click-suppressor-invoked'); // TEMP STUDY TRACE
+      ev.stopPropagation(); ev.preventDefault();
+    };
     card.addEventListener('click', swallow, true);
-    setTimeout(() => card.removeEventListener('click', swallow, true), 350);
+    traceSuppressor = true; StudyTrace.mark('existing-answer-click-suppressor-installed'); // TEMP STUDY TRACE
+    setTimeout(() => {
+      card.removeEventListener('click', swallow, true);
+      traceSuppressor = false; StudyTrace.mark('existing-answer-click-suppressor-removed'); // TEMP STUDY TRACE
+    }, 350);
 
     const dir = dominantDir();
     const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
@@ -571,6 +744,7 @@ function initSwipeGrade() {
   card.addEventListener('pointermove', onMove);
   card.addEventListener('pointerup', onUp);
   card.addEventListener('pointercancel', onUp);
+  StudyTrace.mark('answer-gesture-listeners-installed'); // TEMP STUDY TRACE
   card._swipeCleanup = () => {
     card.removeEventListener('pointerdown', onDown);
     card.removeEventListener('pointermove', onMove);
@@ -687,14 +861,27 @@ function initFlipGesture() {
   const inner = document.getElementById('fc-flip-inner');
   if (!container || !inner) return;
   let startX = 0, currentRotation = 0, dragging = false, flipped = false;
+  let traceMoved = false, traceThreshold = false; // TEMP STUDY TRACE: observational flags.
+  StudyTrace.gesture('front', () => ({ startX, currentRotation, dragging, flipped }));
   const threshold = 90;
   function getX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-  function onStart(e) { if (flipped) return; dragging = true; startX = getX(e); inner.classList.add('no-transition'); }
+  function onStart(e) {
+    if (flipped) return;
+    dragging = true; startX = getX(e); inner.classList.add('no-transition');
+    traceMoved = false; traceThreshold = false;
+    StudyTrace.mark('front-gesture-start', { sourceEvent: e.type }); // TEMP STUDY TRACE
+  }
   function onMove(e) {
     if (!dragging || flipped) return;
     const dx = getX(e) - startX;
     currentRotation = Math.max(-180, Math.min(180, (dx / (container.offsetWidth || 300)) * 200));
     inner.style.transform = `rotateY(${currentRotation}deg)`;
+    if (!traceMoved && dx !== 0) {
+      traceMoved = true; StudyTrace.mark('front-first-movement', { dx, movementThreshold: null }); // TEMP STUDY TRACE: no production movement threshold.
+    }
+    if (!traceThreshold && Math.abs(currentRotation) >= threshold) {
+      traceThreshold = true; StudyTrace.mark('front-flip-threshold-crossed', { rotation: currentRotation, threshold }); // TEMP STUDY TRACE
+    }
   }
   function onEnd() {
     if (!dragging || flipped) return;
@@ -702,7 +889,13 @@ function initFlipGesture() {
     if (Math.abs(currentRotation) >= threshold) {
       flipped = true;
       inner.style.transform = `rotateY(${currentRotation > 0 ? 180 : -180}deg)`;
-      setTimeout(() => showBack(), 350);
+      StudyTrace.path('B-gesture'); // TEMP STUDY TRACE
+      StudyTrace.mark('front-flip-accepted', { rotation: currentRotation });
+      StudyTrace.mark('reveal-timer-scheduled', { delayMs: 350 });
+      setTimeout(() => {
+        StudyTrace.mark('reveal-timer-fired'); // TEMP STUDY TRACE
+        showBack();
+      }, 350);
     } else { currentRotation = 0; inner.style.transform = 'rotateY(0deg)'; }
   }
   if (container._flipCleanup) container._flipCleanup();
@@ -710,6 +903,7 @@ function initFlipGesture() {
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  StudyTrace.mark('front-gesture-listeners-installed'); // TEMP STUDY TRACE
   container._flipCleanup = () => {
     container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
     container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);

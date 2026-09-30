@@ -38,6 +38,7 @@ export function renderInto(containerId, opts = {}) {
       </div>
       <select id="search-filter-${uid}" class="search-filter">
         <option value="all">${app.t('search_filter_all')}</option>
+        <option value="deck">${app.t('search_filter_deck')}</option>
         <option value="kanji">${app.t('search_filter_kanji')}</option>
         <option value="meaning">${app.t('search_filter_meaning')}</option>
         <option value="example">${app.t('search_filter_example')}</option>
@@ -50,6 +51,25 @@ export function renderInto(containerId, opts = {}) {
   const input = document.getElementById(`search-input-${uid}`);
   const clearBtn = document.getElementById(`search-clear-${uid}`);
   const filter = document.getElementById(`search-filter-${uid}`);
+  const results = document.getElementById(`search-results-${uid}`);
+
+  results.addEventListener('click', (e) => {
+    const badge = e.target.closest('.search-deck-badge');
+    if (!badge || !results.contains(badge)) return;
+    e.stopPropagation();
+    window.openDeck(badge.dataset.deckId);
+  }, true);
+  results.addEventListener('click', (e) => {
+    const deckResult = e.target.closest('.search-deck-result');
+    if (!deckResult || !results.contains(deckResult)) return;
+    window.openDeck(deckResult.dataset.deckId);
+  });
+  results.addEventListener('click', (e) => {
+    const preview = e.target.closest('.search-preview-action');
+    if (!preview || !results.contains(preview)) return;
+    e.stopPropagation();
+    window.showCardPreview(preview.dataset.deckId, preview.dataset.cardId);
+  });
 
   input.value = st.query;
   filter.value = st.filter;
@@ -115,6 +135,18 @@ function collectCards(scope, deckId) {
   return list;
 }
 
+function collectDecks(scope, deckId) {
+  const decks = scope === 'deck' && deckId
+    ? (() => { const root = app.findDeck(deckId); return root ? [root, ...app.getDescendantDecks(deckId)] : []; })()
+    : app.getDecksInTreeOrder().map(({ deck }) => deck);
+  const seen = new Set();
+  return decks.filter(deck => {
+    if (seen.has(deck.id)) return false;
+    seen.add(deck.id);
+    return true;
+  }).map(deck => ({ kind: 'deck', deckId: deck.id, deckName: deck.name, parentId: deck.parentId }));
+}
+
 function executeSearch(uid, scope, deckId) {
   const resultsContainer = document.getElementById(`search-results-${uid}`);
   const counter = document.getElementById(`search-counter-${uid}`);
@@ -136,9 +168,10 @@ function executeSearch(uid, scope, deckId) {
 
   const q = query.toLowerCase();
   const filter = st.filter;
-  const allCards = collectCards(scope, deckId);
-
-  const results = allCards.filter(item => {
+  const deckResults = filter === 'all' || filter === 'deck'
+    ? collectDecks(scope, deckId).filter(item => item.deckName.toLowerCase().includes(q))
+    : [];
+  const cardResults = filter === 'deck' ? [] : collectCards(scope, deckId).filter(item => {
     const c = item.card;
     const kanjiMatch = c.kanji?.toLowerCase().includes(q) || c.furigana?.toLowerCase().includes(q);
     const meaningMatch = c.meaningTr?.toLowerCase().includes(q);
@@ -150,7 +183,8 @@ function executeSearch(uid, scope, deckId) {
 
     // 'all'
     return kanjiMatch || meaningMatch || exampleMatch;
-  });
+  }).map(item => ({ kind: 'card', ...item }));
+  const results = [...deckResults, ...cardResults];
 
   if (results.length === 0) {
     resultsContainer.innerHTML = `
@@ -164,22 +198,30 @@ function executeSearch(uid, scope, deckId) {
     // Deste-kapsamlı aramada, sonucun kök desteden mi yoksa bir alt desteden mi
     // geldiğini ancak alt desteyse göster (kök zaten bağlamdan belli).
     const rootDeckId = scope === 'deck' ? deckId : null;
-    resultsContainer.innerHTML = results.map(item => searchResultHTML(item.card, item.deckId, item.deckName, rootDeckId)).join('');
+    resultsContainer.innerHTML = results.map(item => item.kind === 'deck'
+      ? deckResultHTML(item)
+      : searchResultHTML(item.card, item.deckId, item.deckName, rootDeckId)).join('');
     counter.textContent = app.t('search_found', { count: results.length });
   }
+}
+
+function deckResultHTML({ deckId, deckName }) {
+  return `<button type="button" class="search-deck-result tap" data-deck-id="${esc(deckId)}">📁 ${esc(deckName)}</button>`;
 }
 
 function searchResultHTML(c, deckId, deckName, rootDeckId) {
   const showBadge = deckId !== rootDeckId;
   return `
-  <div class="card-list-item clickable-row search-result" onclick="showCardPreview('${deckId}','${c.id}')" role="button" tabindex="0">
-    <div class="cli-kanji">
-      <div class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</div>
-    </div>
-    <div class="cli-info">
-      <div class="cli-meaning">${esc(c.meaningTr)}</div>
-      ${c.exampleJp ? `<div class="cli-furi">${esc(c.exampleJp)}</div>` : ''}
-      ${showBadge ? `<div class="search-deck-badge">📁 ${esc(deckName)}</div>` : ''}
+  <div class="card-list-item search-result">
+    <div class="search-result-main">
+      <button type="button" class="search-preview-action tap" data-deck-id="${esc(deckId)}" data-card-id="${esc(c.id)}" aria-label="${esc(`${app.t('card_preview_title')}: ${c.kanji}`)}">
+        <span class="cli-kanji"><span class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</span></span>
+        <span class="cli-info">
+          <span class="cli-meaning">${esc(c.meaningTr)}</span>
+          ${c.exampleJp ? `<span class="cli-furi">${esc(c.exampleJp)}</span>` : ''}
+        </span>
+      </button>
+      ${showBadge ? `<button type="button" class="search-deck-badge tap" data-deck-id="${esc(deckId)}" aria-label="${esc(`${app.t('detail')}: ${deckName}`)}">📁 ${esc(deckName)}</button>` : ''}
     </div>
     <div class="cli-actions">
       <button class="icon-btn tap" onclick="event.stopPropagation();showEditModal('${deckId}','${c.id}')" aria-label="${app.t('edit_label')}">${app.icon('edit')}</button>
