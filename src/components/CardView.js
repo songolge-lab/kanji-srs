@@ -7,6 +7,9 @@ import { getStudyDirection } from '../store/appState.js';
 import { groupLexicalTokens } from '../utils/lexicalGroups.js';
 import { translateCardContent } from '../services/aiService.js';
 
+// TEMP STUDY TRACE: diagnostic-only hooks; remove after real-device evidence.
+import * as StudyTrace from '../diagnostics/studyTrace.js';
+
 let app;
 
 // ─── HAPTICS ─────────────────────────────────────────────────────────
@@ -21,6 +24,10 @@ function haptic(pattern) {
 let kanjiListenerAdded = false;
 export function init(ctx) {
   app = ctx;
+  StudyTrace.init(app, () => ({ // TEMP STUDY TRACE: safe identity only; never serialize card.
+    card: studyQueue[studyCardIndex], index: studyCardIndex, done: studyDoneToday,
+    answerShown: studyShowingBack, direction: studyDirection, tokenizerReady: !!getTokenizerSync(),
+  }));
   if (!kanjiListenerAdded) {
     kanjiListenerAdded = true;
     document.addEventListener('click', (e) => {
@@ -29,12 +36,13 @@ export function init(ctx) {
       const wordEl = e.target.closest('.word-clickable');
       if (wordEl) {
         e.stopPropagation();
+        StudyTrace.mark('delegated-word-click'); // TEMP STUDY TRACE
         app.openWordModal(wordEl.dataset.word, wordEl.dataset.sentence || '');
         return;
       }
       // Single-kanji click (e.g. example sentence) → per-kanji detail modal.
       const el = e.target.closest('.kanji-clickable');
-      if (el) app.openKanjiModal(el.dataset.kanji);
+      if (el) { StudyTrace.mark('delegated-kanji-click'); app.openKanjiModal(el.dataset.kanji); } // TEMP STUDY TRACE
     });
   }
 }
@@ -322,6 +330,7 @@ export function startStudy(deckId, masteredOnly) {
 export function renderStudy() {
   pendingRubyRefreshCleanup?.();
   const screen = document.getElementById('study-screen');
+  StudyTrace.beforeReplace(screen); // TEMP STUDY TRACE: precedes every full study DOM replacement.
 
   if (!studyQueue.length || studyCardIndex >= studyQueue.length) {
     stopSessionTimer();
@@ -406,6 +415,7 @@ export function renderStudy() {
       <div class="fc-flip-hint">← ${app.t('flip_hint')} →</div>
       <button id="btn-show" class="tap" onclick="showBack()">${app.icon('eye')}${app.t('show_answer')}</button>
     `;
+    StudyTrace.inserted(screen); // TEMP STUDY TRACE
     initFlipGesture();
   } else {
     screen.innerHTML = `
@@ -443,6 +453,7 @@ export function renderStudy() {
         <button class="ans-btn ans-easy tap" onclick="gradeCard(3)">${app.t('grade_easy')}<span class="next-time">${previews[3]}</span></button>
       </div>
     `;
+    StudyTrace.inserted(screen); // TEMP STUDY TRACE
     initSwipeGrade();
   }
   if (studyShowingBack && refreshNeeded) {
@@ -470,6 +481,7 @@ export function renderStudy() {
         return;
       }
       cleanupDeferred?.();
+      StudyTrace.mark('ruby-refresh-about-to-replace'); // TEMP STUDY TRACE
       rubyNode.innerHTML = smartRuby(card.kanji, card.furigana, card.exampleJp);
       if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
     };
@@ -526,6 +538,7 @@ export function renderStudy() {
     if (!getTokenizerSync()) getTokenizer().then(refreshRuby).catch(() => {});
   }
   wireTranslationControls(screen, card);
+  StudyTrace.mark('translation-handlers-installed'); // TEMP STUDY TRACE
 }
 
 function translationButtonHTML() {
@@ -600,9 +613,13 @@ function animateCountUp(elId, target, dur = 900) {
   requestAnimationFrame(step);
 }
 
-export function showBack() { haptic([10]); studyShowingBack = true; renderStudy(); }
+export function showBack() {
+  StudyTrace.mark('showBack-entered'); // TEMP STUDY TRACE
+  haptic([10]); studyShowingBack = true; renderStudy();
+}
 
 export function gradeCard(grade) {
+  StudyTrace.mark('grade-invoked', { grade }); // TEMP STUDY TRACE
   translationRequestId++;
   haptic(HAPTIC_BY_GRADE[grade]);
   const card = studyQueue[studyCardIndex];
@@ -651,6 +668,8 @@ function initSwipeGrade() {
   const MOVE_START = 8; // px before a press becomes a drag (taps pass through)
   let startX = 0, startY = 0, dx = 0, dy = 0;
   let pointerDown = false, dragging = false, pid = null;
+  let traceSuppressor = false; // TEMP STUDY TRACE: mirrors existing suppressor only.
+  StudyTrace.gesture('answer', () => ({ pointerDown, dragging, pid, dx, dy, clickSuppressor: traceSuppressor }));
 
   function dominantDir() {
     if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
@@ -665,6 +684,7 @@ function initSwipeGrade() {
     pointerDown = true; dragging = false; pid = e.pointerId;
     startX = e.clientX; startY = e.clientY; dx = 0; dy = 0;
     card.classList.remove('snapping', 'flying');
+    StudyTrace.mark('answer-gesture-start', { pointerId: pid }); // TEMP STUDY TRACE
   }
   function onMove(e) {
     if (!pointerDown) return;
@@ -673,7 +693,9 @@ function initSwipeGrade() {
       if (Math.hypot(dx, dy) < MOVE_START) return;
       dragging = true;
       stage.classList.add('is-dragging');
+      StudyTrace.mark('answer-movement-threshold-crossed', { dx, dy, threshold: MOVE_START }); // TEMP STUDY TRACE
       try { card.setPointerCapture(pid); } catch { /* capture optional */ }
+      StudyTrace.mark('answer-pointer-capture-attempt', { pointerId: pid }); // TEMP STUDY TRACE
     }
     e.preventDefault();
     const rot = (dx / (stage.offsetWidth || 320)) * 12;
@@ -693,9 +715,16 @@ function initSwipeGrade() {
 
     // Swallow the click that trails a real drag (prevents opening a word modal
     // on release). Self-cleaning so a lingering listener never eats a real tap.
-    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    const swallow = (ev) => {
+      StudyTrace.mark('existing-answer-click-suppressor-invoked'); // TEMP STUDY TRACE
+      ev.stopPropagation(); ev.preventDefault();
+    };
     card.addEventListener('click', swallow, true);
-    setTimeout(() => card.removeEventListener('click', swallow, true), 350);
+    traceSuppressor = true; StudyTrace.mark('existing-answer-click-suppressor-installed'); // TEMP STUDY TRACE
+    setTimeout(() => {
+      card.removeEventListener('click', swallow, true);
+      traceSuppressor = false; StudyTrace.mark('existing-answer-click-suppressor-removed'); // TEMP STUDY TRACE
+    }, 350);
 
     const dir = dominantDir();
     const dist = dir === 'left' || dir === 'right' ? Math.abs(dx) : Math.abs(dy);
@@ -715,6 +744,7 @@ function initSwipeGrade() {
   card.addEventListener('pointermove', onMove);
   card.addEventListener('pointerup', onUp);
   card.addEventListener('pointercancel', onUp);
+  StudyTrace.mark('answer-gesture-listeners-installed'); // TEMP STUDY TRACE
   card._swipeCleanup = () => {
     card.removeEventListener('pointerdown', onDown);
     card.removeEventListener('pointermove', onMove);
@@ -831,14 +861,27 @@ function initFlipGesture() {
   const inner = document.getElementById('fc-flip-inner');
   if (!container || !inner) return;
   let startX = 0, currentRotation = 0, dragging = false, flipped = false;
+  let traceMoved = false, traceThreshold = false; // TEMP STUDY TRACE: observational flags.
+  StudyTrace.gesture('front', () => ({ startX, currentRotation, dragging, flipped }));
   const threshold = 90;
   function getX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-  function onStart(e) { if (flipped) return; dragging = true; startX = getX(e); inner.classList.add('no-transition'); }
+  function onStart(e) {
+    if (flipped) return;
+    dragging = true; startX = getX(e); inner.classList.add('no-transition');
+    traceMoved = false; traceThreshold = false;
+    StudyTrace.mark('front-gesture-start', { sourceEvent: e.type }); // TEMP STUDY TRACE
+  }
   function onMove(e) {
     if (!dragging || flipped) return;
     const dx = getX(e) - startX;
     currentRotation = Math.max(-180, Math.min(180, (dx / (container.offsetWidth || 300)) * 200));
     inner.style.transform = `rotateY(${currentRotation}deg)`;
+    if (!traceMoved && dx !== 0) {
+      traceMoved = true; StudyTrace.mark('front-first-movement', { dx, movementThreshold: null }); // TEMP STUDY TRACE: no production movement threshold.
+    }
+    if (!traceThreshold && Math.abs(currentRotation) >= threshold) {
+      traceThreshold = true; StudyTrace.mark('front-flip-threshold-crossed', { rotation: currentRotation, threshold }); // TEMP STUDY TRACE
+    }
   }
   function onEnd() {
     if (!dragging || flipped) return;
@@ -846,7 +889,13 @@ function initFlipGesture() {
     if (Math.abs(currentRotation) >= threshold) {
       flipped = true;
       inner.style.transform = `rotateY(${currentRotation > 0 ? 180 : -180}deg)`;
-      setTimeout(() => showBack(), 350);
+      StudyTrace.path('B-gesture'); // TEMP STUDY TRACE
+      StudyTrace.mark('front-flip-accepted', { rotation: currentRotation });
+      StudyTrace.mark('reveal-timer-scheduled', { delayMs: 350 });
+      setTimeout(() => {
+        StudyTrace.mark('reveal-timer-fired'); // TEMP STUDY TRACE
+        showBack();
+      }, 350);
     } else { currentRotation = 0; inner.style.transform = 'rotateY(0deg)'; }
   }
   if (container._flipCleanup) container._flipCleanup();
@@ -854,6 +903,7 @@ function initFlipGesture() {
   container.addEventListener('mouseup', onEnd); container.addEventListener('mouseleave', onEnd);
   container.addEventListener('touchstart', onStart, { passive: true });
   container.addEventListener('touchmove', onMove, { passive: true }); container.addEventListener('touchend', onEnd);
+  StudyTrace.mark('front-gesture-listeners-installed'); // TEMP STUDY TRACE
   container._flipCleanup = () => {
     container.removeEventListener('mousedown', onStart); container.removeEventListener('mousemove', onMove);
     container.removeEventListener('mouseup', onEnd); container.removeEventListener('mouseleave', onEnd);
