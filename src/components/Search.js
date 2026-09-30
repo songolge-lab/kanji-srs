@@ -64,11 +64,11 @@ export function renderInto(containerId, opts = {}) {
     if (!deckResult || !results.contains(deckResult)) return;
     window.openDeck(deckResult.dataset.deckId);
   });
-  results.addEventListener('keydown', (e) => {
-    const row = e.target;
-    if (!row.matches('.search-result') || !['Enter', ' '].includes(e.key)) return;
-    e.preventDefault();
-    window.showCardPreview(row.dataset.deckId, row.dataset.cardId);
+  results.addEventListener('click', (e) => {
+    const preview = e.target.closest('.search-preview-action');
+    if (!preview || !results.contains(preview)) return;
+    e.stopPropagation();
+    window.showCardPreview(preview.dataset.deckId, preview.dataset.cardId);
   });
 
   input.value = st.query;
@@ -212,13 +212,15 @@ function deckResultHTML({ deckId, deckName }) {
 function searchResultHTML(c, deckId, deckName, rootDeckId) {
   const showBadge = deckId !== rootDeckId;
   return `
-  <div class="card-list-item clickable-row search-result" onclick="showCardPreview('${deckId}','${c.id}')" role="group" tabindex="0" data-deck-id="${esc(deckId)}" data-card-id="${esc(c.id)}" aria-label="${esc(`${app.t('card_preview_title')}: ${c.kanji}`)}">
-    <div class="cli-kanji">
-      <div class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</div>
-    </div>
-    <div class="cli-info">
-      <div class="cli-meaning">${esc(c.meaningTr)}</div>
-      ${c.exampleJp ? `<div class="cli-furi">${esc(c.exampleJp)}</div>` : ''}
+  <div class="card-list-item search-result">
+    <div class="search-result-main">
+      <button type="button" class="search-preview-action tap" data-deck-id="${esc(deckId)}" data-card-id="${esc(c.id)}" aria-label="${esc(`${app.t('card_preview_title')}: ${c.kanji}`)}">
+        <span class="cli-kanji"><span class="fc-ruby">${smartRuby(c.kanji, c.furigana, c.exampleJp)}</span></span>
+        <span class="cli-info">
+          <span class="cli-meaning">${esc(c.meaningTr)}</span>
+          ${c.exampleJp ? `<span class="cli-furi">${esc(c.exampleJp)}</span>` : ''}
+        </span>
+      </button>
       ${showBadge ? `<button type="button" class="search-deck-badge tap" data-deck-id="${esc(deckId)}" aria-label="${esc(`${app.t('detail')}: ${deckName}`)}">📁 ${esc(deckName)}</button>` : ''}
     </div>
     <div class="cli-actions">
