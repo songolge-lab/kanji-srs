@@ -385,7 +385,6 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            ${translationButtonHTML()}
             ${frontFaceHTML(card)}
           </div>
           <div class="fc-flip-back">
