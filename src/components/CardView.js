@@ -129,9 +129,48 @@ export function ensureCardFurigana(card, onReady) {
   }).finally(() => lazyFuriganaJobs.delete(card));
 }
 
-function buildRubyInnerRaw(surface, reading, clickableKanji = false, renderText = null) {
+// Count complete alignments, capped at two: ambiguity must not become a guess.
+// Kanji runs consume at least one character; literal runs match exactly, and
+// every path must consume the full reading. Tokenizer pronunciation is unused.
+function alignRubyReadings(segs, reading) {
+  const boundaries = new Uint8Array(reading.length + 1);
+  boundaries[0] = 1;
+  let offset = 0;
+  for (const ch of reading) { offset += ch.length; boundaries[offset] = 1; }
+
+  const matches = new Array(segs.length + 1);
+  matches[segs.length] = new Uint8Array(reading.length + 1);
+  matches[segs.length][reading.length] = 1;
+  for (let index = segs.length - 1; index >= 0; index--) {
+    const seg = segs[index];
+    const next = matches[index + 1];
+    const row = matches[index] = new Uint8Array(reading.length + 1);
+    let count = 0;
+    for (let start = reading.length - 1; start >= 0; start--) {
+      if (seg.type === 'k') count = Math.min(2, count + next[start + 1]);
+      if (!boundaries[start]) continue;
+      row[start] = seg.type === 'k' ? count
+        : (reading.startsWith(seg.text, start) ? next[start + seg.text.length] || 0 : 0);
+    }
+  }
+  if (matches[0][0] !== 1) return null;
+
+  let cursor = 0;
+  return segs.map((seg, index) => {
+    if (seg.type !== 'k') { cursor += seg.text.length; return ''; }
+    let end = cursor + 1;
+    while (!matches[index + 1][end]) end++;
+    const annotation = reading.slice(cursor, end);
+    cursor = end;
+    return annotation;
+  });
+}
+
+function buildRubyInnerRaw(surface, reading, clickableKanji = false, renderText = null, renderRuby = null) {
   const baseText = (text, start) => renderText ? renderText(text, start)
     : (clickableKanji ? wrapKanji(esc(text)) : esc(text));
+  const rubyHTML = (text, annotation, start) => renderRuby ? renderRuby(text, annotation, start)
+    : `<ruby>${baseText(text, start)}<rt>${esc(annotation)}</rt></ruby>`;
   if (!reading || surface === reading) {
     return [{ text: surface, html: baseText(surface, 0) }];
   }
@@ -151,32 +190,15 @@ function buildRubyInnerRaw(surface, reading, clickableKanji = false, renderText 
     return [{ text: surface, html: baseText(surface, 0) }];
   }
 
-  let r = reading;
-  const out = [];
-  for (let i = 0; i < segs.length; i++) {
-    const seg = segs[i];
-    if (seg.type === 'h') {
-      const idx = r.indexOf(seg.text);
-      r = idx >= 0 ? r.slice(idx + seg.text.length) : r;
-      out.push({ text: seg.text, html: baseText(seg.text, seg.start) });
-      continue;
-    }
-    const next = segs[i + 1];
-    let rd;
-    if (next && next.type === 'h') {
-      const ni = r.indexOf(next.text);
-      rd = ni >= 0 ? r.slice(0, ni) : r;
-      r = ni >= 0 ? r.slice(ni) : '';
-    } else {
-      rd = r; r = '';
-    }
-    out.push({
-      text: seg.text,
-      html: rd ? `<ruby>${baseText(seg.text, seg.start)}<rt>${esc(rd)}</rt></ruby>`
-        : baseText(seg.text, seg.start)
-    });
-  }
-  return out;
+  const annotations = alignRubyReadings(segs, reading);
+  // An ambiguous or unmatched reading belongs visibly to the complete surface,
+  // never to a guessed individual kanji run. Keep lexical base targets intact.
+  if (!annotations) return [{ text: surface, html: rubyHTML(surface, reading, 0) }];
+  return segs.map((seg, index) => ({
+    text: seg.text,
+    html: seg.type === 'k' ? rubyHTML(seg.text, annotations[index], seg.start)
+      : baseText(seg.text, seg.start)
+  }));
 }
 
 // Bağlama duyarlı ruby: yalnızca KANJI koşuları <rt> okuma alır; saf
@@ -247,7 +269,17 @@ export function smartRuby(surface, reading, sentence) {
       return group.clickable ? wrapWord(fragment, group.text, sentence) : fragment;
     }).join('');
   };
-  return buildRubyInnerRaw(surface, reading, false, renderText).map(seg => seg.html).join('');
+  const renderRuby = (text, annotation, start) => {
+    const end = start + text.length;
+    const owners = groups.filter(group => group.start < end && group.end > start);
+    if (owners.length === 1 && owners[0].clickable) {
+      return wrapWord(`<ruby>${esc(text)}<rt>${esc(annotation)}</rt></ruby>`, owners[0].text, sentence);
+    }
+    // Shared pronunciation has no unambiguous word owner. Only its independent
+    // base fragments open Word Detail; the annotation stays non-word-clickable.
+    return `<ruby>${renderText(text, start)}<rt>${esc(annotation)}</rt></ruby>`;
+  };
+  return buildRubyInnerRaw(surface, reading, false, renderText, renderRuby).map(seg => seg.html).join('');
 }
 
 // ─── STUDY STATE ─────────────────────────────────────────────────────
