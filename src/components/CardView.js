@@ -65,12 +65,22 @@ import { getTokenizer, getTokenizerSync, kataToHira, generateFurigana, generateF
 
 const lazyFuriganaJobs = new WeakSet();
 
+// Reverse study uses a prototype view whose writes would otherwise shadow data.
+function getCanonicalCard(card) {
+  if (!card) return null;
+  for (const deck of app.state.decks) {
+    const savedCard = deck.cards.find(item => item.id === card.id);
+    if (savedCard) return savedCard;
+  }
+  return null;
+}
+
 function hasKanjiText(text) {
   return KANJI_RUN.test(text || '');
 }
 
 function needsMainFurigana(card) {
-  return card && hasKanjiText(card.kanji) && (!card.furigana || card.furiganaStatus === 'pending');
+  return card && hasKanjiText(card.kanji) && !String(card.furigana || '').trim();
 }
 
 function needsExampleFurigana(card) {
@@ -79,22 +89,29 @@ function needsExampleFurigana(card) {
 }
 
 export function ensureCardFurigana(card, onReady) {
+  card = getCanonicalCard(card);
   if (!card || lazyFuriganaJobs.has(card)) return;
   const needMain = needsMainFurigana(card);
   const needExample = needsExampleFurigana(card);
   if (!needMain && !needExample) return;
 
+  const source = card.kanji;
+  const exampleSource = card.exampleJp;
+  const previousExampleMap = JSON.stringify(card.exampleFuriganaMap || {});
   lazyFuriganaJobs.add(card);
   Promise.all([
-    needMain ? generateFurigana(card.kanji).catch(() => '') : Promise.resolve(card.furigana || ''),
-    needExample ? generateFuriganaMap(card.exampleJp).catch(() => ({})) : Promise.resolve(card.exampleFuriganaMap || {}),
+    needMain ? generateFurigana(source).catch(() => '') : Promise.resolve(card.furigana || ''),
+    needExample ? generateFuriganaMap(exampleSource).catch(() => ({})) : Promise.resolve(card.exampleFuriganaMap || {}),
   ]).then(([furigana, exampleMap]) => {
+    // The card may have been edited, deleted, or replaced by import/sync.
+    if (getCanonicalCard(card) !== card) return;
     let changed = false;
-    if (needMain) {
+    if (needMain && card.kanji === source && needsMainFurigana(card)) {
       if (furigana && card.furigana !== furigana) { card.furigana = furigana; changed = true; }
       if (card.furiganaStatus === 'pending') { card.furiganaStatus = card.furigana ? 'ready' : 'empty'; changed = true; }
     }
-    if (needExample) {
+    if (needExample && card.exampleJp === exampleSource
+      && JSON.stringify(card.exampleFuriganaMap || {}) === previousExampleMap) {
       const nextMap = exampleMap || {};
       if (JSON.stringify(card.exampleFuriganaMap || {}) !== JSON.stringify(nextMap)) {
         card.exampleFuriganaMap = nextMap;
@@ -112,23 +129,26 @@ export function ensureCardFurigana(card, onReady) {
   }).finally(() => lazyFuriganaJobs.delete(card));
 }
 
-function buildRubyInnerRaw(surface, reading, clickableKanji = false) {
+function buildRubyInnerRaw(surface, reading, clickableKanji = false, renderText = null) {
+  const baseText = (text, start) => renderText ? renderText(text, start)
+    : (clickableKanji ? wrapKanji(esc(text)) : esc(text));
   if (!reading || surface === reading) {
-    return [{ text: surface, html: clickableKanji ? wrapKanji(esc(surface)) : esc(surface) }];
+    return [{ text: surface, html: baseText(surface, 0) }];
   }
 
   const segs = [];
-  let buf = '', type = null;
+  let buf = '', type = null, start = 0, offset = 0;
   for (const ch of surface) {
-    const t = KANJI_RUN.test(ch) ? 'k' : 'h';
-    if (type === null) { buf = ch; type = t; }
-    else if (t === type) { buf += ch; }
-    else { segs.push({ type, text: buf }); buf = ch; type = t; }
+    const segmentType = KANJI_RUN.test(ch) ? 'k' : 'h';
+    if (type === null) { buf = ch; type = segmentType; }
+    else if (segmentType === type) { buf += ch; }
+    else { segs.push({ type, text: buf, start }); buf = ch; type = segmentType; start = offset; }
+    offset += ch.length;
   }
-  if (buf) segs.push({ type, text: buf });
+  if (buf) segs.push({ type, text: buf, start });
 
   if (!segs.some((s) => s.type === 'k')) {
-    return [{ text: surface, html: esc(surface) }];
+    return [{ text: surface, html: baseText(surface, 0) }];
   }
 
   let r = reading;
@@ -138,7 +158,7 @@ function buildRubyInnerRaw(surface, reading, clickableKanji = false) {
     if (seg.type === 'h') {
       const idx = r.indexOf(seg.text);
       r = idx >= 0 ? r.slice(idx + seg.text.length) : r;
-      out.push({ text: seg.text, html: esc(seg.text) });
+      out.push({ text: seg.text, html: baseText(seg.text, seg.start) });
       continue;
     }
     const next = segs[i + 1];
@@ -152,8 +172,8 @@ function buildRubyInnerRaw(surface, reading, clickableKanji = false) {
     }
     out.push({
       text: seg.text,
-      html: rd ? `<ruby>${clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text)}<rt>${esc(rd)}</rt></ruby>`
-        : (clickableKanji ? wrapKanji(esc(seg.text)) : esc(seg.text))
+      html: rd ? `<ruby>${baseText(seg.text, seg.start)}<rt>${esc(rd)}</rt></ruby>`
+        : baseText(seg.text, seg.start)
     });
   }
   return out;
@@ -207,25 +227,27 @@ export function smartRuby(surface, reading, sentence) {
     return wrapWord(rawSegs.map(s => s.html).join(''), surface, sentence);
   }
 
-  // Çok token → her lexical grubu AYRI bir `.word-clickable` yap ki Word Modal
-  // gerçek bileşen kelimeleri (毎日 / 漢字) arasın, tüm öbeği değil. KRİTİK:
-  // her kanji token'ı KENDİ okumasını doğrudan kuromoji'den (tok.reading,
-  // katakana → hiragana) alır → eski rawSegs-dilimleme yolunun çok-token'lı
-  // kanji koşularında furigana'yı düşürmesi (v2.3.1 regresyonu) giderilir.
-  // Bilinmeyen kelime (reading '*') → okumasız düz metin (yine de tıklanabilir).
-  let html = '';
-  for (const group of groupLexicalTokens(tokens)) {
-    const groupText = group.map(tok => tok.surface_form).join('');
-    if (KANJI_RUN.test(groupText)) {
-      const groupReading = group.every(tok => tok.reading && tok.reading !== '*')
-        ? group.map(tok => kataToHira(tok.reading)).join('') : '';
-      const segs = buildRubyInnerRaw(groupText, groupReading);
-      html += wrapWord(segs.map(s => s.html).join(''), groupText, sentence);
-    } else {
-      html += esc(groupText);
-    }
+  // Pronunciation belongs to the complete supplied reading. Lexical groups
+  // describe only surface offsets; never partition a manual reading using
+  // tokenizer reading lengths. Adjacent words can share one ruby annotation.
+  let offset = 0;
+  const groups = groupLexicalTokens(tokens).map(group => {
+    const text = group.map(tok => tok.surface_form).join('');
+    const start = offset;
+    offset += text.length;
+    return { text, start, end: offset, clickable: KANJI_RUN.test(text) };
+  });
+  if (groups.map(group => group.text).join('') !== surface) {
+    return buildRubyInnerRaw(surface, reading, true).map(seg => seg.html).join('');
   }
-  return html;
+  const renderText = (text, start) => {
+    const end = start + text.length;
+    return groups.filter(group => group.start < end && group.end > start).map(group => {
+      const fragment = esc(surface.slice(Math.max(start, group.start), Math.min(end, group.end)));
+      return group.clickable ? wrapWord(fragment, group.text, sentence) : fragment;
+    }).join('');
+  };
+  return buildRubyInnerRaw(surface, reading, false, renderText).map(seg => seg.html).join('');
 }
 
 // ─── STUDY STATE ─────────────────────────────────────────────────────
@@ -364,16 +386,17 @@ export function renderStudy() {
   }
 
   const card = studyQueue[studyCardIndex];
+  const contentCard = getCanonicalCard(card) || card;
   const session = activeSession;
   const cardIndex = studyCardIndex;
-  const refreshNeeded = !getTokenizerSync() || needsMainFurigana(card) || needsExampleFurigana(card);
+  const refreshNeeded = !getTokenizerSync() || needsMainFurigana(contentCard) || needsExampleFurigana(contentCard);
   let refreshRuby = () => {};
   ensureCardFurigana(card, () => refreshRuby());
   const done = studyCardIndex;
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
   const previews = [0,1,2,3].map(g => previewSRS(card, g, app.cfg(), nowMs()).label);
-  const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+  const exHighlight = highlightKanji(contentCard.exampleJp, contentCard.kanji, contentCard.exampleFuriganaMap);
 
   if (!studyShowingBack) {
     screen.innerHTML = `
@@ -385,18 +408,18 @@ export function renderStudy() {
         <div class="fc-flip-inner" id="fc-flip-inner">
           <div class="fc-flip-front">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
-            ${frontFaceHTML(card)}
+            ${frontFaceHTML(contentCard)}
           </div>
           <div class="fc-flip-back">
             <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
             <div class="fc-back">
-              <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
-              <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
-              ${card.exampleJp ? `
+              <div class="fc-ruby">${smartRuby(contentCard.kanji, contentCard.furigana, contentCard.exampleJp)}</div>
+              <div class="fc-meaning">${kanjiText(contentCard.meaningTr)}</div>
+              ${contentCard.exampleJp ? `
               <hr class="fc-divider">
               <div class="fc-example-wrap">
                 <div class="fc-example">${exHighlight}</div>
-                ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+                ${contentCard.exampleTr ? `<div class="fc-exampletr">${esc(contentCard.exampleTr)}</div>` : ''}
               </div>` : ''}
             </div>
           </div>
@@ -423,13 +446,13 @@ export function renderStudy() {
           <span class="fc-state-badge badge ${stateBadgeCls(card.srs)}">${stateLabel(card.srs)}</span>
           ${translationButtonHTML()}
           <div class="fc-back">
-            <div class="fc-ruby">${smartRuby(card.kanji, card.furigana, card.exampleJp)}</div>
-            <div class="fc-meaning">${kanjiText(card.meaningTr)}</div>
-            ${card.exampleJp ? `
+            <div class="fc-ruby">${smartRuby(contentCard.kanji, contentCard.furigana, contentCard.exampleJp)}</div>
+            <div class="fc-meaning">${kanjiText(contentCard.meaningTr)}</div>
+            ${contentCard.exampleJp ? `
             <hr class="fc-divider">
             <div class="fc-example-wrap">
               <div class="fc-example">${exHighlight}</div>
-              ${card.exampleTr ? `<div class="fc-exampletr">${esc(card.exampleTr)}</div>` : ''}
+              ${contentCard.exampleTr ? `<div class="fc-exampletr">${esc(contentCard.exampleTr)}</div>` : ''}
             </div>` : ''}
           </div>
         </div>
@@ -469,8 +492,10 @@ export function renderStudy() {
         return;
       }
       cleanupDeferred?.();
-      rubyNode.innerHTML = smartRuby(card.kanji, card.furigana, card.exampleJp);
-      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+      const currentContent = getCanonicalCard(card);
+      if (!currentContent) return;
+      rubyNode.innerHTML = smartRuby(currentContent.kanji, currentContent.furigana, currentContent.exampleJp);
+      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(currentContent.exampleJp, currentContent.kanji, currentContent.exampleFuriganaMap);
     };
     function deferRefresh() {
       if (cleanupDeferred) return;

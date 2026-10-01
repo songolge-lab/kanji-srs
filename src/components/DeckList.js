@@ -855,7 +855,9 @@ export async function saveEditCard(deckId, cardId) {
   try {
     const exJpEl = document.getElementById('edit-example-jp');
     card.kanji = document.getElementById('edit-kanji').value.trim();
-    card.furigana = await autoFurigana(document.getElementById('edit-furigana').value.trim(), card.kanji); // boşsa offline üret
+    const submittedFurigana = document.getElementById('edit-furigana').value.trim();
+    card.furigana = await autoFurigana(submittedFurigana, card.kanji); // boşsa offline üret
+    if ('furiganaStatus' in card) card.furiganaStatus = card.furigana ? 'ready' : 'empty';
     card.meaningTr = document.getElementById('edit-meaning').value.trim();
     card.exampleJp = exJpEl.value.trim();
     card.exampleTr = document.getElementById('edit-example-tr').value.trim();
