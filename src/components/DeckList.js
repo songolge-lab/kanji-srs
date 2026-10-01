@@ -349,17 +349,81 @@ export function renderDeckList() {
 }
 
 // ─── HTML5 DRAG & DROP ───────────────────────────────────────────────
+function _createDeckDragImage(card, event) {
+  let image = null;
+  let cleanupTimer = null;
+  const cleanup = () => {
+    if (cleanupTimer !== null) clearTimeout(cleanupTimer);
+    cleanupTimer = null;
+    image?.remove();
+    image = null;
+  };
+  try {
+    const rect = card.getBoundingClientRect();
+    if (!event.dataTransfer?.setDragImage || !rect.width || !rect.height) return cleanup;
+    image = card.cloneNode(true);
+    const originals = [card, ...card.querySelectorAll('*')];
+    const copies = [image, ...image.querySelectorAll('*')];
+    // The clone is outside #deck-list. Freeze the visual/layout properties
+    // needed by its content, including Nova's ancestor-scoped flex ordering.
+    const visualProperties = [
+      'display', 'position', 'box-sizing', 'width', 'height',
+      'min-width', 'max-width', 'min-height', 'max-height', 'padding', 'margin',
+      'border-top', 'border-right', 'border-bottom', 'border-left', 'border-radius',
+      'background', 'box-shadow', 'color', 'opacity', 'visibility',
+      'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing',
+      'text-align', 'white-space', 'word-break', 'overflow-wrap', 'overflow', 'text-overflow',
+      'flex', 'flex-direction', 'flex-wrap', 'align-items', 'align-self', 'justify-content', 'gap', 'order',
+      'top', 'right', 'bottom', 'left', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+    ];
+    originals.forEach((original, index) => {
+      const copy = copies[index];
+      const appearance = getComputedStyle(original);
+      for (const property of visualProperties) copy.style.setProperty(property, appearance.getPropertyValue(property));
+      for (const attribute of [...copy.attributes]) {
+        if (attribute.name === 'id' || attribute.name.startsWith('on')) copy.removeAttribute(attribute.name);
+      }
+    });
+    image.querySelectorAll('.card-menu-pop').forEach(popover => popover.remove());
+    image.classList.remove('deck-draggable', 'dragging', 'drag-over');
+    image.removeAttribute('draggable');
+    image.setAttribute('aria-hidden', 'true');
+    image.inert = true;
+    Object.assign(image.style, {
+      position: 'fixed', left: '0', top: '0', right: 'auto', bottom: 'auto',
+      width: rect.width + 'px', height: rect.height + 'px',
+      minWidth: '0', maxWidth: 'none', minHeight: '0', maxHeight: 'none', margin: '0',
+      opacity: '1', pointerEvents: 'none', zIndex: '2147483647',
+      transform: 'none', transition: 'none', animation: 'none',
+      overflow: 'hidden', clipPath: `inset(0 round ${getComputedStyle(card).borderRadius})`,
+    });
+    document.body.appendChild(image);
+    event.dataTransfer.setDragImage(image,
+      Math.max(0, Math.min(rect.width, event.clientX - rect.left)),
+      Math.max(0, Math.min(rect.height, event.clientY - rect.top)));
+    // Native capture happens at the end of dragstart, before the next task.
+    cleanupTimer = setTimeout(cleanup, 0);
+  } catch {
+    cleanup(); // Keep the browser's normal drag image if capture setup fails.
+  }
+  return cleanup;
+}
+
 function _attachDragAndDrop(container) {
   const cards = container.querySelectorAll('.deck-draggable');
   const dropZone = document.getElementById('deck-drop-top-level');
 
   cards.forEach(card => {
+    let cleanupDragImage = () => {};
     card.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', card.dataset.deckId);
       e.dataTransfer.effectAllowed = 'move';
+      cleanupDragImage();
+      cleanupDragImage = _createDeckDragImage(card, e);
       requestAnimationFrame(() => card.classList.add('dragging'));
     });
     card.addEventListener('dragend', () => {
+      cleanupDragImage();
       card.classList.remove('dragging');
       container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
       if (dropZone) dropZone.classList.remove('drag-over');
