@@ -64,6 +64,62 @@ function validateConnectionCosts(buffer) {
   }
 }
 
+// TokenInfoDictionary.targetMapToBuffer writes little-endian Int32 values:
+// entry count, then [trie ID, target count, token record offsets...] per entry.
+// loadTargetMap ignores the header and ByteBuffer reads past EOF as zero, so
+// validate BEFORE that loader can turn a truncated prefix into a usable map.
+function validateSerializedTokenMap(buffer) {
+  const invalid = (reason) => { throw new Error('Invalid tid_map.dat: ' + reason); };
+  if (buffer.byteLength < 4) invalid('missing entry count');
+  const view = new DataView(buffer);
+  const entries = view.getInt32(0, true);
+  if (entries <= 0 || entries > (buffer.byteLength - 4) / 12) invalid('incomplete advertised entries');
+  const keys = new Set();
+  let offset = 4;
+  for (let index = 0; index < entries; index++) {
+    if (offset + 8 > buffer.byteLength) invalid('truncated entry header');
+    const key = view.getInt32(offset, true);
+    const count = view.getInt32(offset + 4, true);
+    offset += 8;
+    if (key < 0 || keys.has(key)) invalid('invalid or duplicate trie ID');
+    keys.add(key);
+    if (count <= 0 || count > (buffer.byteLength - offset) / 4) invalid('truncated target list');
+    for (let target = 0; target < count; target++, offset += 4) {
+      const record = view.getInt32(offset, true);
+      if (record < 0 || record % 10 !== 0) invalid('invalid token record offset');
+    }
+  }
+  // The bundled real dictionary has zero-filled allocation padding after the
+  // advertised entries. Accept only zeros there, never additional entry data.
+  const bytes = new Uint8Array(buffer);
+  for (; offset < bytes.length; offset++) if (bytes[offset] !== 0) invalid('nonzero trailing data');
+}
+
+function validateTokenMappings(dic) {
+  const dictionary = dic.token_info_dictionary;
+  const records = dictionary.dictionary;
+  const features = dictionary.pos_buffer.buffer;
+  const seen = new Uint8Array(records.buffer.length / 10);
+  for (const [key, targets] of Object.entries(dictionary.target_map)) {
+    for (const offset of targets) {
+      if (offset < 0 || offset % 10 !== 0 || offset + 10 > records.buffer.length || seen[offset / 10]) {
+        throw new Error('Invalid tid_map.dat: missing, duplicate or out-of-bounds token record');
+      }
+      seen[offset / 10] = 1;
+      const pos = records.getInt(offset + 6);
+      if (pos < 0 || pos >= features.length || (pos > 0 && features[pos - 1] !== 0)
+        || features.indexOf(0, pos) < 0) {
+        throw new Error('Invalid tid_map.dat: invalid token feature reference');
+      }
+      const surface = dictionary.getFeatures(offset).split(',')[0];
+      if (!surface || dic.trie.lookup(surface) !== Number(key)) {
+        throw new Error('Invalid tid_map.dat: trie ID does not match token surface');
+      }
+    }
+  }
+  if (seen.includes(0)) throw new Error('Invalid tid_map.dat: unreferenced token records');
+}
+
 // Both known and unknown token records are 10 bytes: left/right IDs, cost,
 // then the feature offset. Viterbi indexes costs as [previous right][next left].
 // A self-consistent 1x1 matrix is still invalid for the loaded token IDs.
@@ -126,6 +182,7 @@ class SmartDictionaryLoader extends DictionaryLoader {
       .then((raw) => {
         const buffer = exactBuffer(inflateIfGzip(raw));
         if (url.split('/').pop() === 'cc.dat.gz') validateConnectionCosts(buffer);
+        if (url.split('/').pop() === 'tid_map.dat.gz') validateSerializedTokenMap(buffer);
         callback(null, buffer);
       })
       .catch((err) => callback(err, null));
@@ -149,6 +206,7 @@ export function getTokenizer() {
       if (err) { reject(err); return; }
       try {
         validateTokenConnections(dic);
+        validateTokenMappings(dic);
         const candidate = new Tokenizer(dic);
         const smoke = candidate.tokenize('日本語');
         if (smoke.map(token => token.surface_form).join('') !== '日本語') {
