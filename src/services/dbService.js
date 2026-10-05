@@ -1,4 +1,5 @@
 import { sbFetch, SUPABASE_URL, SUPABASE_ANON_KEY, SYNC_TABLE } from './supabaseClient.js';
+import { copyExampleFurigana } from '../utils/exampleFurigana.js';
 
 export function syncConfigured() {
   return SUPABASE_URL.indexOf('YOUR_PROJECT') === -1 &&
@@ -65,6 +66,7 @@ export async function publishDeckToCommunity(deckData, title, description, tags)
           exampleJp: c.exampleJp || '',
           exampleTr: c.exampleTr || '',
           exampleFuriganaMap: c.exampleFuriganaMap || {},
+          exampleFurigana: copyExampleFurigana(c.exampleJp || '', c.exampleFurigana),
         })),
       },
     };

@@ -11,6 +11,7 @@
 // scripts/upload_curated_pack.js for publishing new packs.
 
 import { uid } from '../utils.js';
+import { validExampleFurigana } from '../utils/exampleFurigana.js';
 import { addImportedPack, isPackImported } from '../store/appState.js';
 import { fetchCuratedPackCatalog, fetchCuratedPackFile } from './dbService.js';
 
@@ -90,7 +91,7 @@ function makeImportedCard(app, packCard, meta) {
   const card = app.makeCard(
     front, '', packCard.back || '',
     exampleJp, packCard.exampleTranslation || '',
-    {}
+    packCard.exampleFuriganaMap || {}, packCard.exampleFurigana
   );
   return {
     ...card,
@@ -101,7 +102,7 @@ function makeImportedCard(app, packCard, meta) {
     category: packCard.category || null,
     tags: Array.isArray(packCard.tags) ? [...packCard.tags] : [],
     furiganaStatus: front ? 'pending' : 'empty',
-    exampleFuriganaStatus: exampleJp ? 'pending' : 'empty',
+    exampleFuriganaStatus: validExampleFurigana(exampleJp, card.exampleFurigana) ? 'ready' : (exampleJp ? 'pending' : 'empty'),
   };
 }
 

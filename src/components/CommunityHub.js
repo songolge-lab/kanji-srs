@@ -254,7 +254,7 @@ export async function downloadDeck(deckId, btnEl) {
     for (const cc of cards) {
       deck.cards.push(app.makeCard(
         cc.kanji || '', cc.furigana || '', cc.meaningTr || '',
-        cc.exampleJp || '', cc.exampleTr || '', cc.exampleFuriganaMap || {}
+        cc.exampleJp || '', cc.exampleTr || '', cc.exampleFuriganaMap || {}, cc.exampleFurigana
       ));
     }
     app.save();

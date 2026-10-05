@@ -15,7 +15,8 @@ import * as WordModal from './components/WordModal.js';
 import * as CommunityHub from './components/CommunityHub.js';
 import * as Search from './components/Search.js';
 import * as KanjiDict from './services/kanjiDictService.js';
-import { generateFuriganaMap } from './utils/furiganaParser.js';
+import { generateExampleFurigana } from './utils/furiganaParser.js';
+import { copyExampleFurigana, validExampleFurigana, legacyFuriganaMap } from './utils/exampleFurigana.js';
 
 /* =====================================================================
    KANJI SRS — ANA ORKESTRASYON
@@ -555,7 +556,7 @@ function getDescendantDecks(deckId) { const visited = new Set(), result = []; fu
 function getAllCardsForDeck(deckId) { const deck = findDeck(deckId); if (!deck) return []; let cards = [...deck.cards]; for (const desc of getDescendantDecks(deckId)) cards = cards.concat(desc.cards); return cards; }
 function getDecksInTreeOrder() { const result = []; function walk(parentId, depth) { for (const d of state.decks) { if ((d.parentId || null) === parentId) { result.push({ deck: d, depth }); walk(d.id, depth + 1); } } } walk(null, 0); return result; }
 function getDeckPath(deckId) { const path = []; let cur = findDeck(deckId); while (cur) { path.unshift(cur); cur = cur.parentId ? findDeck(cur.parentId) : null; } return path; }
-function makeCard(kanji, furigana, meaningTr, exampleJp, exampleTr, exampleFuriganaMap) { return { id: uid(), kanji, furigana, meaningTr, exampleJp: exampleJp || '', exampleTr: exampleTr || '', exampleFuriganaMap: exampleFuriganaMap || {}, srs: createSrsData(cfg().defaultEase), srsReverse: createSrsData(cfg().defaultEase) }; }
+function makeCard(kanji, furigana, meaningTr, exampleJp, exampleTr, exampleFuriganaMap, exampleFurigana) { return { id: uid(), kanji, furigana, meaningTr, exampleJp: exampleJp || '', exampleTr: exampleTr || '', exampleFuriganaMap: exampleFuriganaMap || {}, exampleFurigana: copyExampleFurigana(exampleJp || '', exampleFurigana), srs: createSrsData(cfg().defaultEase), srsReverse: createSrsData(cfg().defaultEase) }; }
 
 // Card Direction: a read/write view of `card` whose `.srs` transparently
 // proxies to `card.srsReverse` instead of `card.srs`. Every other property
@@ -753,9 +754,17 @@ async function backfillFuriganaMaps() {
   let dirty = false;
   for (const deck of state.decks) {
     for (const card of deck.cards) {
-      if (card.exampleJp && (!card.exampleFuriganaMap || !Object.keys(card.exampleFuriganaMap).length)) {
+      if (card.exampleJp && !validExampleFurigana(card.exampleJp, card.exampleFurigana)) {
+        const source = card.exampleJp;
+        const previousMap = JSON.stringify(card.exampleFuriganaMap || {});
+        const previousData = JSON.stringify(card.exampleFurigana || null);
         try {
-          card.exampleFuriganaMap = await generateFuriganaMap(card.exampleJp);
+          const data = await generateExampleFurigana(source);
+          if (!state.decks.some(savedDeck => savedDeck.cards.includes(card)) || card.exampleJp !== source
+            || JSON.stringify(card.exampleFuriganaMap || {}) !== previousMap
+            || JSON.stringify(card.exampleFurigana || null) !== previousData) continue;
+          card.exampleFurigana = data;
+          if (!Object.keys(card.exampleFuriganaMap || {}).length) card.exampleFuriganaMap = legacyFuriganaMap(data);
           dirty = true;
         } catch { /* tokenizer not ready yet — skip */ }
       }

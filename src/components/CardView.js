@@ -61,7 +61,8 @@ const KANJI_RUN = /[一-龯㐀-䶿]/;
 // bloğu tek bir `.word-clickable` ile sarılır → tıklayınca bağlamsal Word Modal
 // açılır (eski tekil `.kanji-clickable` davranışının yerini alır). `sentence`
 // AI'a bağlam olarak geçer (yoksa kelimenin kendisine düşer).
-import { getTokenizer, getTokenizerSync, kataToHira, generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
+import { getTokenizer, getTokenizerSync, kataToHira, generateFurigana, generateExampleFurigana, warmupFurigana } from '../utils/furiganaParser.js';
+import { validExampleFurigana, legacyFuriganaMap } from '../utils/exampleFurigana.js';
 
 const lazyFuriganaJobs = new WeakSet();
 
@@ -84,8 +85,7 @@ function needsMainFurigana(card) {
 }
 
 function needsExampleFurigana(card) {
-  const map = card && card.exampleFuriganaMap;
-  return card && hasKanjiText(card.exampleJp) && (!map || !Object.keys(map).length || card.exampleFuriganaStatus === 'pending');
+  return card && hasKanjiText(card.exampleJp) && !validExampleFurigana(card.exampleJp, card.exampleFurigana);
 }
 
 export function ensureCardFurigana(card, onReady) {
@@ -98,11 +98,12 @@ export function ensureCardFurigana(card, onReady) {
   const source = card.kanji;
   const exampleSource = card.exampleJp;
   const previousExampleMap = JSON.stringify(card.exampleFuriganaMap || {});
+  const previousExampleData = JSON.stringify(card.exampleFurigana || null);
   lazyFuriganaJobs.add(card);
   Promise.all([
     needMain ? generateFurigana(source).catch(() => '') : Promise.resolve(card.furigana || ''),
-    needExample ? generateFuriganaMap(exampleSource).catch(() => ({})) : Promise.resolve(card.exampleFuriganaMap || {}),
-  ]).then(([furigana, exampleMap]) => {
+    needExample ? generateExampleFurigana(exampleSource).catch(() => null) : Promise.resolve(card.exampleFurigana),
+  ]).then(([furigana, exampleData]) => {
     // The card may have been edited, deleted, or replaced by import/sync.
     if (getCanonicalCard(card) !== card) return;
     let changed = false;
@@ -111,14 +112,19 @@ export function ensureCardFurigana(card, onReady) {
       if (card.furiganaStatus === 'pending') { card.furiganaStatus = card.furigana ? 'ready' : 'empty'; changed = true; }
     }
     if (needExample && card.exampleJp === exampleSource
-      && JSON.stringify(card.exampleFuriganaMap || {}) === previousExampleMap) {
-      const nextMap = exampleMap || {};
-      if (JSON.stringify(card.exampleFuriganaMap || {}) !== JSON.stringify(nextMap)) {
-        card.exampleFuriganaMap = nextMap;
+      && JSON.stringify(card.exampleFuriganaMap || {}) === previousExampleMap
+      && JSON.stringify(card.exampleFurigana || null) === previousExampleData
+      && validExampleFurigana(exampleSource, exampleData)) {
+      card.exampleFurigana = exampleData;
+      changed = true;
+      // Retain a persisted legacy map: its manual/generated origin is unknown.
+      // The regenerated occurrence readings now drive this client's renderer.
+      if (!Object.keys(card.exampleFuriganaMap || {}).length) {
+        card.exampleFuriganaMap = legacyFuriganaMap(exampleData);
         changed = true;
       }
       if (card.exampleFuriganaStatus === 'pending') {
-        card.exampleFuriganaStatus = Object.keys(card.exampleFuriganaMap || {}).length ? 'ready' : 'empty';
+        card.exampleFuriganaStatus = exampleData.spans.length ? 'ready' : 'empty';
         changed = true;
       }
     }
@@ -428,7 +434,7 @@ export function renderStudy() {
   const remaining = studyQueue.length - studyCardIndex;
   const pct = (done / (done + remaining)) * 100;
   const previews = [0,1,2,3].map(g => previewSRS(card, g, app.cfg(), nowMs()).label);
-  const exHighlight = highlightKanji(contentCard.exampleJp, contentCard.kanji, contentCard.exampleFuriganaMap);
+  const exHighlight = highlightKanji(contentCard.exampleJp, contentCard.kanji, contentCard.exampleFuriganaMap, contentCard.exampleFurigana);
 
   if (!studyShowingBack) {
     screen.innerHTML = `
@@ -527,7 +533,7 @@ export function renderStudy() {
       const currentContent = getCanonicalCard(card);
       if (!currentContent) return;
       rubyNode.innerHTML = smartRuby(currentContent.kanji, currentContent.furigana, currentContent.exampleJp);
-      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(currentContent.exampleJp, currentContent.kanji, currentContent.exampleFuriganaMap);
+      if (exampleNode?.isConnected) exampleNode.innerHTML = highlightKanji(currentContent.exampleJp, currentContent.kanji, currentContent.exampleFuriganaMap, currentContent.exampleFurigana);
     };
     function deferRefresh() {
       if (cleanupDeferred) return;
@@ -837,7 +843,7 @@ export function renderReview() {
     if (app.currentView === 'review' && reviewQueue[reviewIndex] === card) renderReview();
   });
   const pct = ((reviewIndex + 1) / reviewQueue.length) * 100;
-  const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap);
+  const exHighlight = highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap, card.exampleFurigana);
   screen.innerHTML = `
     <div class="study-header">
       <div class="study-progress"><div class="study-progress-fill" style="width:${pct}%"></div></div>
@@ -986,7 +992,10 @@ export function updatePreview(prefix, containerId) {
   if (kanji || furigana) backHTML += `<div class="fc-ruby">${smartRuby(kanji || '?', furigana || '...', exJp)}</div>`;
   if (meaning) backHTML += `<div class="fc-meaning">${esc(meaning)}</div>`;
   if (exJp) {
-    backHTML += `<hr class="fc-divider"><div class="fc-example">${esc(exJp)}</div>`;
+    const exampleInput = document.getElementById(prefix + 'example-jp');
+    let map = {}, data = null;
+    try { map = JSON.parse(exampleInput.dataset.furiganaMap || '{}'); data = JSON.parse(exampleInput.dataset.exampleFurigana || 'null'); } catch {}
+    backHTML += `<hr class="fc-divider"><div class="fc-example">${highlightKanji(exJp, kanji, map, data)}</div>`;
     if (exTr) backHTML += `<div class="fc-exampletr">${esc(exTr)}</div>`;
   }
   wrap.innerHTML = `

@@ -1,4 +1,5 @@
 import { createSrsData } from '../core/srsEngine.js';
+import { copyExampleFurigana } from '../utils/exampleFurigana.js';
 
 export const CONFIG = {
   learnSteps: [1, 10],
@@ -363,6 +364,12 @@ export function migrateDecks(decks, exampleDeckNames) {
     // Card Direction (v2.6): every deck studies front→back unless explicitly
     // flipped. Any missing/invalid value normalizes to 'normal'.
     if (d.studyDirection !== 'normal' && d.studyDirection !== 'reverse') d.studyDirection = 'normal';
+    for (const card of d.cards || []) {
+      if (!('exampleFuriganaMap' in card)) card.exampleFuriganaMap = {};
+      // Legacy readings cannot recover lost occurrence identity. Keep them and
+      // default to null until successful offline generation from the source.
+      card.exampleFurigana = copyExampleFurigana(card.exampleJp || '', card.exampleFurigana);
+    }
   }
   return decks;
 }

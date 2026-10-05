@@ -1,3 +1,5 @@
+import { exampleSegments } from './utils/exampleFurigana.js';
+
 export function esc(s) {
   if (!s) return '';
   // String() first: callers occasionally pass non-string truthy values (e.g.
@@ -56,54 +58,31 @@ export function debounce(fn, wait) {
   };
 }
 
-// Renders an example sentence with furigana ruby AND makes every kanji-bearing
-// word block clickable → opens the contextual Word Modal (data-word = the word,
-// data-sentence = the whole sentence). Known words (furiganaMap keys) keep their
-// ruby reading; leftover kanji runs are grouped with trailing kana (okurigana)
-// into clickable blocks. The card's target word stays visually highlighted (.hl).
-//
-// NOTE: data-sentence is stamped in a single FINAL pass — never during the
-// per-word splitting above — because the sentence text contains the very words
-// we split on, so embedding it early would corrupt later splits.
+// Render source slices only. Never search/replace previously generated HTML.
 const KANJI_DETECT = /[一-鿿㐀-䶿々]/;
 // kanji run (+ 々 repetition) followed by optional trailing kana / long mark.
 const KANJI_BLOCK = '[一-鿿㐀-䶿々]+[ぁ-んァ-ヶー]*';
 
-export function highlightKanji(sentence, kanji, furiganaMap) {
+export function highlightKanji(sentence, kanji, furiganaMap, occurrenceData) {
   if (!sentence) return '';
-  let result = esc(sentence);
-  const map = furiganaMap || {};
-  const keys = Object.keys(map).sort((a, b) => b.length - a.length);
-  for (const word of keys) {
-    if (!word) continue;
-    if (!KANJI_DETECT.test(word) || map[word] === word) continue;
-    const isMainKanji = kanji && word === kanji;
-    // Whole compound word is the click target (Word Modal); furigana ruby kept.
-    const ruby = `<ruby${isMainKanji ? ' class="hl"' : ''}>${esc(word)}<rt>${esc(map[word])}</rt></ruby>`;
-    result = result.split(esc(word)).join(`<span class="word-clickable" data-word="${esc(word)}">${ruby}</span>`);
-  }
-  if (kanji && !map[kanji]) {
-    const escapedKanji = esc(kanji).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const kanjiRe = new RegExp(escapedKanji, 'g');
-    // Don't descend into already-built word-clickable blocks.
-    const parts = result.split(/(<span class="word-clickable"[\s\S]*?<\/span>)/);
-    result = parts.map(part => {
-      if (part.startsWith('<span class="word-clickable"')) return part;
-      return part.replace(kanjiRe, `<span class="word-clickable hl" data-word="${esc(kanji)}">${esc(kanji)}</span>`);
-    }).join('');
-  }
-  // Wrap any remaining bare kanji blocks so single kanji / compounds in the
-  // example are clickable too. Skip text already inside word-clickable/ruby/tags.
-  result = result.replace(
-    new RegExp(`(<span class="word-clickable[^"]*"[\\s\\S]*?</span>|<ruby[^>]*>[\\s\\S]*?</ruby>|<[^>]+>)|(${KANJI_BLOCK})`, 'g'),
-    (m, html, block) => html || `<span class="word-clickable" data-word="${esc(block)}">${esc(block)}</span>`
-  );
-  // FINAL pass: stamp the (constant) sentence onto every word block. Safe now —
-  // no further text splitting happens, so the embedded sentence can't corrupt.
-  const ds = esc(sentence);
-  result = result.replace(/<span class="word-clickable([^"]*)"/g,
-    (m, cls) => `<span class="word-clickable${cls}" data-sentence="${ds}"`);
-  return result;
+  const wordHTML = (surface, reading) => {
+    const highlighted = kanji && surface === kanji;
+    const content = reading && reading !== surface
+      ? `<ruby${highlighted ? ' class="hl"' : ''}>${esc(surface)}<rt>${esc(reading)}</rt></ruby>` : esc(surface);
+    return `<span class="word-clickable${highlighted ? ' hl' : ''}" data-word="${esc(surface)}" data-sentence="${esc(sentence)}">${content}</span>`;
+  };
+  const plainHTML = (text) => {
+    const target = kanji ? `|${kanji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` : '';
+    let cursor = 0, html = '';
+    for (const match of text.matchAll(new RegExp(`${KANJI_BLOCK}${target}`, 'g'))) {
+      html += esc(text.slice(cursor, match.index)) + wordHTML(match[0], null);
+      cursor = match.index + match[0].length;
+    }
+    return html + esc(text.slice(cursor));
+  };
+  return exampleSegments(sentence, furiganaMap, occurrenceData).map(segment =>
+    segment.reading && KANJI_DETECT.test(segment.surface)
+      ? wordHTML(segment.surface, segment.reading) : plainHTML(segment.surface)).join('');
 }
 
 export function buildRuby(kanji, furigana) { return `<ruby>${kanji}<rt>${furigana}</rt></ruby>`; }

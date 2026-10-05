@@ -1,5 +1,6 @@
 import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
-import { generateFurigana, generateFuriganaMap, warmupFurigana } from '../utils/furiganaParser.js';
+import { generateFurigana, generateExampleFurigana, warmupFurigana } from '../utils/furiganaParser.js';
+import { exampleSegments, copyExampleFurigana, legacyFuriganaMap } from '../utils/exampleFurigana.js';
 import { generateDeck } from '../services/aiService.js';
 import { smartRuby, kanjiSizeClass } from './CardView.js';
 import { getStudyDirection } from '../store/appState.js';
@@ -150,6 +151,26 @@ function tokenizeSentence(sentence) {
   return tokens;
 }
 
+function renderExampleEditor(sentence, map, data) {
+  const html = exampleSegments(sentence, map, data).map(segment => {
+    if (segment.reading && /[一-龯]/.test(segment.surface)) {
+      return `<span class="fm-token fm-marked" data-token-text="${esc(segment.surface)}">${buildRuby(esc(segment.surface), esc(segment.reading))}</span>`;
+    }
+    return tokenizeSentence(segment.surface).map(token => token.isKanji
+      ? `<span class="fm-token fm-kanji" data-token-text="${esc(token.text)}">${esc(token.text)}</span>` : esc(token.text)).join('');
+  }).join('');
+  return `<div class="fm-editor"><div class="fm-sentence">${html}</div></div>`;
+}
+
+async function exampleInputData(input, sentence) {
+  let map = {}, data = null;
+  try { data = copyExampleFurigana(sentence, JSON.parse(input.dataset.exampleFurigana || 'null')); } catch {}
+  try { if (input.dataset.furiganaSource === sentence) map = JSON.parse(input.dataset.furiganaMap || '{}'); } catch {}
+  if (data) return { map, data };
+  try { data = await generateExampleFurigana(sentence); map = legacyFuriganaMap(data); } catch {}
+  return { map, data };
+}
+
 function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   let input = document.getElementById(inputId);
   const row = document.getElementById(rowId);
@@ -162,33 +183,42 @@ function setupExampleFuriganaAssist(inputId, rowId, btnId, editorId) {
   // Edit formu mevcut exampleFuriganaMap'i dataset'e önceden yükler.
   let furiganaMap = {};
   try { furiganaMap = JSON.parse(input.dataset.furiganaMap || '{}') || {}; } catch { furiganaMap = {}; }
+  let occurrenceData = null;
+  try { occurrenceData = copyExampleFurigana(input.value.trim(), JSON.parse(input.dataset.exampleFurigana || 'null')); } catch {}
+  input.dataset.furiganaSource = input.value.trim();
 
   function render() {
     const sentence = input.value.trim();
     if (!sentence) { editor.innerHTML = ''; return; }
-    const tokens = tokenizeSentence(sentence);
-    const html = tokens.map((tok) => {
-      if (!tok.isKanji) return esc(tok.text);
-      const reading = furiganaMap[tok.text];
-      if (reading) return `<span class="fm-token fm-marked" data-token-text="${esc(tok.text)}">${buildRuby(esc(tok.text), esc(reading))}</span>`;
-      return `<span class="fm-token fm-kanji" data-token-text="${esc(tok.text)}">${esc(tok.text)}</span>`;
-    }).join('');
-    editor.innerHTML = `<div class="fm-editor"><div class="fm-sentence">${html}</div></div>`;
+    editor.innerHTML = renderExampleEditor(sentence, furiganaMap, occurrenceData);
   }
 
   const runParse = debounce(async () => {
     const sentence = input.value.trim();
-    if (!sentence) { furiganaMap = {}; input.dataset.furiganaMap = '{}'; editor.innerHTML = ''; return; }
-    let map;
-    try { map = await generateFuriganaMap(sentence); } catch { return; } // offline parser hazır değil
+    if (!sentence) return;
+    let data;
+    try { data = await generateExampleFurigana(sentence); } catch { return; }
     if (input.value.trim() !== sentence) return; // kullanıcı yazmaya devam etti
-    furiganaMap = map;
+    occurrenceData = data;
+    furiganaMap = legacyFuriganaMap(data);
     input.dataset.furiganaMap = JSON.stringify(furiganaMap);
+    input.dataset.exampleFurigana = JSON.stringify(data);
+    input.dataset.furiganaSource = sentence;
     render();
+    if (input._previewHandler) input._previewHandler();
   }, 600);
 
-  input.addEventListener('input', runParse);
+  input.addEventListener('input', () => {
+    if (input.dataset.furiganaSource !== input.value.trim()) {
+      furiganaMap = {}; occurrenceData = null;
+      input.dataset.furiganaMap = '{}'; input.dataset.exampleFurigana = 'null';
+      input.dataset.furiganaSource = input.value.trim();
+      render();
+    }
+    runParse();
+  });
   render(); // edit formunda önceden yüklü cümle/harita varsa hemen göster
+  if (input.value.trim() && !occurrenceData) runParse();
 }
 
 // ─── CYCLE PREVENTION HELPER ─────────────────────────────────────────
@@ -652,7 +682,7 @@ export function showCardPreview(deckId, cardId) {
 export function showCardPreviewModal(card) {
   const sizeCls = kanjiSizeClass(card.kanji);
   const frontText = esc(card.kanji) || '&nbsp;';
-  const exHighlight = card.exampleJp ? highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap) : '';
+  const exHighlight = card.exampleJp ? highlightKanji(card.exampleJp, card.kanji, card.exampleFuriganaMap, card.exampleFurigana) : '';
   app.openModal(app.t('card_preview_title'), `
     <div class="card-preview-modal">
       <div class="flashcard cpm-front">
@@ -720,8 +750,6 @@ export async function saveCard() {
   const exJpEl = document.getElementById('add-example-jp');
   const exJp = exJpEl.value.trim();
   const exTr = document.getElementById('add-example-tr').value.trim();
-  let exFuriganaMap = {};
-  try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   const deck = app.findDeck(deckId);
   if (!deck) { app.showToast(app.t('warn_deck_not_found')); return; }
@@ -729,13 +757,15 @@ export async function saveCard() {
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
     furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
-    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
+    const example = await exampleInputData(exJpEl, exJp);
+    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, example.map, example.data));
     app.save();
     app.showToast(app.t('toast_card_added', {kanji}));
     document.getElementById('add-kanji').value = '';
     document.getElementById('add-meaning').value = '';
     document.getElementById('add-example-jp').value = '';
     document.getElementById('add-example-jp').dataset.furiganaMap = '{}';
+    document.getElementById('add-example-jp').dataset.exampleFurigana = 'null';
     document.getElementById('add-example-tr').value = '';
     document.getElementById('add-example-furigana-editor').innerHTML = '';
     document.getElementById('add-example-mark-row').style.display = 'none';
@@ -862,8 +892,6 @@ export async function saveCardFromModal(deckId) {
   const exJpEl = document.getElementById('modal-add-example-jp');
   const exJp = exJpEl.value.trim();
   const exTr = document.getElementById('modal-add-example-tr').value.trim();
-  let exFuriganaMap = {};
-  try { exFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch {}
   if (!kanji || !meaning) { app.showToast(app.t('warn_required')); return; }
   _savingModal = true;
   const btn = document.querySelector('#modal-body .btn-primary');
@@ -871,7 +899,8 @@ export async function saveCardFromModal(deckId) {
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
     furigana = await autoFurigana(furigana, kanji); // boşsa offline üret
-    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, exFuriganaMap));
+    const example = await exampleInputData(exJpEl, exJp);
+    deck.cards.push(app.makeCard(kanji, furigana, meaning, exJp, exTr, example.map, example.data));
     app.save();
     app.showToast(app.t('toast_card_added', {kanji}));
     renderDeckDetail();
@@ -879,6 +908,7 @@ export async function saveCardFromModal(deckId) {
     document.getElementById('modal-add-meaning').value = '';
     document.getElementById('modal-add-example-jp').value = '';
     document.getElementById('modal-add-example-jp').dataset.furiganaMap = '{}';
+    document.getElementById('modal-add-example-jp').dataset.exampleFurigana = 'null';
     document.getElementById('modal-add-example-tr').value = '';
     document.getElementById('modal-add-example-furigana-editor').innerHTML = '';
     document.getElementById('modal-add-example-mark-row').style.display = 'none';
@@ -903,6 +933,7 @@ export function showEditModal(deckId, cardId) {
     <div class="btn-row"><button class="btn btn-primary tap" onclick="saveEditCard('${deckId}','${cardId}')">${app.t('save')}</button><button class="btn btn-ghost tap" onclick="closeModal()">${app.t('cancel')}</button></div>
   `);
   document.getElementById('edit-example-jp').dataset.furiganaMap = JSON.stringify(card.exampleFuriganaMap || {});
+  document.getElementById('edit-example-jp').dataset.exampleFurigana = JSON.stringify(card.exampleFurigana || null);
   setupFuriganaAssist('edit-kanji', 'edit-furigana');
   setupExampleFuriganaAssist('edit-example-jp', 'edit-example-mark-row', 'edit-example-mark-btn', 'edit-example-furigana-editor');
 }
@@ -925,7 +956,9 @@ export async function saveEditCard(deckId, cardId) {
     card.meaningTr = document.getElementById('edit-meaning').value.trim();
     card.exampleJp = exJpEl.value.trim();
     card.exampleTr = document.getElementById('edit-example-tr').value.trim();
-    try { card.exampleFuriganaMap = JSON.parse(exJpEl.dataset.furiganaMap || '{}'); } catch { card.exampleFuriganaMap = {}; }
+    const example = await exampleInputData(exJpEl, card.exampleJp);
+    card.exampleFuriganaMap = example.map;
+    card.exampleFurigana = example.data;
     app.save(); app.closeModal(); renderDeckDetail();
     app.showToast(app.t('toast_card_updated'));
   } finally {

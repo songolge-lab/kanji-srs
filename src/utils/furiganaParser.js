@@ -15,6 +15,7 @@
 import Tokenizer from '@sglkc/kuromoji/src/Tokenizer.js';
 import DictionaryLoader from '@sglkc/kuromoji/src/loader/DictionaryLoader.js';
 import { gunzipSync } from 'fflate';
+import { legacyFuriganaMap } from './exampleFurigana.js';
 
 const DIC_PATH = (import.meta.env.BASE_URL || '/') + 'dict';
 
@@ -322,16 +323,19 @@ export async function generateFurigana(text) {
 // fazla token'a yayılsa bile birleştirilir).
 //   "毎日日本語を勉強します"
 //     → { "毎日日本語": "まいにちにほんご", "勉強": "べんきょう" }
-export async function generateFuriganaMap(sentence) {
-  const input = (sentence || '').trim();
-  if (!input || !hasKanji(input)) return {};
+export async function generateExampleFurigana(sentence) {
+  // Offsets refer to the exact stored source, including leading whitespace.
+  const input = String(sentence || '');
+  const data = { version: 1, source: input, spans: [] };
+  if (!input || !hasKanji(input)) return data;
   const tokenizer = await getTokenizer();
   const tokens = tokenizer.tokenize(input);
 
-  const map = {};
   let block = null; // { text, reading, end } — end = cümle içi UTF-16 ofseti
   const flush = () => {
-    if (block && block.reading != null && hasKanji(block.text)) map[block.text] = block.reading;
+    if (block && block.reading && hasKanji(block.text)) {
+      data.spans.push({ start: block.start, end: block.end, surface: block.text, reading: block.reading });
+    }
     block = null;
   };
 
@@ -339,6 +343,7 @@ export async function generateFuriganaMap(sentence) {
   for (const tk of tokens) {
     const surface = tk.surface_form;
     const base = cursor;
+    if (input.slice(base, base + surface.length) !== surface) throw new Error('Example token surfaces do not match source');
     cursor += surface.length;
 
     const reading = tokenReading(tk);
@@ -355,10 +360,16 @@ export async function generateFuriganaMap(sentence) {
         block.end = absStart + seg.text.length;
       } else {
         flush();
-        block = { text: seg.text, reading: kr, end: absStart + seg.text.length };
+        block = { text: seg.text, reading: kr, start: absStart, end: absStart + seg.text.length };
       }
     }
   }
   flush();
-  return map;
+  if (cursor !== input.length) throw new Error('Example tokens do not cover source');
+  return data;
+}
+
+// Compatibility output only: identical surfaces may overwrite each other.
+export async function generateFuriganaMap(sentence) {
+  return legacyFuriganaMap(await generateExampleFurigana(sentence));
 }
