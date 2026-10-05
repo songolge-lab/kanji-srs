@@ -1,6 +1,7 @@
 import { esc, debounce, buildRuby, highlightKanji } from '../utils.js';
 import { generateFurigana, generateExampleFurigana, warmupFurigana } from '../utils/furiganaParser.js';
 import { exampleSegments, copyExampleFurigana, legacyFuriganaMap } from '../utils/exampleFurigana.js';
+import { hasKanji, isKanjiChar } from '../utils/japaneseText.js';
 import { generateDeck } from '../services/aiService.js';
 import { smartRuby, kanjiSizeClass } from './CardView.js';
 import { getStudyDirection } from '../store/appState.js';
@@ -141,7 +142,6 @@ function setupFuriganaAssist(kanjiInputId, furiganaInputId) {
 function tokenizeSentence(sentence) {
   const tokens = [];
   let buf = '', bufIsKanji = null;
-  const isKanjiChar = (ch) => /[一-龯]/.test(ch);
   for (const ch of sentence) {
     const k = isKanjiChar(ch);
     if (bufIsKanji === null || k === bufIsKanji) { buf += ch; bufIsKanji = k; }
@@ -153,7 +153,7 @@ function tokenizeSentence(sentence) {
 
 function renderExampleEditor(sentence, map, data) {
   const html = exampleSegments(sentence, map, data).map(segment => {
-    if (segment.reading && /[一-龯]/.test(segment.surface)) {
+    if (segment.reading && hasKanji(segment.surface)) {
       return `<span class="fm-token fm-marked" data-token-text="${esc(segment.surface)}">${buildRuby(esc(segment.surface), esc(segment.reading))}</span>`;
     }
     return tokenizeSentence(segment.surface).map(token => token.isKanji

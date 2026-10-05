@@ -6,6 +6,7 @@ import { fireConfetti } from '../utils/confetti.js';
 import { getStudyDirection } from '../store/appState.js';
 import { groupLexicalTokens } from '../utils/lexicalGroups.js';
 import { translateCardContent } from '../services/aiService.js';
+import { hasKanji, codePointLength } from '../utils/japaneseText.js';
 
 let app;
 
@@ -47,13 +48,11 @@ function kanjiText(text) {
 // Uzun cümlelerde dev font'un kartı taşırmaması için: metin uzadıkça
 // daha küçük bir font-size sınıfı uygular (CSS .fc-kanji-sm / .fc-kanji-xs).
 export function kanjiSizeClass(text) {
-  const len = (text || '').trim().length;
+  const len = codePointLength((text || '').trim());
   if (len > 15) return ' fc-kanji-xs';
   if (len > 8) return ' fc-kanji-sm';
   return '';
 }
-
-const KANJI_RUN = /[一-龯㐀-䶿]/;
 
 // Bağlama duyarlı ruby: yalnızca KANJI koşuları <rt> okuma alır; saf
 // hiragana/katakana parçalar (を, します gibi) düz metin kalır — okuma
@@ -77,7 +76,7 @@ function getCanonicalCard(card) {
 }
 
 function hasKanjiText(text) {
-  return KANJI_RUN.test(text || '');
+  return hasKanji(text);
 }
 
 function needsMainFurigana(card) {
@@ -184,7 +183,7 @@ function buildRubyInnerRaw(surface, reading, clickableKanji = false, renderText 
   const segs = [];
   let buf = '', type = null, start = 0, offset = 0;
   for (const ch of surface) {
-    const segmentType = KANJI_RUN.test(ch) ? 'k' : 'h';
+    const segmentType = hasKanji(ch) ? 'k' : 'h';
     if (type === null) { buf = ch; type = segmentType; }
     else if (segmentType === type) { buf += ch; }
     else { segs.push({ type, text: buf, start }); buf = ch; type = segmentType; start = offset; }
@@ -217,11 +216,11 @@ export function smartRuby(surface, reading, sentence) {
   reading = (reading || '').toString();
   sentence = (sentence || surface).toString();
 
-  const tokenizer = isJapaneseCard() && KANJI_RUN.test(surface) ? getTokenizerSync() : null;
+  const tokenizer = isJapaneseCard() && hasKanji(surface) ? getTokenizerSync() : null;
   if (!reading && tokenizer) {
     try {
       reading = tokenizer.tokenize(surface)
-        .map((tok) => KANJI_RUN.test(tok.surface_form) && tok.reading && tok.reading !== '*' ? kataToHira(tok.reading) : tok.surface_form)
+        .map((tok) => hasKanji(tok.surface_form) && tok.reading && tok.reading !== '*' ? kataToHira(tok.reading) : tok.surface_form)
         .join('');
     } catch {
       reading = '';
@@ -230,7 +229,7 @@ export function smartRuby(surface, reading, sentence) {
 
   const rawSegs = buildRubyInnerRaw(surface, reading);
 
-  if (!isJapaneseCard() || !KANJI_RUN.test(surface)) {
+  if (!isJapaneseCard() || !hasKanji(surface)) {
     return rawSegs.map(s => s.html).join('');
   }
 
@@ -263,7 +262,7 @@ export function smartRuby(surface, reading, sentence) {
     const text = group.map(tok => tok.surface_form).join('');
     const start = offset;
     offset += text.length;
-    return { text, start, end: offset, clickable: KANJI_RUN.test(text) };
+    return { text, start, end: offset, clickable: hasKanji(text) };
   });
   if (groups.map(group => group.text).join('') !== surface) {
     return buildRubyInnerRaw(surface, reading, true).map(seg => seg.html).join('');

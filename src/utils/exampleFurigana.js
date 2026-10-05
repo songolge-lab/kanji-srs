@@ -1,15 +1,15 @@
+import { isCodePointBoundary } from './japaneseText.js';
+
 // Additive example metadata: the exact source binds UTF-16 spans to one
 // sentence. The legacy surface-keyed map remains a separate, lossy field.
 export function validExampleFurigana(sentence, data) {
   if (typeof sentence !== 'string' || !data || data.version !== 1
     || data.source !== sentence || !Array.isArray(data.spans)) return false;
-  const boundary = (offset) => !(offset > 0 && offset < sentence.length
-    && /[\uD800-\uDBFF]/.test(sentence[offset - 1]) && /[\uDC00-\uDFFF]/.test(sentence[offset]));
   let end = 0;
   for (const span of data.spans) {
     if (!span || !Number.isInteger(span.start) || !Number.isInteger(span.end)
       || span.start < end || span.end <= span.start || span.end > sentence.length
-      || !boundary(span.start) || !boundary(span.end)
+      || !isCodePointBoundary(sentence, span.start) || !isCodePointBoundary(sentence, span.end)
       || typeof span.surface !== 'string' || sentence.slice(span.start, span.end) !== span.surface
       || typeof span.reading !== 'string' || !span.reading) return false;
     end = span.end;
@@ -48,7 +48,7 @@ export function exampleSegments(sentence, map, data) {
       ? Object.keys(map).filter(key => key && typeof map[key] === 'string' && map[key]).sort((left, right) => right.length - left.length) : [];
     let cursor = 0, plainStart = 0;
     while (cursor < sentence.length) {
-      const key = keys.find(surface => sentence.startsWith(surface, cursor));
+      const key = keys.find(surface => sentence.startsWith(surface, cursor) && isCodePointBoundary(sentence, cursor + surface.length));
       if (key) { add(plainStart, cursor); add(cursor, cursor + key.length, map[key]); cursor += key.length; plainStart = cursor; }
       else cursor += String.fromCodePoint(sentence.codePointAt(cursor)).length;
     }

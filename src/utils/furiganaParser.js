@@ -16,14 +16,9 @@ import Tokenizer from '@sglkc/kuromoji/src/Tokenizer.js';
 import DictionaryLoader from '@sglkc/kuromoji/src/loader/DictionaryLoader.js';
 import { gunzipSync } from 'fflate';
 import { legacyFuriganaMap } from './exampleFurigana.js';
+import { hasKanji, isKanjiChar } from './japaneseText.js';
 
 const DIC_PATH = (import.meta.env.BASE_URL || '/') + 'dict';
-
-// Kanji aralığı — DeckList.js'deki tokenizeSentence ile birebir aynı
-// (furiganaMap anahtarlarının render bloklarıyla eşleşmesi için).
-const KANJI_RE = /[一-龯]/;
-const hasKanji = (s) => /[一-龯]/.test(s || '');
-const isKanjiChar = (ch) => KANJI_RE.test(ch);
 
 // Katakana → Hiragana (Unicode offset 0x60). kuromoji okumaları katakana
 // döndürür; uygulama hiragana saklar.
@@ -258,10 +253,10 @@ function segmentKanjiKana(surface) {
   const segs = [];
   let buf = '', type = null, start = 0, idx = 0;
   for (const ch of surface) {
-    const t = isKanjiChar(ch) ? 'k' : 'h';
-    if (type === null) { buf = ch; type = t; start = idx; }
-    else if (t === type) { buf += ch; }
-    else { segs.push({ type, text: buf, start }); buf = ch; type = t; start = idx; }
+    const segmentType = isKanjiChar(ch) ? 'k' : 'h';
+    if (type === null) { buf = ch; type = segmentType; start = idx; }
+    else if (segmentType === type) { buf += ch; }
+    else { segs.push({ type, text: buf, start }); buf = ch; type = segmentType; start = idx; }
     idx += ch.length;
   }
   if (buf) segs.push({ type, text: buf, start });

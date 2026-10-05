@@ -1,6 +1,5 @@
 import { esc } from '../utils.js';
-
-const KANJI_REGEX = /[一-鿿㐀-䶿]/g;
+import { IDEOGRAPH_SOURCE } from './japaneseText.js';
 
 export function isJapaneseCard(cardLanguage) {
   return !cardLanguage || cardLanguage === 'ja' || cardLanguage === 'jp';
@@ -8,7 +7,7 @@ export function isJapaneseCard(cardLanguage) {
 
 export function wrapKanji(text) {
   if (!text) return '';
-  return text.replace(KANJI_REGEX, k => `<span class="kanji-clickable" data-kanji="${k}">${k}</span>`);
+  return text.replace(new RegExp(IDEOGRAPH_SOURCE, 'gu'), k => `<span class="kanji-clickable" data-kanji="${k}">${k}</span>`);
 }
 
 // Wraps an already-rendered word block (`contentHtml`, e.g. ruby markup) in a

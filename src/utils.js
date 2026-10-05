@@ -1,4 +1,5 @@
 import { exampleSegments } from './utils/exampleFurigana.js';
+import { hasKanji, KANJI_BLOCK_SOURCE } from './utils/japaneseText.js';
 
 export function esc(s) {
   if (!s) return '';
@@ -59,9 +60,6 @@ export function debounce(fn, wait) {
 }
 
 // Render source slices only. Never search/replace previously generated HTML.
-const KANJI_DETECT = /[一-鿿㐀-䶿々]/;
-// kanji run (+ 々 repetition) followed by optional trailing kana / long mark.
-const KANJI_BLOCK = '[一-鿿㐀-䶿々]+[ぁ-んァ-ヶー]*';
 
 export function highlightKanji(sentence, kanji, furiganaMap, occurrenceData) {
   if (!sentence) return '';
@@ -74,14 +72,14 @@ export function highlightKanji(sentence, kanji, furiganaMap, occurrenceData) {
   const plainHTML = (text) => {
     const target = kanji ? `|${kanji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` : '';
     let cursor = 0, html = '';
-    for (const match of text.matchAll(new RegExp(`${KANJI_BLOCK}${target}`, 'g'))) {
+    for (const match of text.matchAll(new RegExp(`${KANJI_BLOCK_SOURCE}${target}`, 'gu'))) {
       html += esc(text.slice(cursor, match.index)) + wordHTML(match[0], null);
       cursor = match.index + match[0].length;
     }
     return html + esc(text.slice(cursor));
   };
   return exampleSegments(sentence, furiganaMap, occurrenceData).map(segment =>
-    segment.reading && KANJI_DETECT.test(segment.surface)
+    segment.reading && hasKanji(segment.surface)
       ? wordHTML(segment.surface, segment.reading) : plainHTML(segment.surface)).join('');
 }
 

@@ -1,12 +1,10 @@
 import { esc } from '../utils.js';
 import { defineWordContextually } from '../services/aiService.js';
+import { isKanjiChar } from '../utils/japaneseText.js';
 
 // Jukugo Smart Word Modal: opened when a whole word block on the back of a
 // flashcard is clicked. Defines the ENTIRE compound word contextually via
 // Gemini, and offers a per-kanji breakdown that drills into the Kanji Modal.
-
-// Common-kanji range used to split the word into clickable breakdown chips.
-const KANJI_CHAR = /[一-龯]/;
 
 let app;
 export function init(ctx) { app = ctx; }
@@ -19,7 +17,7 @@ export function open(word, sentence, cachedMeaningHtml = null) {
   sentence = (sentence || '').toString();
 
   // One chip per kanji character in the word → opens the per-kanji detail modal.
-  const chars = [...word].filter((ch) => KANJI_CHAR.test(ch));
+  const chars = [...word].filter(isKanjiChar);
   const chipsHtml = chars.length
     ? chars.map((ch) => `<button class="kanji-chip tap" data-char="${esc(ch)}">${esc(ch)}</button>`).join('')
     : `<span class="text-muted">—</span>`;
