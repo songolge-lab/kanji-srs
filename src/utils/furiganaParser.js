@@ -48,6 +48,45 @@ function inflateIfGzip(u8) {
   return (u8[0] === 0x1f && u8[1] === 0x8b) ? gunzipSync(u8) : u8;
 }
 
+// Kuromoji stores two signed Int16 dimensions followed by their full matrix.
+// Check decoded bytes before DictionaryLoader constructs its typed array.
+function validateConnectionCosts(buffer) {
+  if (buffer.byteLength < 4 || buffer.byteLength % 2 !== 0) {
+    throw new Error('Invalid cc.dat: incomplete Int16 header or matrix');
+  }
+  const dimensions = new Int16Array(buffer, 0, 2);
+  const forward = dimensions[0], backward = dimensions[1];
+  if (forward <= 0 || backward <= 0) {
+    throw new Error('Invalid cc.dat: non-positive matrix dimensions');
+  }
+  if (buffer.byteLength !== (forward * backward + 2) * 2) {
+    throw new Error('Invalid cc.dat: matrix byte length does not match dimensions');
+  }
+}
+
+// Both known and unknown token records are 10 bytes: left/right IDs, cost,
+// then the feature offset. Viterbi indexes costs as [previous right][next left].
+// A self-consistent 1x1 matrix is still invalid for the loaded token IDs.
+function validateTokenConnections(dic) {
+  const costs = dic.connection_costs;
+  for (const [name, tokenDictionary] of [
+    ['tid.dat', dic.token_info_dictionary], ['unk.dat', dic.unknown_dictionary],
+  ]) {
+    const records = tokenDictionary.dictionary;
+    const length = records.buffer.length;
+    if (length === 0 || length % 10 !== 0) {
+      throw new Error('Invalid ' + name + ': incomplete token records');
+    }
+    for (let offset = 0; offset < length; offset += 10) {
+      const left = records.getShort(offset), right = records.getShort(offset + 2);
+      if (left < 0 || left >= costs.backward_dimension
+        || right < 0 || right >= costs.forward_dimension) {
+        throw new Error('Invalid cc.dat: matrix dimensions incompatible with ' + name);
+      }
+    }
+  }
+}
+
 // Packaged Electron renderer'ı `file://` üzerinden yüklenir ve Chromium
 // `fetch('file://…')` desteklemez. Bu durumda dict baytlarını main
 // process'ten IPC ile okuruz (preload → window.electronAPI.readDict).
@@ -84,7 +123,11 @@ class SmartDictionaryLoader extends DictionaryLoader {
         });
 
     source
-      .then((raw) => callback(null, exactBuffer(inflateIfGzip(raw))))
+      .then((raw) => {
+        const buffer = exactBuffer(inflateIfGzip(raw));
+        if (url.split('/').pop() === 'cc.dat.gz') validateConnectionCosts(buffer);
+        callback(null, buffer);
+      })
       .catch((err) => callback(err, null));
   }
 }
@@ -92,16 +135,50 @@ class SmartDictionaryLoader extends DictionaryLoader {
 let _tokenizerPromise = null;
 let _tokenizerInstance = null;
 
+function resetTokenizer() {
+  _tokenizerInstance = null;
+  _tokenizerPromise = null;
+}
+
 export function getTokenizer() {
   if (_tokenizerPromise) return _tokenizerPromise;
-  _tokenizerPromise = new Promise((resolve, reject) => {
+  // Defer loading so even synchronous transport/loader failures clear the
+  // shared promise after it has been assigned. Concurrent callers share it.
+  _tokenizerPromise = Promise.resolve().then(() => new Promise((resolve, reject) => {
     new SmartDictionaryLoader(DIC_PATH).load((err, dic) => {
-      if (err) { _tokenizerPromise = null; reject(err); }
-      else {
-        _tokenizerInstance = new Tokenizer(dic);
-        resolve(_tokenizerInstance);
+      if (err) { reject(err); return; }
+      try {
+        validateTokenConnections(dic);
+        const candidate = new Tokenizer(dic);
+        const smoke = candidate.tokenize('日本語');
+        if (smoke.map(token => token.surface_form).join('') !== '日本語') {
+          throw new Error('Dictionary smoke tokenization failed');
+        }
+
+        const tokenize = candidate.tokenize;
+        candidate.tokenize = function (...args) {
+          try {
+            return tokenize.apply(this, args);
+          } catch (error) {
+            // This exact string is thrown by Kuromoji's ConnectionCosts.get.
+            // Ordinary input errors retain the cache; stale instances cannot
+            // evict a newer healthy candidate. No automatic reload is started.
+            if (error === 'ConnectionCosts buffer overflow'
+              && this === candidate && _tokenizerInstance === candidate) resetTokenizer();
+            throw error;
+          }
+        };
+        resolve(candidate);
+      } catch (error) {
+        reject(error);
       }
     });
+  })).then((candidate) => {
+    _tokenizerInstance = candidate;
+    return candidate;
+  }).catch((error) => {
+    resetTokenizer();
+    throw error;
   });
   return _tokenizerPromise;
 }
