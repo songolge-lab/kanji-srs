@@ -3,6 +3,10 @@ import kanjiBase from '../data/locales/kanji_base.json';
 let meaningEn = null;
 let meaningLang = null;
 let activeLang = 'en';
+let requestedLang = 'en';
+let requestGeneration = 0;
+let englishPromise = null;
+let loading = false;
 
 async function loadPack(lang) {
   switch (lang) {
@@ -15,14 +19,38 @@ async function loadPack(lang) {
 }
 
 export async function setLanguage(lang) {
-  if (!meaningEn) meaningEn = await loadPack('en');
-  if (lang === 'en') {
-    meaningLang = null;
-    activeLang = 'en';
-    return;
+  const generation = ++requestGeneration;
+  const selected = ['en', 'tr', 'ko', 'mn'].includes(lang) ? lang : 'en';
+  requestedLang = selected;
+  loading = true;
+  // Immediate lookups use a correctly labelled English fallback, never the
+  // previous native pack with the newly selected UI language's label.
+  meaningLang = null;
+  activeLang = 'en';
+  if (!englishPromise) {
+    englishPromise = loadPack('en').catch(error => { englishPromise = null; throw error; });
   }
-  meaningLang = await loadPack(lang);
-  activeLang = lang;
+  try {
+    const [english, native] = await Promise.all([
+      englishPromise, selected === 'en' ? Promise.resolve(null) : loadPack(selected),
+    ]);
+    if (generation !== requestGeneration) return false;
+    meaningEn = english;
+    meaningLang = native;
+    activeLang = selected;
+    loading = false;
+    return true;
+  } catch (error) {
+    // Stale failures cannot change readiness or surface an error for a newer
+    // successful selection. Latest failures leave the English fallback active.
+    if (generation !== requestGeneration) return false;
+    loading = false;
+    throw error;
+  }
+}
+
+export function getLanguageState() {
+  return { requestedLang, activeLang, loading };
 }
 
 export function lookup(kanji) {

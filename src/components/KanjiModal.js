@@ -2,6 +2,7 @@ import { lookup } from '../services/kanjiDictService.js';
 import { esc } from '../utils.js';
 
 let app;
+let visibleEntry = null;
 export function init(ctx) { app = ctx; }
 
 // `opts.onBack` (opsiyonel): sağlanırsa modal başlığının sol üstüne bir geri (←)
@@ -18,12 +19,13 @@ export function open(kanji, opts = {}) {
   if (!entry) {
     app.openModal(app.t('kanji_detail'), `
       ${backBtn}
-      <div class="modal-glyph-head">
+      <div class="modal-glyph-head" id="kanji-modal-content">
         <div class="fc-kanji">${esc(kanji)}</div>
         <p class="text-muted mt-2">${app.t('kanji_not_found')}</p>
       </div>
       <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
     `);
+    visibleEntry = { kanji, opts, element: document.getElementById('kanji-modal-content') };
     wireBack(onBack);
     return;
   }
@@ -32,7 +34,7 @@ export function open(kanji, opts = {}) {
 
   app.openModal(app.t('kanji_detail'), `
     ${backBtn}
-    <div class="modal-glyph-head">
+    <div class="modal-glyph-head" id="kanji-modal-content">
       <div class="fc-kanji">${esc(kanji)}</div>
     </div>
     <div class="kanji-detail-rows">
@@ -51,7 +53,17 @@ export function open(kanji, opts = {}) {
     </div>
     <button class="btn btn-ghost btn-block tap mt-3" onclick="closeModal()">${app.t('close')}</button>
   `);
+  visibleEntry = { kanji, opts, element: document.getElementById('kanji-modal-content') };
   wireBack(onBack);
+}
+
+// Refresh only this still-visible modal instance. Closing it or replacing it
+// with another dialog while a pack loads must not reopen Kanji Detail.
+export function refresh() {
+  if (!visibleEntry?.element?.isConnected
+    || document.getElementById('kanji-modal-content') !== visibleEntry.element
+    || !document.getElementById('modal-bg')?.classList.contains('show')) return;
+  open(visibleEntry.kanji, visibleEntry.opts);
 }
 
 // openModal HTML'i senkron bastığından buton hemen bağlanabilir (taze → leak yok).

@@ -434,7 +434,28 @@ function t(key, params) {
   if (!params) return str;
   return str.replace(/\{(\w+)\}/g, (_, k) => params[k] != null ? params[k] : '');
 }
-function setLang(lang) { currentLang = lang; localStorage.setItem('stacks-lang', lang); document.documentElement.lang = lang; KanjiDict.setLanguage(lang); updateExampleDeck(); updateStaticTexts(); showView(currentView); Analytics.renderGlobalStats(); }
+let languageRequestGeneration = 0;
+async function setLang(lang) {
+  if (!LANG[lang]) return false;
+  const generation = ++languageRequestGeneration;
+  const readiness = KanjiDict.setLanguage(lang);
+  currentLang = lang;
+  localStorage.setItem('stacks-lang', lang);
+  document.documentElement.lang = lang;
+  updateExampleDeck(); updateStaticTexts(); showView(currentView); Analytics.renderGlobalStats();
+  KanjiModal.refresh(); // pending lookups show the labelled English fallback
+  try {
+    const committed = await readiness;
+    if (!committed || generation !== languageRequestGeneration || currentLang !== lang) return false;
+    KanjiModal.refresh();
+    return true;
+  } catch (error) {
+    if (generation !== languageRequestGeneration || currentLang !== lang) return false;
+    KanjiModal.refresh();
+    showToast(t('warn_error', { msg: error.message }), 3500);
+    return false;
+  }
+}
 function updateExampleDeck() {
   const exDeck = state.decks.find(d => d.isExample);
   if (!exDeck) return;
