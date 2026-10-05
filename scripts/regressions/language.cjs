@@ -96,8 +96,14 @@ async function run() {
   await dictionary.setLanguage('tr');
   const nativePack = JSON.parse(fs.readFileSync(path.join(root, 'src/data/locales/kanji_tr.json')));
   const english = JSON.parse(fs.readFileSync(path.join(root, 'src/data/locales/kanji_en.json')));
-  const missing = Object.keys(english).find(key => !nativePack[key] && english[key]);
-  assert.ok(missing); assert.equal(dictionary.lookup(missing).meaning, english[missing]); assert.equal(dictionary.lookup(missing).hasNativeMeaning, false);
+  // The real Turkish and English packs have identical empty-meaning keys.
+  // Omit a native entry only in the controlled loader to exercise fallback.
+  const fallback = await createHarness({}, { jsonValue(filename, value) {
+    if (filename.endsWith('kanji_tr.json')) { delete value.日; }
+    return value;
+  } }).load('src/services/kanjiDictService.js');
+  await fallback.init('tr');
+  assert.equal(fallback.lookup('日').meaning, english.日); assert.equal(fallback.lookup('日').hasNativeMeaning, false);
   console.log('PASS language: awaited init, delayed immediate fallback, reversed completion, stale success/failure, latest failure/retry, visible modal refresh, closed/replaced modal guards, rapid and sequential switching, missing-native English fallback');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

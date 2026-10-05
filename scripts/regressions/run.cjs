@@ -6,7 +6,8 @@ const { root } = require('./harness.cjs');
 const jobs = [];
 for (const branch of ['web', 'ipc']) {
   for (const fixture of ['healthy', 'missing', 'gzip', 'cc', 'cc-truncated',
-    'map-truncated', 'map-partial', 'map-target', 'map-count', 'map-padding', 'decoded', 'runtime']) {
+    'map-truncated', 'map-partial', 'map-target', 'map-trie', 'map-count', 'map-padding',
+    'tid-padding', 'map-unpadded', 'decoded', 'runtime']) {
     jobs.push(['tokenizer.cjs', branch, fixture]);
   }
 }

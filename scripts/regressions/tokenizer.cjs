@@ -18,7 +18,13 @@ async function run() {
   if (fixture === 'map-partial') replaceMap(rawMap.slice(0, 4175475));
   if (fixture === 'map-target') {
     const bytes = rawMap.slice();
-    new DataView(bytes.buffer).setInt32(12, 0x7ffffffa, true);
+    const recordLength = gunzipSync(assets['tid.dat.gz']).length;
+    new DataView(bytes.buffer).setInt32(12, recordLength + 10, true);
+    replaceMap(bytes);
+  }
+  if (fixture === 'map-trie') {
+    const bytes = rawMap.slice();
+    new DataView(bytes.buffer).setInt32(4, 0x7f4e5d6c, true);
     replaceMap(bytes);
   }
   if (fixture === 'map-count') {
@@ -29,8 +35,13 @@ async function run() {
   if (fixture === 'map-padding') {
     const bytes = rawMap.slice(); bytes[bytes.length - 1] = 1; replaceMap(bytes);
   }
+  if (fixture === 'tid-padding') {
+    const bytes = gunzipSync(assets['tid.dat.gz']); bytes[bytes.length - 1] = 1;
+    state.replacements['tid.dat.gz'] = gzipSync(bytes);
+  }
+  if (fixture === 'map-unpadded') replaceMap(rawMap.slice(0, 4175476));
   if (fixture === 'decoded') state.replacements = Object.fromEntries(Object.entries(assets).map(([name, bytes]) => [name, gunzipSync(bytes)]));
-  const healthy = ['healthy', 'decoded', 'runtime'].includes(fixture);
+  const healthy = ['healthy', 'decoded', 'map-unpadded', 'runtime'].includes(fixture);
   const first = api.getTokenizer();
   const callers = Array.from({ length: 12 }, () => api.getTokenizer());
   callers.forEach(promise => assert.equal(promise, first));

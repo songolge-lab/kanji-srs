@@ -27,8 +27,12 @@ async function run() {
   for (const key of ['僑', '侶']) { assert.equal(dictionary.lookup(key, 'tr').meaning, tr[key]); assert.equal(dictionary.lookup(key).hasNativeMeaning, true); }
   assert.equal(dictionary.lookup('侨'), null); assert.equal(dictionary.lookup('侣'), null);
   const en = JSON.parse(fs.readFileSync(path.join(root, 'src/data/locales/kanji_en.json')));
-  const missing = Object.keys(en).find(key => !tr[key] && en[key]);
-  assert.ok(missing); assert.equal(dictionary.lookup(missing).meaning, en[missing]); assert.equal(dictionary.lookup(missing).hasNativeMeaning, false);
+  const fallback = await createHarness({}, { jsonValue(filename, value) {
+    if (filename.endsWith('kanji_tr.json')) delete value.日;
+    return value;
+  } }).load('src/services/kanjiDictService.js');
+  await fallback.init('tr');
+  assert.equal(fallback.lookup('日').meaning, en.日); assert.equal(fallback.lookup('日').hasNativeMeaning, false);
   await dictionary.setLanguage('en');
   for (const key of ['僑', '侶']) { assert.equal(dictionary.lookup(key).meaning, en[key]); assert.equal(dictionary.lookup(key).hasNativeMeaning, false); }
   console.log('PASS Turkish: exact 3121-key equality, two key-only corrections with byte-identical glosses, unchanged base/other locales, native lookup and English fallback');

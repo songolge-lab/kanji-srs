@@ -96,12 +96,14 @@ function validateTokenMappings(dic) {
   const records = dictionary.dictionary;
   const features = dictionary.pos_buffer.buffer;
   const seen = new Uint8Array(records.buffer.length / 10);
+  let recordEnd = 0;
   for (const [key, targets] of Object.entries(dictionary.target_map)) {
     for (const offset of targets) {
       if (offset < 0 || offset % 10 !== 0 || offset + 10 > records.buffer.length || seen[offset / 10]) {
         throw new Error('Invalid tid_map.dat: missing, duplicate or out-of-bounds token record');
       }
       seen[offset / 10] = 1;
+      recordEnd = Math.max(recordEnd, offset + 10);
       const pos = records.getInt(offset + 6);
       if (pos < 0 || pos >= features.length || (pos > 0 && features[pos - 1] !== 0)
         || features.indexOf(0, pos) < 0) {
@@ -113,7 +115,15 @@ function validateTokenMappings(dic) {
       }
     }
   }
-  if (seen.includes(0)) throw new Error('Invalid tid_map.dat: unreferenced token records');
+  // The installed assets also retain zero-filled token-record capacity (10MB
+  // allocation, not 10MB of live records). Every record through the last
+  // referenced record must be mapped; only an all-zero suffix is padding.
+  if (seen.subarray(0, recordEnd / 10).includes(0)) {
+    throw new Error('Invalid tid_map.dat: unreferenced token records');
+  }
+  for (let offset = recordEnd; offset < records.buffer.length; offset++) {
+    if (records.buffer[offset] !== 0) throw new Error('Invalid tid_map.dat: unmapped nonzero token record');
+  }
 }
 
 // Both known and unknown token records are 10 bytes: left/right IDs, cost,

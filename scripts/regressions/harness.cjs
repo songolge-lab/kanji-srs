@@ -19,8 +19,9 @@ function createHarness(globals = {}, options = {}) {
     if (cache.has(filename)) return cache.get(filename);
     let module;
     if (filename.endsWith('.json') || filename.includes('node_modules')) {
-      const value = filename.endsWith('.json')
+      let value = filename.endsWith('.json')
         ? JSON.parse(fs.readFileSync(filename, 'utf8')) : requireAtRoot(filename);
+      if (filename.endsWith('.json') && options.jsonValue) value = options.jsonValue(filename, value);
       const names = ['default', ...Object.keys(value).filter(key => key !== 'default')];
       module = new vm.SyntheticModule(names, function () {
         this.setExport('default', value);
@@ -76,7 +77,9 @@ function dictionaryTransport(branch = 'web') {
     window: { location: { protocol: 'https:' } },
     fetch: async url => {
       if (!url.startsWith('/nested/dict/')) throw new Error('Unexpected dictionary URL');
-      const bytes = read(url.split('/').pop());
+      const name = url.split('/').pop();
+      if (name === state.missing) { state.reads.push(name); return { ok: false, status: 404, statusText: 'Not Found' }; }
+      const bytes = read(name);
       return { ok: true, arrayBuffer: async () => bytes.slice().buffer };
     },
   };
