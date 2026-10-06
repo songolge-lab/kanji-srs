@@ -7,7 +7,11 @@ const jobs = [];
 for (const branch of ['web', 'ipc']) {
   for (const fixture of ['healthy', 'missing', 'gzip', 'cc', 'cc-truncated',
     'map-truncated', 'map-partial', 'map-target', 'map-trie', 'map-count', 'map-padding',
-    'tid-padding', 'map-unpadded', 'decoded', 'runtime']) {
+    'tid-padding', 'map-unpadded', 'decoded', 'offset', 'runtime',
+    'unk-truncated', 'unk-partial', 'unk-count', 'unk-target', 'unk-key',
+    'unk-padding', 'unk-record', 'unk-feature', 'unk-char', 'unk-compat',
+    'unk-invoke-padding', 'unk-invoke-truncated', 'unk-default', 'unk-unpadded',
+    'maps-reordered', 'trie-unmapped']) {
     jobs.push(['tokenizer.cjs', branch, fixture]);
   }
 }

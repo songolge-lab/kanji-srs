@@ -64,8 +64,8 @@ function validateConnectionCosts(buffer) {
 // entry count, then [trie ID, target count, token record offsets...] per entry.
 // loadTargetMap ignores the header and ByteBuffer reads past EOF as zero, so
 // validate BEFORE that loader can turn a truncated prefix into a usable map.
-function validateSerializedTokenMap(buffer) {
-  const invalid = (reason) => { throw new Error('Invalid tid_map.dat: ' + reason); };
+function validateSerializedTokenMap(buffer, name = 'tid_map.dat') {
+  const invalid = (reason) => { throw new Error('Invalid ' + name + ': ' + reason); };
   if (buffer.byteLength < 4) invalid('missing entry count');
   const view = new DataView(buffer);
   const entries = view.getInt32(0, true);
@@ -77,7 +77,7 @@ function validateSerializedTokenMap(buffer) {
     const key = view.getInt32(offset, true);
     const count = view.getInt32(offset + 4, true);
     offset += 8;
-    if (key < 0 || keys.has(key)) invalid('invalid or duplicate trie ID');
+    if (key < 0 || keys.has(key)) invalid('invalid or duplicate mapping key');
     keys.add(key);
     if (count <= 0 || count > (buffer.byteLength - offset) / 4) invalid('truncated target list');
     for (let target = 0; target < count; target++, offset += 4) {
@@ -91,8 +91,7 @@ function validateSerializedTokenMap(buffer) {
   for (; offset < bytes.length; offset++) if (bytes[offset] !== 0) invalid('nonzero trailing data');
 }
 
-function validateTokenMappings(dic) {
-  const dictionary = dic.token_info_dictionary;
+function validateMappedTokenRecords(dictionary, name, validateSurface) {
   const records = dictionary.dictionary;
   const features = dictionary.pos_buffer.buffer;
   const seen = new Uint8Array(records.buffer.length / 10);
@@ -100,30 +99,127 @@ function validateTokenMappings(dic) {
   for (const [key, targets] of Object.entries(dictionary.target_map)) {
     for (const offset of targets) {
       if (offset < 0 || offset % 10 !== 0 || offset + 10 > records.buffer.length || seen[offset / 10]) {
-        throw new Error('Invalid tid_map.dat: missing, duplicate or out-of-bounds token record');
+        throw new Error('Invalid ' + name + ': missing, duplicate or out-of-bounds token record');
       }
       seen[offset / 10] = 1;
       recordEnd = Math.max(recordEnd, offset + 10);
       const pos = records.getInt(offset + 6);
       if (pos < 0 || pos >= features.length || (pos > 0 && features[pos - 1] !== 0)
         || features.indexOf(0, pos) < 0) {
-        throw new Error('Invalid tid_map.dat: invalid token feature reference');
+        throw new Error('Invalid ' + name + ': invalid token feature reference');
       }
       const surface = dictionary.getFeatures(offset).split(',')[0];
-      if (!surface || dic.trie.lookup(surface) !== Number(key)) {
-        throw new Error('Invalid tid_map.dat: trie ID does not match token surface');
-      }
+      if (!surface) throw new Error('Invalid ' + name + ': empty token surface');
+      validateSurface(Number(key), surface);
     }
   }
   // The installed assets also retain zero-filled token-record capacity (10MB
   // allocation, not 10MB of live records). Every record through the last
   // referenced record must be mapped; only an all-zero suffix is padding.
   if (seen.subarray(0, recordEnd / 10).includes(0)) {
-    throw new Error('Invalid tid_map.dat: unreferenced token records');
+    throw new Error('Invalid ' + name + ': unreferenced token records');
   }
   for (let offset = recordEnd; offset < records.buffer.length; offset++) {
-    if (records.buffer[offset] !== 0) throw new Error('Invalid tid_map.dat: unmapped nonzero token record');
+    if (records.buffer[offset] !== 0) throw new Error('Invalid ' + name + ': unmapped nonzero token record');
   }
+}
+
+// A CHECK parent alone is not reachability: unused allocation also contains
+// links. Memoize parent chains through real non-NUL byte edges back to root.
+// Both time and the bitmap are bounded by the supplied base/check arrays.
+function validateTrieTerminals(trie, targetMap) {
+  const base = trie.bc.getBaseBuffer(), check = trie.bc.getCheckBuffer();
+  if (!base.length || base.length !== check.length || base[0] < 0) {
+    throw new Error('Invalid trie: incomplete base/check storage or root');
+  }
+  const reachability = new Uint8Array(base.length); // 0 unseen, 1 visiting, 2 reachable, 3 unreachable
+  reachability[0] = 2;
+  const reachable = (node) => {
+    const path = [];
+    let cursor = node, valid = true;
+    while (reachability[cursor] === 0) {
+      reachability[cursor] = 1;
+      path.push(cursor);
+      const parent = check[cursor];
+      const code = parent >= 0 && parent < base.length ? cursor - base[parent] : -1;
+      if (parent < 0 || parent >= base.length || base[parent] < 0 || code < 1 || code > 255) {
+        valid = false;
+        break;
+      }
+      cursor = parent;
+    }
+    valid = valid && reachability[cursor] === 2;
+    for (const entry of path) reachability[entry] = valid ? 2 : 3;
+    return valid;
+  };
+  const terminalKeys = new Set();
+  for (let node = 1; node < base.length; node++) {
+    const parent = check[node];
+    if (parent <= 0 || parent >= base.length || base[parent] !== node || !reachable(parent)) continue;
+    // Installed doublearray encodes a NUL terminal's value as -BASE - 1.
+    const key = -base[node] - 1;
+    if (base[node] >= 0 || !Object.hasOwn(targetMap, key) || !targetMap[key].length || terminalKeys.has(key)) {
+      throw new Error('Invalid tid_map.dat: reachable trie terminal lacks a unique token mapping');
+    }
+    terminalKeys.add(key);
+  }
+}
+
+function validateTokenMappings(dic) {
+  validateMappedTokenRecords(dic.token_info_dictionary, 'tid_map.dat', (key, surface) => {
+    if (dic.trie.lookup(surface) !== key) throw new Error('Invalid tid_map.dat: trie ID does not match token surface');
+  });
+  validateTrieTerminals(dic.trie, dic.token_info_dictionary.target_map);
+}
+
+// InvokeDefinitionMap serializes [invoke:u8, grouping:u8, length:i32,
+// name:UTF8+NUL] records without a count. Its real allocation has a zero
+// suffix; trim that capacity before the installed loader invents empty classes.
+function validatedInvokeBuffer(buffer) {
+  const bytes = new Uint8Array(buffer), view = new DataView(buffer);
+  let offset = 0, count = 0;
+  const invalid = () => { throw new Error('Invalid unk_invoke.dat: incomplete category definition or padding'); };
+  while (offset < bytes.length) {
+    if (offset + 7 > bytes.length || bytes[offset + 6] === 0) {
+      for (let index = offset; index < bytes.length; index++) if (bytes[index] !== 0) invalid();
+      break;
+    }
+    if (++count > 256 || bytes[offset] > 1 || bytes[offset + 1] > 1 || view.getInt32(offset + 2, true) < 0) invalid();
+    const end = bytes.indexOf(0, offset + 6);
+    if (end < 0) invalid();
+    offset = end + 1;
+  }
+  if (!count) invalid();
+  return buffer.slice(0, offset);
+}
+
+function validateUnknownMappings(dic) {
+  const dictionary = dic.unknown_dictionary;
+  const definition = dictionary.character_definition;
+  const invoke = definition.invoke_definition_map;
+  const classes = invoke.map, names = new Set();
+  for (let key = 0; key < classes.length; key++) {
+    const category = classes[key];
+    if (category.class_id !== key || !category.class_name || names.has(category.class_name)
+      || !Object.hasOwn(dictionary.target_map, key) || !dictionary.target_map[key].length) {
+      throw new Error('Invalid unk_map.dat: category lacks a unique definition or token mapping');
+    }
+    names.add(category.class_name);
+  }
+  const defaultId = invoke.lookup('DEFAULT');
+  if (!Number.isInteger(defaultId) || defaultId < 0 || defaultId >= classes.length) {
+    throw new Error('Invalid unk_map.dat: missing DEFAULT category');
+  }
+  const allowed = classes.length >= 32 ? 0xffffffff : (2 ** classes.length - 1) >>> 0;
+  for (let code = 0; code < definition.character_category_map.length; code++) {
+    if (definition.character_category_map[code] >= classes.length
+      || (definition.compatible_category_map[code] & ~allowed) !== 0) {
+      throw new Error('Invalid unk_map.dat: codepoint refers to an undefined category');
+    }
+  }
+  validateMappedTokenRecords(dictionary, 'unk_map.dat', (key, surface) => {
+    if (classes[key]?.class_name !== surface) throw new Error('Invalid unk_map.dat: category does not match token surface');
+  });
 }
 
 // Both known and unknown token records are 10 bytes: left/right IDs, cost,
@@ -186,9 +282,15 @@ class SmartDictionaryLoader extends DictionaryLoader {
 
     source
       .then((raw) => {
-        const buffer = exactBuffer(inflateIfGzip(raw));
-        if (url.split('/').pop() === 'cc.dat.gz') validateConnectionCosts(buffer);
-        if (url.split('/').pop() === 'tid_map.dat.gz') validateSerializedTokenMap(buffer);
+        let buffer = exactBuffer(inflateIfGzip(raw));
+        const name = url.split('/').pop();
+        if (name === 'cc.dat.gz') validateConnectionCosts(buffer);
+        if (name === 'tid_map.dat.gz' || name === 'unk_map.dat.gz') validateSerializedTokenMap(buffer, name.slice(0, -3));
+        if ((name === 'unk_char.dat.gz' && buffer.byteLength !== 65536)
+          || (name === 'unk_compat.dat.gz' && buffer.byteLength !== 65536 * 4)) {
+          throw new Error('Invalid ' + name + ': incomplete codepoint category table');
+        }
+        if (name === 'unk_invoke.dat.gz') buffer = validatedInvokeBuffer(buffer);
         callback(null, buffer);
       })
       .catch((err) => callback(err, null));
@@ -213,6 +315,7 @@ export function getTokenizer() {
       try {
         validateTokenConnections(dic);
         validateTokenMappings(dic);
+        validateUnknownMappings(dic);
         const candidate = new Tokenizer(dic);
         const smoke = candidate.tokenize('日本語');
         if (smoke.map(token => token.surface_form).join('') !== '日本語') {
