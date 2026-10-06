@@ -461,10 +461,13 @@ export async function generateExampleFurigana(sentence) {
       : segs.filter((s) => s.type === 'k').map((seg) => ({ seg, reading: null }));
 
     for (const { seg, reading: kr } of fitted) {
+      // Unknown ideographs are source gaps, not part of a readable annotation.
+      // Flush before the gap so it cannot erase readings on either side.
+      if (!kr) { flush(); continue; }
       const absStart = base + seg.start;
       if (block && block.end === absStart) {
         block.text += seg.text;
-        block.reading = (block.reading != null && kr != null) ? block.reading + kr : null;
+        block.reading += kr;
         block.end = absStart + seg.text.length;
       } else {
         flush();

@@ -16,6 +16,7 @@ for (const branch of ['web', 'ipc']) {
   }
 }
 for (const concern of ['occurrences', 'unicode', 'language', 'turkish']) jobs.push([`${concern}.cjs`]);
+for (const branch of ['web', 'ipc']) jobs.push(['unknown-neighbors.cjs', branch]);
 let failed = 0;
 for (const [script, ...args] of jobs) {
   const result = spawnSync(process.execPath, ['--experimental-vm-modules', '--no-warnings', path.join(__dirname, script), ...args], {
