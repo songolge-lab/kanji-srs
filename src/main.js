@@ -22,7 +22,7 @@ import { copyExampleFurigana, validExampleFurigana, legacyFuriganaMap } from './
    KANJI SRS — ANA ORKESTRASYON
    ===================================================================== */
 
-const APP_VERSION = '2.6.1';
+const APP_VERSION = '2.6.2';
 
 // ─── İKON SETİ ─────────────────────────────────────────────────────────
 const ICONS = {
